@@ -15,13 +15,36 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Sanitize FTP server hostname
+      - name: Sanitize FTP host and auto-detect Hostinger public_html path
         id: ftp
         env:
           RAW_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
         run: |
           CLEAN_HOST=$(echo "$RAW_SERVER" | sed -E 's#^[a-zA-Z]+://##; s#/.*$##; s#[[:space:]]##g')
           echo "host=$CLEAN_HOST" >> "$GITHUB_OUTPUT"
+
+          ROOT_LIST=$(curl -s --list-only --user "$FTP_USER:$FTP_PASS" "ftp://$CLEAN_HOST/" || true)
+          echo "FTP root entries:"
+          echo "$ROOT_LIST"
+
+          TARGET_DIR="./"
+          if echo "$ROOT_LIST" | grep -qx "php-api"; then
+            TARGET_DIR="./"
+          elif echo "$ROOT_LIST" | grep -qx "domains"; then
+            DOM_LIST=$(curl -s --list-only --user "$FTP_USER:$FTP_PASS" "ftp://$CLEAN_HOST/domains/empireskillsindia.com/" || true)
+            if echo "$DOM_LIST" | grep -qx "public_html"; then
+              TARGET_DIR="./domains/empireskillsindia.com/public_html/"
+            else
+              TARGET_DIR="./public_html/"
+            fi
+          elif echo "$ROOT_LIST" | grep -qx "public_html"; then
+            TARGET_DIR="./public_html/"
+          fi
+
+          echo "Detected Hostinger web root: $TARGET_DIR"
+          echo "dir=$TARGET_DIR" >> "$GITHUB_OUTPUT"
 
       - name: Prepare clean deploy folder (preserving live config.php)
         run: |
@@ -41,7 +64,7 @@ jobs:
           port: 21
           protocol: ftp
           local-dir: ./deploy/
-          server-dir: ./public_html/
+          server-dir: ${{ steps.ftp.outputs.dir }}
           dangerous-clean-slate: false
           exclude: |
             **/.git*
