@@ -15,6 +15,7 @@ import {
   FileText,
 } from "lucide-react";
 import { InstituteEmblem } from "@/components/InstituteEmblem";
+import { BrandLogo } from "@/components/BrandLogo";
 import { PrintableAdmissionForm } from "@/components/PrintableAdmissionForm";
 import { INSTITUTE_INFO, type SubjectResultItem } from "@/lib/constants";
 import { formatDisplayDate } from "@/lib/generators";
@@ -400,30 +401,35 @@ export default function StudentZonePage() {
               </div>
             )}
 
-            {/* TAB 2: PRINTABLE STUDENT ID CARD */}
+            {/* TAB 2: PRINTABLE PVC PORTRAIT STUDENT ID CARD (54mm x 86mm CR80) */}
             {activeTab === "idcard" && (
-              <div id="printable-document" className="flex justify-center py-4">
-                <div className="w-full max-w-md bg-white border-2 border-[#0B3D62] rounded-xl shadow-lg overflow-hidden">
-                  {/* ID Card Header */}
-                  <div className="bg-[#0B3D62] text-white px-5 py-3.5 border-b-4 border-[#F07228] flex items-center gap-3">
-                    <InstituteEmblem size={44} className="shrink-0" />
-                    <div>
-                      <h3 className="text-base font-extrabold tracking-wide leading-tight">
-                        {INSTITUTE_INFO.name}
-                      </h3>
-                      <p className="text-[10px] text-[#FFB380] font-semibold">
+              <div className="space-y-3">
+                <p className="no-print text-center text-xs text-slate-500">
+                  Standard PVC Aadhar / CR80 Portrait Size (<strong>54mm × 86mm</strong>) —
+                  Ready for PVC Card Printing
+                </p>
+                <div id="printable-document" className="flex justify-center py-2">
+                  <div
+                    className="pvc-id-card bg-white border-2 border-[#0B3D62] rounded-[12px] shadow-xl overflow-hidden flex flex-col justify-between"
+                    style={{ width: "260px", height: "414px" }}
+                  >
+                    {/* Top Brand Header with Official Institute Logo */}
+                    <div className="bg-white px-3 pt-2.5 pb-2 border-b-[3px] border-[#F07228] text-center">
+                      <div className="flex justify-center">
+                        <BrandLogo height={30} />
+                      </div>
+                      <p className="text-[7.5px] font-bold text-[#0B3D62] tracking-wider uppercase mt-1">
                         ISO 9001:2015 Certified Institution
                       </p>
-                      <p className="text-[9px] text-slate-300 uppercase tracking-wider mt-0.5">
-                        OFFICIAL STUDENT IDENTITY CARD
-                      </p>
+                      <div className="mt-1 inline-block bg-[#0B3D62] text-white text-[8px] font-extrabold tracking-[0.14em] uppercase px-2.5 py-0.5 rounded-sm">
+                        STUDENT IDENTITY CARD
+                      </div>
                     </div>
-                  </div>
 
-                  {/* ID Card Body */}
-                  <div className="p-5 space-y-4">
-                    <div className="flex items-start gap-4">
-                      <div className="w-24 h-28 rounded border-2 border-[#0B3D62] bg-slate-50 overflow-hidden shrink-0 flex items-center justify-center">
+                    {/* Portrait Body: Centered Photo + Student Details */}
+                    <div className="px-3.5 py-2 flex-1 flex flex-col items-center justify-between">
+                      {/* Passport Photo */}
+                      <div className="w-[74px] h-[86px] rounded-md border-2 border-[#0B3D62] bg-slate-50 overflow-hidden flex items-center justify-center shadow-sm">
                         {student.photoUrl ? (
                           // eslint-disable-next-line @next/next/no-img-element
                           <img
@@ -432,72 +438,83 @@ export default function StudentZonePage() {
                             className="w-full h-full object-cover"
                           />
                         ) : (
-                          <User className="w-10 h-10 text-slate-300" />
+                          <User className="w-8 h-8 text-slate-300" />
                         )}
                       </div>
-                      <div className="space-y-1 text-xs flex-1">
-                        <p className="text-[10px] font-bold uppercase tracking-wider text-[#D65B14]">
-                          Enrollment No.
-                        </p>
-                        <p className="text-sm font-mono font-extrabold text-[#0B3D62]">
-                          {student.enrollmentNumber}
-                        </p>
-                        <p className="text-base font-extrabold text-slate-900 uppercase pt-1">
+
+                      {/* Name & Enrollment */}
+                      <div className="text-center w-full mt-1">
+                        <p className="text-[12px] font-extrabold text-[#0B3D62] uppercase leading-tight truncate">
                           {student.fullName}
                         </p>
-                        <p className="text-slate-600">
-                          S/o / D/o: <strong className="text-slate-800">{student.fatherName}</strong>
-                        </p>
-                        <p className="text-slate-600">
-                          DOB: <strong className="text-slate-800">{formatDisplayDate(student.dob)}</strong>
+                        <p className="text-[9.5px] font-mono font-extrabold text-[#D65B14] mt-0.5">
+                          ID: {student.enrollmentNumber}
                         </p>
                       </div>
-                    </div>
 
-                    <div className="bg-slate-50 border border-slate-200 rounded p-3 text-xs space-y-1.5">
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500">Course:</span>
-                        <strong className="text-[#0B3D62] text-right">
-                          {student.courseName}
-                        </strong>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500">Course Code / Session:</span>
-                        <strong>
-                          {student.courseCode} | {student.session}
-                        </strong>
-                      </div>
-                      <div className="flex justify-between gap-2">
-                        <span className="text-slate-500">Contact:</span>
-                        <strong>{student.mobile}</strong>
-                      </div>
-                    </div>
-
-                    <div className="flex items-end justify-between pt-2 border-t border-slate-200">
-                      <div className="flex items-center gap-2">
-                        <div className="p-1 bg-white border border-slate-200 rounded">
-                          <QRCodeSVG
-                            value={`${INSTITUTE_INFO.website}/verify-certificate?cert=${student.enrollmentNumber}`}
-                            size={54}
-                          />
+                      {/* Compact Details Table */}
+                      <div className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-[8.5px] space-y-0.5 mt-1">
+                        <div className="flex justify-between gap-1.5">
+                          <span className="text-slate-500 shrink-0">Father&apos;s Name:</span>
+                          <strong className="text-slate-800 truncate text-right uppercase">
+                            {student.fatherName}
+                          </strong>
                         </div>
-                        <div className="text-[10px] text-slate-500 leading-tight">
-                          <p className="font-bold text-[#0B3D62]">Scan to Verify</p>
-                          <p>Authorized Student</p>
-                          <p>Valid: {student.session}</p>
+                        <div className="flex justify-between gap-1.5">
+                          <span className="text-slate-500 shrink-0">DOB:</span>
+                          <strong className="text-slate-800">
+                            {formatDisplayDate(student.dob)}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between gap-1.5">
+                          <span className="text-slate-500 shrink-0">Course:</span>
+                          <strong className="text-[#0B3D62] truncate text-right">
+                            {student.courseName}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between gap-1.5">
+                          <span className="text-slate-500 shrink-0">Session:</span>
+                          <strong className="text-slate-800">
+                            {student.session} ({student.courseCode})
+                          </strong>
+                        </div>
+                        <div className="flex justify-between gap-1.5">
+                          <span className="text-slate-500 shrink-0">Mobile:</span>
+                          <strong className="text-slate-800">{student.mobile}</strong>
                         </div>
                       </div>
-                      <div className="text-right text-[10px]">
-                        <div className="w-24 border-b border-slate-400 mb-1 ml-auto" />
-                        <p className="font-bold text-[#0B3D62]">Registrar Signature</p>
-                        <p className="text-slate-500">Empire Skills India</p>
+
+                      {/* QR Code + Registrar Signature */}
+                      <div className="w-full flex items-end justify-between pt-1.5 mt-1 border-t border-slate-200">
+                        <div className="flex items-center gap-1.5">
+                          <div className="p-0.5 bg-white border border-slate-300 rounded">
+                            <QRCodeSVG
+                              value={`https://${INSTITUTE_INFO.website}/verify-certificate?cert=${student.enrollmentNumber}`}
+                              size={38}
+                            />
+                          </div>
+                          <div className="text-[7px] text-slate-500 leading-tight">
+                            <p className="font-bold text-[#0B3D62]">Scan Verify</p>
+                            <p>Valid: {student.session}</p>
+                          </div>
+                        </div>
+                        <div className="text-right text-[7.5px]">
+                          <div className="w-16 border-b border-slate-500 mb-0.5 ml-auto" />
+                          <p className="font-bold text-[#0B3D62]">Registrar Sign</p>
+                          <p className="text-[6.5px] text-slate-500">Empire Skills India</p>
+                        </div>
                       </div>
                     </div>
-                  </div>
 
-                  {/* Bottom Navy Bar */}
-                  <div className="bg-[#0B3D62] text-slate-200 px-4 py-2 text-[10px] text-center">
-                    {INSTITUTE_INFO.address} • Helpline: {INSTITUTE_INFO.helpline}
+                    {/* Bottom Navy Footer Strip */}
+                    <div className="bg-[#0B3D62] text-white px-2.5 py-1.5 text-[7px] text-center leading-tight">
+                      <p className="font-semibold text-[#FFB380]">
+                        {INSTITUTE_INFO.website}
+                      </p>
+                      <p className="text-slate-200 truncate">
+                        Helpline: {INSTITUTE_INFO.helpline}
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

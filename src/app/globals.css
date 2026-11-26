@@ -102,4 +102,17 @@
     margin: 0 !important;
     box-shadow: none !important;
   }
+
+  body.print-document-mode .pvc-id-card {
+    width: 54mm !important;
+    height: 86mm !important;
+    min-width: 54mm !important;
+    max-width: 54mm !important;
+    min-height: 86mm !important;
+    max-height: 86mm !important;
+    border-radius: 3mm !important;
+    box-shadow: none !important;
+    margin: 5mm !important;
+    overflow: hidden !important;
+  }
 }
