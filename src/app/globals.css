@@ -125,16 +125,20 @@
   }
 
   body.print-admission-form-mode .admission-a4-page {
-    width: 196mm !important;
-    max-width: 100% !important;
-    height: auto !important;
-    min-height: 0 !important;
-    padding: 6mm 8mm !important;
-    margin: 0 auto !important;
+    width: 210mm !important;
+    max-width: 210mm !important;
+    height: 293mm !important;
+    min-height: 293mm !important;
+    max-height: 293mm !important;
+    padding: 11mm 13mm !important;
+    margin: 0 !important;
     border: none !important;
     box-shadow: none !important;
-    overflow: visible !important;
+    overflow: hidden !important;
     box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
     break-after: page !important;
     page-break-after: always !important;
     break-inside: avoid !important;
