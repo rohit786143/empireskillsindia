@@ -13,11 +13,21 @@ import {
   User,
   Trash2,
   Printer,
+  IndianRupee,
 } from "lucide-react";
 import { ACADEMIC_SESSIONS, STUDY_MODES } from "@/lib/constants";
-import { formatDisplayDate } from "@/lib/generators";
+import { formatDisplayDate, formatINR } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
 import { PrintableAdmissionForm } from "./PrintableAdmissionForm";
+
+interface FeePaymentEntry {
+  id: string;
+  amount: number;
+  mode: string;
+  receiptNo: string;
+  date: string;
+  remarks?: string;
+}
 
 interface ApplicationRow {
   id: string;
@@ -44,6 +54,10 @@ interface ApplicationRow {
   pincode: string;
   qualificationsJson: string;
   extraDetailsJson?: string | null;
+  totalFee?: number;
+  courseTotalFee?: number;
+  feePaid?: number;
+  feePaymentsJson?: string | null;
   photoUrl: string | null;
   signatureUrl: string | null;
   marksheetUrl: string | null;
@@ -73,6 +87,15 @@ export function AdminAdmissionsClient({
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ApplicationRow | null>(null);
   const [printFormApp, setPrintFormApp] = useState<ApplicationRow | null>(null);
+  const [feeModalApp, setFeeModalApp] = useState<ApplicationRow | null>(null);
+  const [feeModalMode, setFeeModalMode] = useState<"APPROVE" | "COLLECT">("APPROVE");
+  const [feeTotalInput, setFeeTotalInput] = useState("0");
+  const [feeReceiveInput, setFeeReceiveInput] = useState("0");
+  const [feePayMode, setFeePayMode] = useState("Cash");
+  const [feeReceiptNo, setFeeReceiptNo] = useState("");
+  const [feePayDate, setFeePayDate] = useState(new Date().toISOString().slice(0, 10));
+  const [feeRemarks, setFeeRemarks] = useState("");
+  const [savingFee, setSavingFee] = useState(false);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
@@ -105,6 +128,76 @@ export function AdminAdmissionsClient({
     }
     return true;
   });
+
+  function openFeeModal(app: ApplicationRow, mode: "APPROVE" | "COLLECT") {
+    const baseTotal = app.totalFee || app.courseTotalFee || 0;
+    const paid = app.feePaid || 0;
+    const pending = Math.max(0, baseTotal - paid);
+    setFeeModalApp(app);
+    setFeeModalMode(mode);
+    setFeeTotalInput(String(baseTotal));
+    setFeeReceiveInput(mode === "COLLECT" ? String(pending) : String(baseTotal));
+    setFeePayMode("Cash");
+    setFeeReceiptNo("");
+    setFeePayDate(new Date().toISOString().slice(0, 10));
+    setFeeRemarks("");
+  }
+
+  function parsePayments(json?: string | null): FeePaymentEntry[] {
+    if (!json) return [];
+    try {
+      const arr = JSON.parse(json);
+      return Array.isArray(arr) ? arr : [];
+    } catch {
+      return [];
+    }
+  }
+
+  async function handleSubmitFeeModal(e: React.FormEvent) {
+    e.preventDefault();
+    if (!feeModalApp) return;
+    setSavingFee(true);
+    try {
+      const payload: Record<string, unknown> = {
+        totalFee: Number(feeTotalInput || 0),
+      };
+      if (feeModalMode === "APPROVE") {
+        payload.action = "APPROVE";
+      }
+      const receivedAmt = Number(feeReceiveInput || 0);
+      if (receivedAmt > 0) {
+        payload.payment = {
+          amount: receivedAmt,
+          mode: feePayMode,
+          receiptNo: feeReceiptNo.trim(),
+          date: feePayDate,
+          remarks: feeRemarks.trim(),
+        };
+      }
+
+      const res = await apiFetch(
+        `/admissions.php?id=${encodeURIComponent(feeModalApp.id)}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify(payload),
+        }
+      );
+      const data = await res.json();
+      if (res.ok && data.application) {
+        setApplications((prev) =>
+          prev.map((a) =>
+            a.id === feeModalApp.id ? { ...a, ...data.application } : a
+          )
+        );
+        if (selected?.id === feeModalApp.id) {
+          setSelected({ ...selected, ...data.application });
+        }
+        setFeeModalApp(null);
+      }
+    } finally {
+      setSavingFee(false);
+    }
+  }
 
   async function handleAction(id: string, action: "APPROVE" | "REJECT") {
     setBusyId(id);
@@ -265,18 +358,24 @@ export function AdminAdmissionsClient({
               <th className="py-3 px-4">Ref / Enrollment No.</th>
               <th className="py-3 px-4">Programme &amp; Session</th>
               <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4">Fee Status</th>
               <th className="py-3 px-4 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
             {filtered.length === 0 ? (
               <tr>
-                <td colSpan={5} className="py-8 text-center text-slate-500">
+                <td colSpan={6} className="py-8 text-center text-slate-500">
                   No applications found matching the selected filter.
                 </td>
               </tr>
             ) : (
-              filtered.map((app) => (
+              filtered.map((app) => {
+                const totalFee = app.totalFee || app.courseTotalFee || 0;
+                const paidFee = app.feePaid || 0;
+                const pendingFee = Math.max(0, totalFee - paidFee);
+                const isCleared = totalFee > 0 && pendingFee === 0;
+                return (
                 <tr key={app.id} className="hover:bg-slate-50">
                   <td className="py-3 px-4">
                     <div className="flex items-center gap-2.5">
@@ -333,7 +432,30 @@ export function AdminAdmissionsClient({
                     )}
                   </td>
                   <td className="py-3 px-4">
-                    <div className="flex items-center justify-end gap-1.5">
+                    {totalFee <= 0 ? (
+                      <span className="text-slate-400">—</span>
+                    ) : isCleared ? (
+                      <div className="space-y-0.5">
+                        <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">
+                          ✓ ALL FEE CLEARED
+                        </span>
+                        <div className="text-[10px] text-slate-500">
+                          Paid: {formatINR(paidFee)} / {formatINR(totalFee)}
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="space-y-0.5">
+                        <span className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-800 font-bold text-[10px]">
+                          Pending: {formatINR(pendingFee)}
+                        </span>
+                        <div className="text-[10px] text-slate-600">
+                          Paid: {formatINR(paidFee)} / {formatINR(totalFee)}
+                        </div>
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-end gap-1.5 flex-wrap">
                       <button
                         type="button"
                         onClick={() => setPrintFormApp(app)}
@@ -357,11 +479,27 @@ export function AdminAdmissionsClient({
                         <button
                           type="button"
                           disabled={busyId === app.id}
-                          onClick={() => handleAction(app.id, "APPROVE")}
+                          onClick={() => openFeeModal(app, "APPROVE")}
                           className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-50"
                         >
                           <CheckCircle2 className="w-3.5 h-3.5" />
-                          Approve
+                          Approve &amp; Fee
+                        </button>
+                      )}
+
+                      {app.status === "APPROVED" && (
+                        <button
+                          type="button"
+                          onClick={() => openFeeModal(app, "COLLECT")}
+                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded font-bold border ${
+                            isCleared
+                              ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
+                              : "bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100"
+                          }`}
+                          title="Collect Fee / View Payment Receipts"
+                        >
+                          <IndianRupee className="w-3.5 h-3.5" />
+                          {isCleared ? "Fee Ledger" : "Collect Fee"}
                         </button>
                       )}
 
@@ -380,7 +518,7 @@ export function AdminAdmissionsClient({
                       {app.status === "APPROVED" && (
                         <Link
                           href={`/admin/certificates/generate?studentId=${app.id}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#F07228] hover:bg-[#F07228] text-white font-bold"
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-bold"
                         >
                           <Award className="w-3.5 h-3.5" />
                           Certificate
@@ -399,11 +537,232 @@ export function AdminAdmissionsClient({
                     </div>
                   </td>
                 </tr>
-              ))
+                );
+              })
             )}
           </tbody>
         </table>
       </div>
+
+      {/* Approve & Fee Collection / Ledger Modal */}
+      {feeModalApp && (() => {
+        const payments = parsePayments(feeModalApp.feePaymentsJson);
+        const alreadyPaid = feeModalApp.feePaid || 0;
+        const totalNum = Math.max(0, Number(feeTotalInput || 0));
+        const receiveNow = Math.max(0, Number(feeReceiveInput || 0));
+        const newTotalPaid = alreadyPaid + receiveNow;
+        const newPending = Math.max(0, totalNum - newTotalPaid);
+
+        return (
+          <div
+            className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"
+            onClick={() => setFeeModalApp(null)}
+          >
+            <div
+              className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border-t-4 border-[#0B3D62] shadow-xl p-6 space-y-5"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-start justify-between border-b border-slate-200 pb-3">
+                <div>
+                  <h3 className="text-lg font-bold text-[#0B3D62]">
+                    {feeModalMode === "APPROVE"
+                      ? "Approve Admission & Record Fee Payment"
+                      : "Fee Ledger & Collect Pending Installment"}
+                  </h3>
+                  <p className="text-xs text-slate-500">
+                    {feeModalApp.fullName} — {feeModalApp.courseName} (
+                    {feeModalApp.enrollmentNumber || feeModalApp.applicationRef})
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setFeeModalApp(null)}
+                  className="p-1 rounded hover:bg-slate-100"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+
+              {/* Live Fee Summary */}
+              <div className="grid grid-cols-3 gap-3 text-center text-xs">
+                <div className="p-3 rounded bg-slate-50 border border-slate-200">
+                  <span className="text-slate-500 block">Total Course Fee</span>
+                  <strong className="text-base text-[#0B3D62]">
+                    {formatINR(totalNum)}
+                  </strong>
+                </div>
+                <div className="p-3 rounded bg-emerald-50 border border-emerald-200">
+                  <span className="text-emerald-700 block">Total Paid (After Save)</span>
+                  <strong className="text-base text-emerald-800">
+                    {formatINR(newTotalPaid)}
+                  </strong>
+                </div>
+                <div
+                  className={`p-3 rounded border ${
+                    newPending === 0 && totalNum > 0
+                      ? "bg-emerald-100 border-emerald-300"
+                      : "bg-red-50 border-red-200"
+                  }`}
+                >
+                  <span className="block text-slate-600">Pending Balance</span>
+                  {newPending === 0 && totalNum > 0 ? (
+                    <strong className="text-xs font-extrabold text-emerald-800 uppercase">
+                      ✓ ALL FEE CLEARED
+                    </strong>
+                  ) : (
+                    <strong className="text-base text-red-700">
+                      {formatINR(newPending)}
+                    </strong>
+                  )}
+                </div>
+              </div>
+
+              {/* Existing Payment History */}
+              {payments.length > 0 && (
+                <div className="space-y-2">
+                  <h4 className="text-xs font-bold uppercase text-[#0B3D62]">
+                    Previous Fee Receipts ({payments.length})
+                  </h4>
+                  <table className="w-full text-xs border border-slate-200">
+                    <thead className="bg-slate-50 text-slate-600">
+                      <tr>
+                        <th className="py-1.5 px-2 text-left">Date</th>
+                        <th className="py-1.5 px-2 text-left">Amount</th>
+                        <th className="py-1.5 px-2 text-left">Mode</th>
+                        <th className="py-1.5 px-2 text-left">Receipt / UTR No.</th>
+                        <th className="py-1.5 px-2 text-left">Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200">
+                      {payments.map((p) => (
+                        <tr key={p.id}>
+                          <td className="py-1.5 px-2">{formatDisplayDate(p.date)}</td>
+                          <td className="py-1.5 px-2 font-bold text-emerald-700">
+                            {formatINR(p.amount)}
+                          </td>
+                          <td className="py-1.5 px-2 font-semibold">{p.mode}</td>
+                          <td className="py-1.5 px-2 font-mono">{p.receiptNo || "—"}</td>
+                          <td className="py-1.5 px-2 text-slate-500">{p.remarks || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {/* Record Payment Form */}
+              <form onSubmit={handleSubmitFeeModal} className="space-y-3 text-xs">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Total Applicable Fee (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      required
+                      value={feeTotalInput}
+                      onChange={(e) => setFeeTotalInput(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded font-bold"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Fee Received Now (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={feeReceiveInput}
+                      onChange={(e) => setFeeReceiveInput(e.target.value)}
+                      placeholder="e.g., 5000"
+                      className="w-full px-3 py-2 border border-slate-300 rounded font-bold text-emerald-800"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Payment Mode *
+                    </label>
+                    <select
+                      value={feePayMode}
+                      onChange={(e) => setFeePayMode(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                    >
+                      <option value="Cash">Cash</option>
+                      <option value="UPI">UPI</option>
+                      <option value="Bank Transfer">Bank Transfer</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      {feePayMode === "Cash"
+                        ? "Cash Receipt Number"
+                        : feePayMode === "UPI"
+                        ? "UPI Transaction / UTR No."
+                        : "Bank Reference / NEFT / IMPS No."}
+                    </label>
+                    <input
+                      type="text"
+                      value={feeReceiptNo}
+                      onChange={(e) => setFeeReceiptNo(e.target.value)}
+                      placeholder={
+                        feePayMode === "Cash"
+                          ? "e.g., REC-2026-001"
+                          : "e.g., UTR / Txn Reference No."
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded font-mono"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Payment Date
+                    </label>
+                    <input
+                      type="date"
+                      value={feePayDate}
+                      onChange={(e) => setFeePayDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Remarks (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={feeRemarks}
+                      onChange={(e) => setFeeRemarks(e.target.value)}
+                      placeholder="e.g., 1st Installment / Final Balance"
+                      className="w-full px-3 py-2 border border-slate-300 rounded"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setFeeModalApp(null)}
+                    className="px-4 py-2 rounded border border-slate-300 font-bold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingFee}
+                    className="px-5 py-2 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-50"
+                  >
+                    {savingFee
+                      ? "Saving..."
+                      : feeModalMode === "APPROVE"
+                      ? "Confirm Approval & Save Fee"
+                      : "Record Fee Payment"}
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* Full-Screen Printable 3-Page Official Admission Form View */}
       {printFormApp && (
@@ -541,10 +900,14 @@ export function AdminAdmissionsClient({
               {selected.status !== "APPROVED" && (
                 <button
                   type="button"
-                  onClick={() => handleAction(selected.id, "APPROVE")}
+                  onClick={() => {
+                    const target = selected;
+                    setSelected(null);
+                    openFeeModal(target, "APPROVE");
+                  }}
                   className="px-4 py-2 rounded bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold"
                 >
-                  Approve &amp; Generate Enrollment No.
+                  Approve &amp; Record Fee
                 </button>
               )}
               <button

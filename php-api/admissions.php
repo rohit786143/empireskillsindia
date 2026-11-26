@@ -30,7 +30,7 @@ if ($method === 'GET') {
         array_push($params, $q, $q, $q, $q, $q);
     }
 
-    $sql = 'SELECT a.*, c.duration AS joined_course_duration
+    $sql = 'SELECT a.*, c.duration AS joined_course_duration, (c.fee + c.registration_fee) AS joined_course_fee
             FROM admission_applications a
             LEFT JOIN courses c ON c.id = a.course_id';
     if (!empty($where)) {
@@ -44,6 +44,12 @@ if ($method === 'GET') {
     while ($row = $stmt->fetch()) {
         $mapped = map_application($row);
         $mapped['courseDuration'] = $row['joined_course_duration'] ?: '1 Year';
+        $mapped['courseTotalFee'] = isset($row['joined_course_fee']) && $row['joined_course_fee'] !== null
+            ? (int)$row['joined_course_fee']
+            : 0;
+        if ($mapped['totalFee'] <= 0 && $mapped['courseTotalFee'] > 0) {
+            $mapped['totalFee'] = $mapped['courseTotalFee'];
+        }
         $apps[] = $mapped;
     }
 
@@ -154,11 +160,20 @@ if ($method === 'POST') {
     json_response(['application' => map_application($row->fetch())], 201);
 }
 
-// PATCH / PUT: approve, reject, or update marks [Admin]
+// PATCH / PUT: approve, reject, record fee payments, or update marks [Admin]
 if ($method === 'PATCH' || $method === 'PUT') {
     require_admin();
     $id = trim((string)($_GET['id'] ?? ''));
     if ($id === '') json_response(['error' => 'Application id is required.'], 400);
+
+    // Auto-ensure fee columns exist in MySQL without requiring manual SQL import
+    foreach ([
+        'ALTER TABLE admission_applications ADD COLUMN total_fee INT DEFAULT 0',
+        'ALTER TABLE admission_applications ADD COLUMN fee_paid INT DEFAULT 0',
+        'ALTER TABLE admission_applications ADD COLUMN fee_payments_json LONGTEXT DEFAULT NULL',
+    ] as $alterSql) {
+        try { $pdo->exec($alterSql); } catch (PDOException $e) {}
+    }
 
     $stmt = $pdo->prepare('SELECT * FROM admission_applications WHERE id = ? LIMIT 1');
     $stmt->execute([$id]);
@@ -189,6 +204,42 @@ if ($method === 'PATCH' || $method === 'PUT') {
     } elseif ($status === 'PENDING') {
         $fields[] = '`status` = ?';
         $params[] = 'PENDING';
+    }
+
+    // Handle Fee Setup & Payment Installment Recording (on Approve or Collect Fee)
+    if (array_key_exists('totalFee', $body)) {
+        $fields[] = '`total_fee` = ?';
+        $params[] = max(0, (int)$body['totalFee']);
+    }
+
+    if (!empty($body['payment']) && is_array($body['payment'])) {
+        $payAmount = max(0, (int)($body['payment']['amount'] ?? 0));
+        $existingPayments = [];
+        if (!empty($existing['fee_payments_json'])) {
+            $decoded = json_decode($existing['fee_payments_json'], true);
+            if (is_array($decoded)) $existingPayments = $decoded;
+        }
+        if ($payAmount > 0) {
+            $existingPayments[] = [
+                'id'        => generate_cuid(),
+                'amount'    => $payAmount,
+                'mode'      => trim((string)($body['payment']['mode'] ?? 'Cash')),
+                'receiptNo' => trim((string)($body['payment']['receiptNo'] ?? '')),
+                'date'      => trim((string)($body['payment']['date'] ?? '')) ?: date('Y-m-d'),
+                'remarks'   => trim((string)($body['payment']['remarks'] ?? '')),
+            ];
+            $totalPaid = 0;
+            foreach ($existingPayments as $p) {
+                $totalPaid += (int)($p['amount'] ?? 0);
+            }
+            $fields[] = '`fee_paid` = ?';
+            $params[] = $totalPaid;
+            $fields[] = '`fee_payments_json` = ?';
+            $params[] = json_encode($existingPayments, JSON_UNESCAPED_UNICODE);
+        }
+    } elseif (array_key_exists('feePaid', $body)) {
+        $fields[] = '`fee_paid` = ?';
+        $params[] = max(0, (int)$body['feePaid']);
     }
 
     if (array_key_exists('remarks', $body)) {

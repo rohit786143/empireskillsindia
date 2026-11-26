@@ -46,6 +46,9 @@ interface StudentRecord {
   extraDetailsJson?: string | null;
   photoUrl: string | null;
   signatureUrl?: string | null;
+  totalFee?: number;
+  feePaid?: number;
+  feePaymentsJson?: string | null;
   createdAt?: string;
   isCompleted: boolean;
   marksObtained: number | null;
@@ -211,6 +214,55 @@ export default function StudentZonePage() {
 
         {student && (
           <div className="space-y-6">
+            {/* Student Fee Status Summary Bar */}
+            {(student.totalFee ?? 0) > 0 && (
+              <div className="no-print bg-white border border-slate-200 rounded-lg px-5 py-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
+                <div className="flex flex-wrap items-center gap-4">
+                  <span>
+                    Total Course Fee:{" "}
+                    <strong className="text-[#0B3D62]">
+                      ₹{(student.totalFee || 0).toLocaleString("en-IN")}
+                    </strong>
+                  </span>
+                  <span>
+                    Fee Paid:{" "}
+                    <strong className="text-emerald-700">
+                      ₹{(student.feePaid || 0).toLocaleString("en-IN")}
+                    </strong>
+                  </span>
+                  <span>
+                    Pending Balance:{" "}
+                    <strong
+                      className={
+                        Math.max(0, (student.totalFee || 0) - (student.feePaid || 0)) === 0
+                          ? "text-emerald-700"
+                          : "text-red-700"
+                      }
+                    >
+                      ₹
+                      {Math.max(
+                        0,
+                        (student.totalFee || 0) - (student.feePaid || 0)
+                      ).toLocaleString("en-IN")}
+                    </strong>
+                  </span>
+                </div>
+                {Math.max(0, (student.totalFee || 0) - (student.feePaid || 0)) === 0 ? (
+                  <span className="px-3 py-1 rounded bg-emerald-100 text-emerald-800 font-extrabold uppercase tracking-wider">
+                    ✓ ALL FEE CLEARED
+                  </span>
+                ) : (
+                  <span className="px-3 py-1 rounded bg-amber-100 text-amber-900 font-bold">
+                    Pending Fee: ₹
+                    {Math.max(
+                      0,
+                      (student.totalFee || 0) - (student.feePaid || 0)
+                    ).toLocaleString("en-IN")}
+                  </span>
+                )}
+              </div>
+            )}
+
             {/* Switch Tabs */}
             <div className="no-print flex flex-wrap items-center justify-between gap-3">
               <div className="flex items-center gap-2">
