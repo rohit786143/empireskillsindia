@@ -71,7 +71,31 @@ export function AdminCoursesClient({
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
+  const [syncing, setSyncing] = useState(false);
   const [error, setError] = useState("");
+
+  async function handleSyncOfficialCourses() {
+    if (
+      !confirm(
+        "Replace current sample courses with the exact 19 Official Empire + NIELIT Courses & Fee Structure? (All existing student records & certificates stay safe.)"
+      )
+    ) {
+      return;
+    }
+    setSyncing(true);
+    try {
+      const res = await apiFetch("/sync-courses.php", { method: "POST" });
+      const data = await res.json();
+      if (res.ok && data.courses) {
+        setCourses(data.courses);
+        alert("Official 19 Courses & Fee Structure loaded successfully!");
+      } else {
+        alert(data.error || "Failed to sync official courses.");
+      }
+    } finally {
+      setSyncing(false);
+    }
+  }
 
   function recalcTotal(next: typeof EMPTY_FORM) {
     if (next.feeType === "monthly") {
@@ -287,13 +311,23 @@ export function AdminCoursesClient({
             Total Course Fee calculates automatically and displays identically to students.
           </p>
         </div>
-        <button
-          type="button"
-          onClick={openNew}
-          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded bg-[#0B3D62] hover:bg-[#135589] text-white text-xs font-bold shadow-sm"
-        >
-          <Plus className="w-4 h-4" /> Add New Course
-        </button>
+        <div className="flex flex-wrap items-center gap-2">
+          <button
+            type="button"
+            disabled={syncing}
+            onClick={handleSyncOfficialCourses}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded bg-[#F07228] hover:bg-[#D65B14] text-white text-xs font-bold shadow-sm disabled:opacity-60"
+          >
+            {syncing ? "Loading 19 Courses..." : "Load Official 19 Courses & Fees"}
+          </button>
+          <button
+            type="button"
+            onClick={openNew}
+            className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded bg-[#0B3D62] hover:bg-[#135589] text-white text-xs font-bold shadow-sm"
+          >
+            <Plus className="w-4 h-4" /> Add New Course
+          </button>
+        </div>
       </div>
 
       {/* Official Fee Structure Style Table */}
