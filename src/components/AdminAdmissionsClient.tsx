@@ -1,0 +1,721 @@
+"use client";
+
+import React, { useState } from "react";
+import Link from "next/link";
+import {
+  CheckCircle2,
+  XCircle,
+  Eye,
+  Plus,
+  Search,
+  Award,
+  X,
+  User,
+  Trash2,
+} from "lucide-react";
+import { ACADEMIC_SESSIONS, STUDY_MODES } from "@/lib/constants";
+import { formatDisplayDate } from "@/lib/generators";
+import { apiFetch } from "@/lib/api";
+
+interface ApplicationRow {
+  id: string;
+  applicationRef: string;
+  status: string;
+  enrollmentNumber: string | null;
+  courseId: string | null;
+  courseName: string;
+  courseCode: string;
+  session: string;
+  studyMode: string;
+  fullName: string;
+  fatherName: string;
+  motherName: string;
+  dob: string;
+  gender: string;
+  category: string;
+  aadharNumber: string;
+  mobile: string;
+  email: string;
+  address: string;
+  city: string;
+  state: string;
+  pincode: string;
+  qualificationsJson: string;
+  photoUrl: string | null;
+  signatureUrl: string | null;
+  marksheetUrl: string | null;
+  idProofUrl: string | null;
+  isCompleted: boolean;
+  grade: string | null;
+  percentage: number | null;
+  createdAt: string;
+}
+
+interface CourseOption {
+  id: string;
+  code: string;
+  title: string;
+}
+
+export function AdminAdmissionsClient({
+  initialApplications,
+  courses,
+}: {
+  initialApplications: ApplicationRow[];
+  courses: CourseOption[];
+}) {
+  const [applications, setApplications] =
+    useState<ApplicationRow[]>(initialApplications);
+  const [statusFilter, setStatusFilter] = useState<string>("ALL");
+  const [search, setSearch] = useState("");
+  const [selected, setSelected] = useState<ApplicationRow | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [addModalOpen, setAddModalOpen] = useState(false);
+
+  // Offline Student Form State
+  const [offlineForm, setOfflineForm] = useState({
+    courseId: courses[0]?.id || "",
+    session: ACADEMIC_SESSIONS[0] as string,
+    studyMode: STUDY_MODES[0] as string,
+    fullName: "",
+    fatherName: "",
+    motherName: "",
+    dob: "",
+    gender: "Male",
+    category: "General",
+    aadharNumber: "",
+    mobile: "",
+    email: "",
+    address: "",
+    photoUrl: "",
+  });
+  const [savingOffline, setSavingOffline] = useState(false);
+  const [offlineError, setOfflineError] = useState("");
+
+  const filtered = applications.filter((a) => {
+    if (statusFilter !== "ALL" && a.status !== statusFilter) return false;
+    if (search.trim()) {
+      const q = search.trim().toLowerCase();
+      const hay = `${a.fullName} ${a.applicationRef} ${a.enrollmentNumber || ""} ${a.mobile} ${a.courseName}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  async function handleAction(id: string, action: "APPROVE" | "REJECT") {
+    setBusyId(id);
+    try {
+      const res = await apiFetch(`/admissions.php?id=${encodeURIComponent(id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({ action }),
+      });
+      const data = await res.json();
+      if (res.ok && data.application) {
+        setApplications((prev) =>
+          prev.map((a) => (a.id === id ? { ...a, ...data.application } : a))
+        );
+        if (selected?.id === id) {
+          setSelected({ ...selected, ...data.application });
+        }
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleDelete(id: string) {
+    if (!confirm("Delete this admission record permanently?")) return;
+    setBusyId(id);
+    try {
+      const res = await apiFetch(`/admissions.php?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      if (res.ok) {
+        setApplications((prev) => prev.filter((a) => a.id !== id));
+        if (selected?.id === id) setSelected(null);
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  function handleOfflinePhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setOfflineForm((prev) => ({ ...prev, photoUrl: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleCreateOffline(e: React.FormEvent) {
+    e.preventDefault();
+    setSavingOffline(true);
+    setOfflineError("");
+    try {
+      const res = await apiFetch("/admissions.php", {
+        method: "POST",
+        body: JSON.stringify({
+          ...offlineForm,
+          autoApprove: true,
+          qualifications: [],
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setOfflineError(data.error || "Failed to add student.");
+      } else {
+        setApplications((prev) => [data.application, ...prev]);
+        setAddModalOpen(false);
+        setOfflineForm({
+          courseId: courses[0]?.id || "",
+          session: ACADEMIC_SESSIONS[0] as string,
+          studyMode: STUDY_MODES[0] as string,
+          fullName: "",
+          fatherName: "",
+          motherName: "",
+          dob: "",
+          gender: "Male",
+          category: "General",
+          aadharNumber: "",
+          mobile: "",
+          email: "",
+          address: "",
+          photoUrl: "",
+        });
+      }
+    } catch {
+      setOfflineError("Network error.");
+    } finally {
+      setSavingOffline(false);
+    }
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-extrabold text-[#0B3D62]">
+            Admission &amp; Student Management
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Review online applications, approve with one-click Enrollment Number generation,
+            or add offline students directly.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={() => setAddModalOpen(true)}
+          className="inline-flex items-center gap-1.5 px-4 py-2.5 rounded bg-[#0B3D62] hover:bg-[#135589] text-white text-xs font-bold shadow-sm"
+        >
+          <Plus className="w-4 h-4" />
+          Add Offline Student
+        </button>
+      </div>
+
+      {/* Filters */}
+      <div className="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-wrap gap-1.5">
+          {["ALL", "PENDING", "APPROVED", "REJECTED"].map((st) => (
+            <button
+              key={st}
+              type="button"
+              onClick={() => setStatusFilter(st)}
+              className={`px-3 py-1.5 rounded text-xs font-bold border ${
+                statusFilter === st
+                  ? "bg-[#0B3D62] text-white border-[#0B3D62]"
+                  : "bg-slate-50 text-slate-600 border-slate-200 hover:bg-slate-100"
+              }`}
+            >
+              {st} (
+              {st === "ALL"
+                ? applications.length
+                : applications.filter((a) => a.status === st).length}
+              )
+            </button>
+          ))}
+        </div>
+
+        <div className="relative w-full sm:w-72">
+          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+          <input
+            type="text"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            placeholder="Search name, ref, enrollment..."
+            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+          />
+        </div>
+      </div>
+
+      {/* Applications Table */}
+      <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-x-auto">
+        <table className="w-full text-xs text-left">
+          <thead className="bg-[#0B3D62] text-white uppercase">
+            <tr>
+              <th className="py-3 px-4">Student</th>
+              <th className="py-3 px-4">Ref / Enrollment No.</th>
+              <th className="py-3 px-4">Programme &amp; Session</th>
+              <th className="py-3 px-4">Status</th>
+              <th className="py-3 px-4 text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-slate-200">
+            {filtered.length === 0 ? (
+              <tr>
+                <td colSpan={5} className="py-8 text-center text-slate-500">
+                  No applications found matching the selected filter.
+                </td>
+              </tr>
+            ) : (
+              filtered.map((app) => (
+                <tr key={app.id} className="hover:bg-slate-50">
+                  <td className="py-3 px-4">
+                    <div className="flex items-center gap-2.5">
+                      <div className="w-9 h-10 rounded border border-slate-200 bg-slate-100 overflow-hidden shrink-0 flex items-center justify-center">
+                        {app.photoUrl ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img
+                            src={app.photoUrl}
+                            alt={app.fullName}
+                            className="w-full h-full object-cover"
+                          />
+                        ) : (
+                          <User className="w-4 h-4 text-slate-400" />
+                        )}
+                      </div>
+                      <div>
+                        <p className="font-bold text-[#0B3D62]">{app.fullName}</p>
+                        <p className="text-[11px] text-slate-500">
+                          S/o {app.fatherName} • {app.mobile}
+                        </p>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-3 px-4 font-mono">
+                    <div className="text-slate-600">{app.applicationRef}</div>
+                    {app.enrollmentNumber && (
+                      <div className="font-bold text-emerald-700 mt-0.5">
+                        {app.enrollmentNumber}
+                      </div>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    <p className="font-semibold text-slate-800">{app.courseName}</p>
+                    <p className="text-[11px] text-slate-500">
+                      {app.session} • {app.studyMode}
+                    </p>
+                  </td>
+                  <td className="py-3 px-4">
+                    <span
+                      className={`inline-block px-2 py-0.5 rounded font-bold text-[10px] ${
+                        app.status === "APPROVED"
+                          ? "bg-emerald-100 text-emerald-800"
+                          : app.status === "REJECTED"
+                          ? "bg-red-100 text-red-800"
+                          : "bg-amber-100 text-amber-800"
+                      }`}
+                    >
+                      {app.status}
+                    </span>
+                    {app.isCompleted && (
+                      <span className="ml-1 inline-block px-2 py-0.5 rounded bg-blue-100 text-[#135589] font-bold text-[10px]">
+                        COMPLETED ({app.grade})
+                      </span>
+                    )}
+                  </td>
+                  <td className="py-3 px-4">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => setSelected(app)}
+                        className="p-1.5 rounded border border-slate-300 text-slate-700 hover:bg-slate-100"
+                        title="View Details & Documents"
+                      >
+                        <Eye className="w-3.5 h-3.5" />
+                      </button>
+
+                      {app.status !== "APPROVED" && (
+                        <button
+                          type="button"
+                          disabled={busyId === app.id}
+                          onClick={() => handleAction(app.id, "APPROVE")}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-50"
+                        >
+                          <CheckCircle2 className="w-3.5 h-3.5" />
+                          Approve
+                        </button>
+                      )}
+
+                      {app.status === "PENDING" && (
+                        <button
+                          type="button"
+                          disabled={busyId === app.id}
+                          onClick={() => handleAction(app.id, "REJECT")}
+                          className="inline-flex items-center gap-1 px-2 py-1.5 rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold disabled:opacity-50"
+                        >
+                          <XCircle className="w-3.5 h-3.5" />
+                          Reject
+                        </button>
+                      )}
+
+                      {app.status === "APPROVED" && (
+                        <Link
+                          href={`/admin/certificates/generate?studentId=${app.id}`}
+                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#F07228] hover:bg-[#F07228] text-white font-bold"
+                        >
+                          <Award className="w-3.5 h-3.5" />
+                          Certificate
+                        </Link>
+                      )}
+
+                      <button
+                        type="button"
+                        disabled={busyId === app.id}
+                        onClick={() => handleDelete(app.id)}
+                        className="p-1.5 rounded text-red-600 hover:bg-red-50"
+                        title="Delete Record"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* View Application Details Modal */}
+      {selected && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"
+          onClick={() => setSelected(null)}
+        >
+          <div
+            className="bg-white rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto border-t-4 border-[#0B3D62] shadow-xl p-6 space-y-5"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between border-b border-slate-200 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-[#0B3D62]">
+                  {selected.fullName}
+                </h3>
+                <p className="text-xs text-slate-500 font-mono">
+                  Ref: {selected.applicationRef}
+                  {selected.enrollmentNumber
+                    ? ` | Enrollment: ${selected.enrollmentNumber}`
+                    : ""}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                className="p-1 rounded hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs bg-slate-50 p-4 rounded border border-slate-200">
+              <div>
+                <span className="text-slate-500">Course: </span>
+                <strong className="text-[#0B3D62]">{selected.courseName}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Session / Mode: </span>
+                <strong>
+                  {selected.session} / {selected.studyMode}
+                </strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Father&apos;s Name: </span>
+                <strong>{selected.fatherName}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Mother&apos;s Name: </span>
+                <strong>{selected.motherName}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500">DOB / Gender / Category: </span>
+                <strong>
+                  {formatDisplayDate(selected.dob)} | {selected.gender} |{" "}
+                  {selected.category}
+                </strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Aadhar: </span>
+                <strong>{selected.aadharNumber || "—"}</strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Mobile / Email: </span>
+                <strong>
+                  {selected.mobile} | {selected.email}
+                </strong>
+              </div>
+              <div>
+                <span className="text-slate-500">Address: </span>
+                <strong>
+                  {selected.address} {selected.city} {selected.state}{" "}
+                  {selected.pincode}
+                </strong>
+              </div>
+            </div>
+
+            {/* Uploaded Documents */}
+            <div>
+              <h4 className="text-xs font-bold uppercase text-[#0B3D62] mb-2">
+                Uploaded Documents
+              </h4>
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {[
+                  { label: "Passport Photo", url: selected.photoUrl },
+                  { label: "Signature", url: selected.signatureUrl },
+                  { label: "Marksheet", url: selected.marksheetUrl },
+                  { label: "ID Proof", url: selected.idProofUrl },
+                ].map((doc) => (
+                  <div
+                    key={doc.label}
+                    className="border border-slate-200 rounded p-2 text-center bg-slate-50"
+                  >
+                    <p className="text-[10px] font-bold text-slate-600 mb-1.5">
+                      {doc.label}
+                    </p>
+                    {doc.url ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={doc.url}
+                        alt={doc.label}
+                        className="h-24 mx-auto object-contain rounded bg-white"
+                      />
+                    ) : (
+                      <div className="h-24 flex items-center justify-center text-[10px] text-slate-400">
+                        Not uploaded
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+              {selected.status !== "APPROVED" && (
+                <button
+                  type="button"
+                  onClick={() => handleAction(selected.id, "APPROVE")}
+                  className="px-4 py-2 rounded bg-emerald-700 hover:bg-emerald-800 text-white text-xs font-bold"
+                >
+                  Approve &amp; Generate Enrollment No.
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => setSelected(null)}
+                className="px-4 py-2 rounded border border-slate-300 text-xs font-bold"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Add Offline Student Modal */}
+      {addModalOpen && (
+        <div
+          className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"
+          onClick={() => setAddModalOpen(false)}
+        >
+          <div
+            className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto border-t-4 border-[#0B3D62] shadow-xl p-6 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between border-b border-slate-200 pb-3">
+              <div>
+                <h3 className="text-lg font-bold text-[#0B3D62]">
+                  Add Offline Enrolled Student
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Directly enrolls the student as Approved with an auto-generated Enrollment
+                  Number.
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAddModalOpen(false)}
+                className="p-1 rounded hover:bg-slate-100"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {offlineError && (
+              <div className="p-3 rounded bg-red-50 border border-red-200 text-red-700 text-xs">
+                {offlineError}
+              </div>
+            )}
+
+            <form onSubmit={handleCreateOffline} className="space-y-4 text-xs">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">Course *</label>
+                  <select
+                    value={offlineForm.courseId}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, courseId: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                  >
+                    {courses.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        [{c.code}] {c.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Student Full Name *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={offlineForm.fullName}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, fullName: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Father&apos;s Name *
+                  </label>
+                  <input
+                    required
+                    type="text"
+                    value={offlineForm.fatherName}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, fatherName: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Mother&apos;s Name
+                  </label>
+                  <input
+                    type="text"
+                    value={offlineForm.motherName}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, motherName: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Date of Birth *
+                  </label>
+                  <input
+                    required
+                    type="date"
+                    value={offlineForm.dob}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, dob: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Mobile *</label>
+                  <input
+                    required
+                    type="tel"
+                    value={offlineForm.mobile}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, mobile: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Email</label>
+                  <input
+                    type="email"
+                    value={offlineForm.email}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, email: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Session</label>
+                  <select
+                    value={offlineForm.session}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, session: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                  >
+                    {ACADEMIC_SESSIONS.map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Student Photo (Optional)
+                  </label>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    onChange={handleOfflinePhoto}
+                    className="w-full text-xs"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">Address</label>
+                  <input
+                    type="text"
+                    value={offlineForm.address}
+                    onChange={(e) =>
+                      setOfflineForm({ ...offlineForm, address: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setAddModalOpen(false)}
+                  className="px-4 py-2 rounded border border-slate-300 font-bold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingOffline}
+                  className="px-5 py-2 rounded bg-[#0B3D62] hover:bg-[#135589] text-white font-bold"
+                >
+                  {savingOffline ? "Enrolling..." : "Enroll & Generate ID"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}

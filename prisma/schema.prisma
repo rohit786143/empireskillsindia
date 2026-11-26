@@ -1,0 +1,133 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model AdminUser {
+  id           String   @id @default(cuid())
+  name         String
+  email        String   @unique
+  passwordHash String
+  role         String   @default("OWNER")
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+}
+
+model Course {
+  id                      String                 @id @default(cuid())
+  code                    String                 @unique
+  slug                    String                 @unique
+  title                   String
+  category                String
+  duration                String
+  eligibility             String
+  fee                     Int
+  registrationFee         Int                    @default(500)
+  studyMode               String                 @default("Regular / Online")
+  overview                String
+  syllabusJson            String
+  careerOpportunitiesJson String
+  featured                Boolean                @default(true)
+  isActive                Boolean                @default(true)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  applications            AdmissionApplication[]
+}
+
+model Notice {
+  id              String   @id @default(cuid())
+  title           String
+  refNumber       String
+  category        String   @default("General")
+  content         String
+  publishedDate   String
+  isNew           Boolean  @default(true)
+  showInTicker    Boolean  @default(false)
+  attachmentLabel String?
+  isActive        Boolean  @default(true)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model AdmissionApplication {
+  id                 String        @id @default(cuid())
+  applicationRef     String        @unique
+  status             String        @default("PENDING") // PENDING, APPROVED, REJECTED
+  enrollmentNumber   String?       @unique
+  courseId           String?
+  course             Course?       @relation(fields: [courseId], references: [id], onDelete: SetNull)
+  courseName         String
+  courseCode         String
+  session            String
+  studyMode          String
+  fullName           String
+  fatherName         String
+  motherName         String
+  dob                String
+  gender             String
+  category           String
+  aadharNumber       String
+  mobile             String
+  email              String
+  address            String
+  city               String        @default("")
+  state              String        @default("")
+  pincode            String        @default("")
+  qualificationsJson String
+  photoUrl           String?
+  signatureUrl       String?
+  marksheetUrl       String?
+  idProofUrl         String?
+  isCompleted        Boolean       @default(false)
+  marksObtained      Int?
+  totalMarks         Int?
+  percentage         Float?
+  grade              String?
+  resultJson         String?
+  completionDate     String?
+  remarks            String?
+  approvedAt         DateTime?
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  certificates       Certificate[]
+}
+
+model Certificate {
+  id                String                @id @default(cuid())
+  certificateNumber String                @unique
+  enrollmentNumber  String
+  applicationId     String?
+  application       AdmissionApplication? @relation(fields: [applicationId], references: [id], onDelete: SetNull)
+  studentName       String
+  fatherName        String
+  motherName        String?
+  dob               String
+  photoUrl          String?
+  courseName        String
+  courseCode        String?
+  duration          String
+  session           String?
+  marksObtained     Int?
+  totalMarks        Int?
+  percentage        Float?
+  grade             String
+  completionDate    String?
+  issueDate         String
+  status            String                @default("VALID") // VALID, REVOKED
+  createdAt         DateTime              @default(now())
+  updatedAt         DateTime              @updatedAt
+}
+
+model ContactInquiry {
+  id        String   @id @default(cuid())
+  name      String
+  email     String
+  phone     String
+  subject   String
+  message   String
+  createdAt DateTime @default(now())
+}

@@ -1,0 +1,25 @@
+RewriteEngine On
+
+# 1. Block public access to source code, config, and SQL files when deployed via Git
+RewriteRule ^(\.git|src|prisma|node_modules)(/|$) - [F,L]
+RewriteRule ^(database\.sql|package\.json|package-lock\.json|tsconfig\.json|next\.config\.ts|postcss\.config\.mjs|\.env.*)$ - [F,L]
+
+# 2. Allow PHP API requests directly
+RewriteRule ^php-api/ - [L]
+
+# 3. Allow direct access to /out/ assets if already rewritten
+RewriteRule ^out/ - [L]
+
+# 4. Dynamic course slug fallback -> static detail page
+RewriteRule ^courses/([^/]+)/?$ out/courses/detail/index.html?slug=$1 [L,QSA]
+
+# 5. Serve exact files inside out/ (e.g. /empire-logo.png, /_next/...)
+RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI} -f
+RewriteRule ^(.*)$ out/$1 [L]
+
+# 6. Serve directory index.html inside out/ (e.g. /, /about/, /admin/login/)
+RewriteCond %{DOCUMENT_ROOT}/out%{REQUEST_URI}/index.html -f
+RewriteRule ^(.*)$ out/$1/index.html [L]
+
+# 7. Root index fallback
+RewriteRule ^$ out/index.html [L]

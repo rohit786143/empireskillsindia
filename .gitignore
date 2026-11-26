@@ -1,0 +1,28 @@
+# dependencies
+/node_modules
+/.pnp
+.pnp.*
+.yarn/*
+
+# next.js build cache (out/ IS tracked for Hostinger Git auto-deploy)
+/.next/
+/build
+
+# misc
+.DS_Store
+*.pem
+
+# debug
+npm-debug.log*
+
+# local env files (never commit secrets)
+.env
+.env*.local
+
+# typescript
+*.tsbuildinfo
+next-env.d.ts
+
+# local sqlite db
+/prisma/*.db
+/prisma/*.db-journal

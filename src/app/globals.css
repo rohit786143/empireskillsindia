@@ -1,0 +1,105 @@
+@import "tailwindcss";
+
+:root {
+  /* Harmonized with Empire Skills India Official Logo */
+  --esi-navy: #0B3D62;
+  --esi-navy-dark: #072A44;
+  --esi-royal: #135589;
+  --esi-orange: #F07228;
+  --esi-orange-dark: #D65B14;
+  --esi-orange-soft: #FFF4ED;
+  --esi-surface: #FFFFFF;
+  --esi-slate-bg: #F7F9FC;
+  --esi-text: #1E293B;
+}
+
+@layer base {
+  body {
+    background-color: var(--esi-slate-bg);
+    color: var(--esi-text);
+    font-family: "Inter", "Segoe UI", system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+  }
+}
+
+/* Smooth Institutional Notification Ticker */
+@keyframes esi-marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.esi-ticker-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: esi-marquee 38s linear infinite;
+}
+
+.esi-ticker-track:hover {
+  animation-play-state: paused;
+}
+
+/* Print Styles */
+@media print {
+  body {
+    background: #ffffff !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+
+  .print-only {
+    display: block !important;
+  }
+
+  /* Landscape A4 Certificate Print Mode */
+  body.print-certificate-mode * {
+    visibility: hidden;
+  }
+
+  body.print-certificate-mode #printable-certificate,
+  body.print-certificate-mode #printable-certificate * {
+    visibility: visible;
+  }
+
+  body.print-certificate-mode #printable-certificate {
+    position: fixed !important;
+    inset: 0 !important;
+    width: 297mm !important;
+    height: 210mm !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    box-shadow: none !important;
+    border-radius: 0 !important;
+    overflow: hidden !important;
+    page-break-after: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Portrait Slip / ID Card / Marksheet Print Mode */
+  body.print-document-mode * {
+    visibility: hidden;
+  }
+
+  body.print-document-mode #printable-document,
+  body.print-document-mode #printable-document * {
+    visibility: visible;
+  }
+
+  body.print-document-mode #printable-document {
+    position: absolute !important;
+    left: 0 !important;
+    top: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    box-shadow: none !important;
+  }
+}
