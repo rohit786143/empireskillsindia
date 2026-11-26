@@ -2,7 +2,12 @@
 
 import React, { useState } from "react";
 import { Plus, Edit3, Trash2, X } from "lucide-react";
-import { COURSE_CATEGORIES, COURSE_DURATIONS, COURSE_ELIGIBILITIES } from "@/lib/constants";
+import {
+  COURSE_CATEGORIES,
+  COURSE_DURATIONS,
+  COURSE_ELIGIBILITIES,
+  type FeeBreakdown,
+} from "@/lib/constants";
 import { formatINR } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
 
@@ -24,21 +29,36 @@ interface CourseItem {
   isActive: boolean;
 }
 
+function getDurationMonths(duration: string): number {
+  const d = duration.toLowerCase();
+  if (d.includes("2 year")) return 24;
+  if (d.includes("1 year")) return 12;
+  if (d.includes("6 month")) return 6;
+  if (d.includes("3 month")) return 3;
+  if (d.includes("1 month")) return 1;
+  return 0;
+}
+
 const EMPTY_FORM = {
   id: "",
   code: "",
   title: "",
   category: "Computer & IT",
-  duration: "6 Months",
+  duration: "1 Year",
   eligibility: "10th Pass",
-  fee: 6500,
+  feeType: "monthly" as "monthly" | "semester" | "onetime",
   registrationFee: 500,
-  admissionFee: 1500,
+  admissionFee: 3000,
   monthlyFee: 1500,
-  examFee: 1000,
-  studyMode: "Regular / Online",
+  sem1Fee: 0,
+  sem2Fee: 0,
+  fee: 21500,
+  examFee: 1500,
+  examFeeNote: "",
+  studyMode: "Regular / Hybrid",
   overview: "",
-  syllabusText: "Module 1: Core Fundamentals\n- Introduction & Practical Lab\n- Assessment & Project",
+  syllabusText:
+    "Module 1: Core Fundamentals\n- Introduction & Practical Lab\n- Assessment & Project",
   careersText: "Office Executive, Technical Assistant",
 };
 
@@ -53,10 +73,50 @@ export function AdminCoursesClient({
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
 
+  function recalcTotal(next: typeof EMPTY_FORM) {
+    if (next.feeType === "monthly") {
+      const months = getDurationMonths(next.duration);
+      const calc =
+        Number(next.registrationFee || 0) +
+        Number(next.admissionFee || 0) +
+        Number(next.monthlyFee || 0) * months;
+      return { ...next, fee: calc };
+    }
+    if (next.feeType === "semester") {
+      const calc =
+        Number(next.registrationFee || 0) +
+        Number(next.admissionFee || 0) +
+        Number(next.sem1Fee || 0) +
+        Number(next.sem2Fee || 0);
+      return { ...next, fee: calc };
+    }
+    return next;
+  }
+
+  function updateField<K extends keyof typeof EMPTY_FORM>(
+    key: K,
+    value: (typeof EMPTY_FORM)[K],
+    shouldRecalc = false
+  ) {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      return shouldRecalc ? recalcTotal(next) : next;
+    });
+  }
+
   function openNew() {
     setForm(EMPTY_FORM);
     setError("");
     setModalOpen(true);
+  }
+
+  function parseBreakdown(json?: string | null): FeeBreakdown {
+    if (!json) return {};
+    try {
+      return JSON.parse(json) as FeeBreakdown;
+    } catch {
+      return {};
+    }
   }
 
   function openEdit(c: CourseItem) {
@@ -81,14 +141,13 @@ export function AdminCoursesClient({
       careersText = "";
     }
 
-    let fb: { admissionFee?: number; monthlyFee?: number; examFee?: number } = {};
-    if (c.feeBreakdownJson) {
-      try {
-        fb = JSON.parse(c.feeBreakdownJson);
-      } catch {
-        fb = {};
-      }
-    }
+    const fb = parseBreakdown(c.feeBreakdownJson);
+    const feeType: "monthly" | "semester" | "onetime" =
+      (fb.sem1Fee || 0) > 0 || (fb.sem2Fee || 0) > 0
+        ? "semester"
+        : (fb.monthlyFee || 0) > 0
+        ? "monthly"
+        : "onetime";
 
     setForm({
       id: c.id,
@@ -97,11 +156,15 @@ export function AdminCoursesClient({
       category: c.category,
       duration: c.duration,
       eligibility: c.eligibility,
-      fee: c.fee,
-      registrationFee: c.registrationFee,
+      feeType,
+      registrationFee: fb.registrationFee ?? c.registrationFee ?? 0,
       admissionFee: fb.admissionFee ?? 0,
       monthlyFee: fb.monthlyFee ?? 0,
+      sem1Fee: fb.sem1Fee ?? 0,
+      sem2Fee: fb.sem2Fee ?? 0,
+      fee: c.fee,
       examFee: fb.examFee ?? 0,
+      examFeeNote: fb.examFeeNote ?? "",
       studyMode: c.studyMode,
       overview: c.overview,
       syllabusText,
@@ -138,6 +201,22 @@ export function AdminCoursesClient({
     setSaving(true);
     setError("");
     try {
+      const feeBreakdown: FeeBreakdown = {
+        registrationFee: Number(form.registrationFee || 0),
+        admissionFee: Number(form.admissionFee || 0),
+        courseFee: Number(form.fee || 0),
+        examFee: Number(form.examFee || 0),
+      };
+      if (form.feeType === "monthly") {
+        feeBreakdown.monthlyFee = Number(form.monthlyFee || 0);
+      } else if (form.feeType === "semester") {
+        feeBreakdown.sem1Fee = Number(form.sem1Fee || 0);
+        feeBreakdown.sem2Fee = Number(form.sem2Fee || 0);
+      }
+      if (form.examFeeNote.trim()) {
+        feeBreakdown.examFeeNote = form.examFeeNote.trim();
+      }
+
       const payload = {
         code: form.code,
         title: form.title,
@@ -146,13 +225,7 @@ export function AdminCoursesClient({
         eligibility: form.eligibility,
         fee: Number(form.fee),
         registrationFee: Number(form.registrationFee),
-        feeBreakdown: {
-          registrationFee: Number(form.registrationFee),
-          admissionFee: Number(form.admissionFee),
-          monthlyFee: Number(form.monthlyFee),
-          courseFee: Number(form.fee),
-          examFee: Number(form.examFee),
-        },
+        feeBreakdown,
         studyMode: form.studyMode,
         overview: form.overview,
         syllabus: parseSyllabus(form.syllabusText),
@@ -200,16 +273,18 @@ export function AdminCoursesClient({
     }
   }
 
+  const monthsCount = getDurationMonths(form.duration);
+
   return (
     <div className="space-y-6">
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl font-extrabold text-[#0B3D62]">
-            Course Manager
+            Course &amp; Fee Structure Manager
           </h1>
           <p className="text-xs text-slate-500 mt-0.5">
-            Add, update, or remove academic programmes displayed across the public portal and
-            admission form.
+            Add individual fee heads (Registration, Admission, Monthly/Semester, Exam Fee) —
+            Total Course Fee calculates automatically and displays identically to students.
           </p>
         </div>
         <button
@@ -221,62 +296,85 @@ export function AdminCoursesClient({
         </button>
       </div>
 
+      {/* Official Fee Structure Style Table */}
       <div className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-x-auto">
         <table className="w-full text-xs text-left">
           <thead className="bg-[#0B3D62] text-white uppercase">
             <tr>
-              <th className="py-3 px-4">Code</th>
-              <th className="py-3 px-4">Course Title</th>
-              <th className="py-3 px-4">Category</th>
-              <th className="py-3 px-4">Duration / Eligibility</th>
-              <th className="py-3 px-4">Fee</th>
-              <th className="py-3 px-4 text-right">Actions</th>
+              <th className="py-3 px-3">Course Name</th>
+              <th className="py-3 px-3">Duration</th>
+              <th className="py-3 px-3 text-right">Reg. Fee</th>
+              <th className="py-3 px-3 text-right">Adm. Fee</th>
+              <th className="py-3 px-3 text-right">Monthly / Sem Fee</th>
+              <th className="py-3 px-3 text-right">Course Fee</th>
+              <th className="py-3 px-3 text-right">Exam Fee</th>
+              <th className="py-3 px-3 text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-slate-200">
-            {courses.map((c) => (
-              <tr key={c.id} className="hover:bg-slate-50">
-                <td className="py-3 px-4 font-mono font-bold text-[#0B3D62]">
-                  {c.code}
-                </td>
-                <td className="py-3 px-4 font-bold text-slate-900">{c.title}</td>
-                <td className="py-3 px-4">
-                  <span className="px-2 py-0.5 rounded bg-blue-50 text-[#135589] font-semibold">
-                    {c.category}
-                  </span>
-                </td>
-                <td className="py-3 px-4">
-                  {c.duration} • {c.eligibility}
-                </td>
-                <td className="py-3 px-4 font-bold text-[#0B3D62]">
-                  {formatINR(c.fee)}
-                </td>
-                <td className="py-3 px-4">
-                  <div className="flex items-center justify-end gap-1.5">
-                    <button
-                      type="button"
-                      onClick={() => openEdit(c)}
-                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" /> Edit
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => handleDelete(c.id)}
-                      className="p-1.5 rounded text-red-600 hover:bg-red-50"
-                      title="Delete Course"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                </td>
-              </tr>
-            ))}
+            {courses.map((c) => {
+              const fb = parseBreakdown(c.feeBreakdownJson);
+              const reg = fb.registrationFee ?? c.registrationFee ?? 0;
+              const adm = fb.admissionFee ?? 0;
+              const monthly = fb.monthlyFee ?? 0;
+              const sem1 = fb.sem1Fee ?? 0;
+              const sem2 = fb.sem2Fee ?? 0;
+              const exam = fb.examFee ?? 0;
+              return (
+                <tr key={c.id} className="hover:bg-slate-50">
+                  <td className="py-3 px-3">
+                    <div className="font-bold text-[#0B3D62]">{c.title}</div>
+                    <div className="text-[10px] text-slate-500">
+                      <span className="font-mono">{c.code}</span> • {c.category}
+                    </div>
+                  </td>
+                  <td className="py-3 px-3 font-semibold">{c.duration}</td>
+                  <td className="py-3 px-3 text-right">
+                    {reg > 0 ? formatINR(reg) : "—"}
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    {adm > 0 ? formatINR(adm) : "—"}
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    {monthly > 0
+                      ? `${formatINR(monthly)}/mo`
+                      : sem1 > 0
+                      ? `S1: ${formatINR(sem1)} / S2: ${formatINR(sem2)}`
+                      : "—"}
+                  </td>
+                  <td className="py-3 px-3 text-right font-extrabold text-[#D65B14] bg-amber-50/40">
+                    {formatINR(c.fee)}
+                  </td>
+                  <td className="py-3 px-3 text-right">
+                    {fb.examFeeNote || (exam > 0 ? formatINR(exam) : "—")}
+                  </td>
+                  <td className="py-3 px-3">
+                    <div className="flex items-center justify-end gap-1.5">
+                      <button
+                        type="button"
+                        onClick={() => openEdit(c)}
+                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded border border-slate-300 text-slate-700 hover:bg-slate-100 font-bold"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" /> Edit
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleDelete(c.id)}
+                        className="p-1.5 rounded text-red-600 hover:bg-red-50"
+                        title="Delete Course"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>
 
-      {/* Add / Edit Modal */}
+      {/* Add / Edit Course Modal with Auto-Total Fee Calculator */}
       {modalOpen && (
         <div
           className="fixed inset-0 z-50 bg-slate-900/60 flex items-center justify-center p-4"
@@ -288,7 +386,7 @@ export function AdminCoursesClient({
           >
             <div className="flex items-center justify-between border-b border-slate-200 pb-2">
               <h3 className="text-lg font-bold text-[#0B3D62]">
-                {form.id ? "Edit Course" : "Create New Course"}
+                {form.id ? "Edit Course & Fee Structure" : "Add New Course & Fee Structure"}
               </h3>
               <button
                 type="button"
@@ -305,7 +403,7 @@ export function AdminCoursesClient({
               </div>
             )}
 
-            <form onSubmit={handleSave} className="space-y-3 text-xs">
+            <form onSubmit={handleSave} className="space-y-4 text-xs">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
@@ -315,8 +413,8 @@ export function AdminCoursesClient({
                     required
                     type="text"
                     value={form.code}
-                    onChange={(e) => setForm({ ...form, code: e.target.value })}
-                    placeholder="e.g., ESI-PGDCA-105"
+                    onChange={(e) => updateField("code", e.target.value)}
+                    placeholder="e.g., ESI-DCA-101"
                     className="w-full px-3 py-2 border border-slate-300 rounded font-mono uppercase"
                   />
                 </div>
@@ -326,7 +424,7 @@ export function AdminCoursesClient({
                   </label>
                   <select
                     value={form.category}
-                    onChange={(e) => setForm({ ...form, category: e.target.value })}
+                    onChange={(e) => updateField("category", e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
                   >
                     {COURSE_CATEGORIES.filter((c) => c !== "All").map((cat) => (
@@ -338,13 +436,13 @@ export function AdminCoursesClient({
                 </div>
                 <div className="sm:col-span-2">
                   <label className="block font-bold text-slate-700 mb-1">
-                    Course Title *
+                    Course Name *
                   </label>
                   <input
                     required
                     type="text"
                     value={form.title}
-                    onChange={(e) => setForm({ ...form, title: e.target.value })}
+                    onChange={(e) => updateField("title", e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded"
                   />
                 </div>
@@ -352,7 +450,7 @@ export function AdminCoursesClient({
                   <label className="block font-bold text-slate-700 mb-1">Duration *</label>
                   <select
                     value={form.duration}
-                    onChange={(e) => setForm({ ...form, duration: e.target.value })}
+                    onChange={(e) => updateField("duration", e.target.value, true)}
                     className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
                   >
                     {COURSE_DURATIONS.filter((d) => d !== "All").map((d) => (
@@ -368,7 +466,7 @@ export function AdminCoursesClient({
                   </label>
                   <select
                     value={form.eligibility}
-                    onChange={(e) => setForm({ ...form, eligibility: e.target.value })}
+                    onChange={(e) => updateField("eligibility", e.target.value)}
                     className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
                   >
                     {COURSE_ELIGIBILITIES.filter((e) => e !== "All").map((e) => (
@@ -378,105 +476,195 @@ export function AdminCoursesClient({
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Course Fee (INR) *
-                  </label>
-                  <input
-                    required
-                    type="number"
-                    value={form.fee}
-                    onChange={(e) => setForm({ ...form, fee: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded font-bold"
-                  />
+              </div>
+
+              {/* Itemized Fee Structure Box */}
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3">
+                <div className="flex flex-wrap items-center justify-between gap-2">
+                  <span className="font-bold text-[#0B3D62] uppercase">
+                    Fee Structure Breakdown (Auto-Calculates Total Course Fee)
+                  </span>
+                  <div className="flex gap-1.5">
+                    {(["monthly", "semester", "onetime"] as const).map((t) => (
+                      <button
+                        key={t}
+                        type="button"
+                        onClick={() => updateField("feeType", t, true)}
+                        className={`px-2.5 py-1 rounded text-[11px] font-bold border ${
+                          form.feeType === t
+                            ? "bg-[#0B3D62] text-white border-[#0B3D62]"
+                            : "bg-white text-slate-600 border-slate-300"
+                        }`}
+                      >
+                        {t === "monthly"
+                          ? "Monthly Plan"
+                          : t === "semester"
+                          ? "Semester Plan"
+                          : "One-Time Fee"}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Registration Fee (INR)
-                  </label>
-                  <input
-                    type="number"
-                    value={form.registrationFee}
-                    onChange={(e) =>
-                      setForm({ ...form, registrationFee: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded"
-                  />
+
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Registration Fee (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.registrationFee}
+                      onChange={(e) =>
+                        updateField("registrationFee", Number(e.target.value), true)
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Admission Fee (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.admissionFee}
+                      onChange={(e) =>
+                        updateField("admissionFee", Number(e.target.value), true)
+                      }
+                      className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                    />
+                  </div>
+
+                  {form.feeType === "monthly" && (
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        Monthly Fee (₹) {monthsCount > 0 ? `× ${monthsCount} mo` : ""}
+                      </label>
+                      <input
+                        type="number"
+                        min={0}
+                        value={form.monthlyFee}
+                        onChange={(e) =>
+                          updateField("monthlyFee", Number(e.target.value), true)
+                        }
+                        className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                      />
+                    </div>
+                  )}
+
+                  {form.feeType === "semester" && (
+                    <>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          1st Sem Fee (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={form.sem1Fee}
+                          onChange={(e) =>
+                            updateField("sem1Fee", Number(e.target.value), true)
+                          }
+                          className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          2nd Sem Fee (₹)
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={form.sem2Fee}
+                          onChange={(e) =>
+                            updateField("sem2Fee", Number(e.target.value), true)
+                          }
+                          className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                        />
+                      </div>
+                    </>
+                  )}
+
+                  <div>
+                    <label className="block font-bold text-[#D65B14] mb-1">
+                      Total Course Fee (₹) *
+                    </label>
+                    <input
+                      required
+                      type="number"
+                      min={0}
+                      value={form.fee}
+                      onChange={(e) => updateField("fee", Number(e.target.value))}
+                      className="w-full px-3 py-2 border-2 border-[#F07228] rounded bg-white font-extrabold text-[#D65B14]"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Examination Fee (₹)
+                    </label>
+                    <input
+                      type="number"
+                      min={0}
+                      value={form.examFee}
+                      onChange={(e) => updateField("examFee", Number(e.target.value))}
+                      className="w-full px-3 py-2 border border-slate-300 rounded bg-white"
+                    />
+                  </div>
                 </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Admission Fee (INR)
-                  </label>
-                  <input
-                    type="number"
-                    value={form.admissionFee}
-                    onChange={(e) =>
-                      setForm({ ...form, admissionFee: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded"
-                  />
-                </div>
-                <div>
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Monthly Fee (INR)
-                  </label>
-                  <input
-                    type="number"
-                    value={form.monthlyFee}
-                    onChange={(e) =>
-                      setForm({ ...form, monthlyFee: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Examination Fee (INR)
-                  </label>
-                  <input
-                    type="number"
-                    value={form.examFee}
-                    onChange={(e) =>
-                      setForm({ ...form, examFee: Number(e.target.value) })
-                    }
-                    className="w-full px-3 py-2 border border-slate-300 rounded"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Course Overview *
-                  </label>
-                  <textarea
-                    required
-                    rows={3}
-                    value={form.overview}
-                    onChange={(e) => setForm({ ...form, overview: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Syllabus Modules (Blank line separates modules; lines starting with - are
-                    topics)
-                  </label>
-                  <textarea
-                    rows={5}
-                    value={form.syllabusText}
-                    onChange={(e) => setForm({ ...form, syllabusText: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded font-mono"
-                  />
-                </div>
-                <div className="sm:col-span-2">
-                  <label className="block font-bold text-slate-700 mb-1">
-                    Career Opportunities (Comma-separated)
-                  </label>
-                  <input
-                    type="text"
-                    value={form.careersText}
-                    onChange={(e) => setForm({ ...form, careersText: e.target.value })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded"
-                  />
-                </div>
+
+                {form.feeType === "monthly" && monthsCount > 0 && (
+                  <p className="text-[11px] text-slate-600 bg-white px-3 py-1.5 rounded border border-slate-200">
+                    Formula: Reg ({formatINR(form.registrationFee)}) + Adm (
+                    {formatINR(form.admissionFee)}) + Monthly ({formatINR(form.monthlyFee)} ×{" "}
+                    {monthsCount} months = {formatINR(form.monthlyFee * monthsCount)}) ={" "}
+                    <strong className="text-[#D65B14]">
+                      {formatINR(
+                        form.registrationFee +
+                          form.admissionFee +
+                          form.monthlyFee * monthsCount
+                      )}
+                    </strong>
+                    {form.examFee > 0 && ` (+ Exam Fee ${formatINR(form.examFee)})`}
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Course Overview *
+                </label>
+                <textarea
+                  required
+                  rows={2}
+                  value={form.overview}
+                  onChange={(e) => updateField("overview", e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Syllabus Modules (Blank line separates modules; lines starting with - are
+                  topics)
+                </label>
+                <textarea
+                  rows={4}
+                  value={form.syllabusText}
+                  onChange={(e) => updateField("syllabusText", e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded font-mono"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Career Opportunities (Comma-separated)
+                </label>
+                <input
+                  type="text"
+                  value={form.careersText}
+                  onChange={(e) => updateField("careersText", e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded"
+                />
               </div>
 
               <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">

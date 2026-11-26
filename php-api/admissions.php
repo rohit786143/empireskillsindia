@@ -223,6 +223,7 @@ if ($method === 'PATCH' || $method === 'PUT') {
             $existingPayments[] = [
                 'id'        => generate_cuid(),
                 'amount'    => $payAmount,
+                'feeType'   => trim((string)($body['payment']['feeType'] ?? 'Course Fee')),
                 'mode'      => trim((string)($body['payment']['mode'] ?? 'Cash')),
                 'receiptNo' => trim((string)($body['payment']['receiptNo'] ?? '')),
                 'date'      => trim((string)($body['payment']['date'] ?? '')) ?: date('Y-m-d'),

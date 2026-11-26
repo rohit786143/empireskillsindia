@@ -36,6 +36,8 @@ export interface PublicCourse {
   duration: string;
   eligibility: string;
   fee: number;
+  registrationFee?: number;
+  feeBreakdownJson?: string | null;
   studyMode: string;
   overview: string;
 }

@@ -23,11 +23,35 @@ import { PrintableAdmissionForm } from "./PrintableAdmissionForm";
 interface FeePaymentEntry {
   id: string;
   amount: number;
+  feeType?: string;
   mode: string;
   receiptNo: string;
   date: string;
   remarks?: string;
 }
+
+const FEE_HEAD_OPTIONS = [
+  "Registration + Admission Fee",
+  "Registration Fee",
+  "Admission Fee",
+  "Monthly Fee (Month 1)",
+  "Monthly Fee (Month 2)",
+  "Monthly Fee (Month 3)",
+  "Monthly Fee (Month 4)",
+  "Monthly Fee (Month 5)",
+  "Monthly Fee (Month 6)",
+  "Monthly Fee (Month 7)",
+  "Monthly Fee (Month 8)",
+  "Monthly Fee (Month 9)",
+  "Monthly Fee (Month 10)",
+  "Monthly Fee (Month 11)",
+  "Monthly Fee (Month 12)",
+  "1st Semester Fee",
+  "2nd Semester Fee",
+  "Examination Fee",
+  "Full Course Fee",
+  "Other / Custom",
+];
 
 interface ApplicationRow {
   id: string;
@@ -91,6 +115,7 @@ export function AdminAdmissionsClient({
   const [feeModalMode, setFeeModalMode] = useState<"APPROVE" | "COLLECT">("APPROVE");
   const [feeTotalInput, setFeeTotalInput] = useState("0");
   const [feeReceiveInput, setFeeReceiveInput] = useState("0");
+  const [feeHeadInput, setFeeHeadInput] = useState("Registration + Admission Fee");
   const [feePayMode, setFeePayMode] = useState("Cash");
   const [feeReceiptNo, setFeeReceiptNo] = useState("");
   const [feePayDate, setFeePayDate] = useState(new Date().toISOString().slice(0, 10));
@@ -137,6 +162,9 @@ export function AdminAdmissionsClient({
     setFeeModalMode(mode);
     setFeeTotalInput(String(baseTotal));
     setFeeReceiveInput(mode === "COLLECT" ? String(pending) : String(baseTotal));
+    setFeeHeadInput(
+      mode === "APPROVE" ? "Registration + Admission Fee" : "Monthly Fee (Month 1)"
+    );
     setFeePayMode("Cash");
     setFeeReceiptNo("");
     setFeePayDate(new Date().toISOString().slice(0, 10));
@@ -168,10 +196,11 @@ export function AdminAdmissionsClient({
       if (receivedAmt > 0) {
         payload.payment = {
           amount: receivedAmt,
+          feeType: feeHeadInput,
           mode: feePayMode,
           receiptNo: feeReceiptNo.trim(),
           date: feePayDate,
-          remarks: feeRemarks.trim(),
+          remarks: feeRemarks.trim() || feeHeadInput,
         };
       }
 
@@ -627,22 +656,31 @@ export function AdminAdmissionsClient({
                     <thead className="bg-slate-50 text-slate-600">
                       <tr>
                         <th className="py-1.5 px-2 text-left">Date</th>
-                        <th className="py-1.5 px-2 text-left">Amount</th>
+                        <th className="py-1.5 px-2 text-left">Fee Head / Remark</th>
                         <th className="py-1.5 px-2 text-left">Mode</th>
-                        <th className="py-1.5 px-2 text-left">Receipt / UTR No.</th>
-                        <th className="py-1.5 px-2 text-left">Remarks</th>
+                        <th className="py-1.5 px-2 text-left">Receipt / UTR</th>
+                        <th className="py-1.5 px-2 text-right">Amount</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-200">
                       {payments.map((p) => (
                         <tr key={p.id}>
                           <td className="py-1.5 px-2">{formatDisplayDate(p.date)}</td>
-                          <td className="py-1.5 px-2 font-bold text-emerald-700">
-                            {formatINR(p.amount)}
+                          <td className="py-1.5 px-2">
+                            <span className="font-bold text-[#0B3D62]">
+                              {p.feeType || "Course Fee"}
+                            </span>
+                            {p.remarks && p.remarks !== p.feeType && (
+                              <span className="block text-[10px] text-slate-500">
+                                {p.remarks}
+                              </span>
+                            )}
                           </td>
                           <td className="py-1.5 px-2 font-semibold">{p.mode}</td>
                           <td className="py-1.5 px-2 font-mono">{p.receiptNo || "—"}</td>
-                          <td className="py-1.5 px-2 text-slate-500">{p.remarks || "—"}</td>
+                          <td className="py-1.5 px-2 text-right font-bold text-emerald-700">
+                            {formatINR(p.amount)}
+                          </td>
                         </tr>
                       ))}
                     </tbody>
@@ -678,6 +716,22 @@ export function AdminAdmissionsClient({
                       placeholder="e.g., 5000"
                       className="w-full px-3 py-2 border border-slate-300 rounded font-bold text-emerald-800"
                     />
+                  </div>
+                  <div className="sm:col-span-2">
+                    <label className="block font-bold text-[#0B3D62] mb-1">
+                      Which Fee Received? (Fee Head) *
+                    </label>
+                    <select
+                      value={feeHeadInput}
+                      onChange={(e) => setFeeHeadInput(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded bg-white font-semibold"
+                    >
+                      {FEE_HEAD_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>
+                          {opt}
+                        </option>
+                      ))}
+                    </select>
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">

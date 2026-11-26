@@ -214,54 +214,111 @@ export default function StudentZonePage() {
 
         {student && (
           <div className="space-y-6">
-            {/* Student Fee Status Summary Bar */}
-            {(student.totalFee ?? 0) > 0 && (
-              <div className="no-print bg-white border border-slate-200 rounded-lg px-5 py-3.5 shadow-sm flex flex-wrap items-center justify-between gap-3 text-xs">
-                <div className="flex flex-wrap items-center gap-4">
-                  <span>
-                    Total Course Fee:{" "}
-                    <strong className="text-[#0B3D62]">
-                      ₹{(student.totalFee || 0).toLocaleString("en-IN")}
-                    </strong>
-                  </span>
-                  <span>
-                    Fee Paid:{" "}
-                    <strong className="text-emerald-700">
-                      ₹{(student.feePaid || 0).toLocaleString("en-IN")}
-                    </strong>
-                  </span>
-                  <span>
-                    Pending Balance:{" "}
-                    <strong
-                      className={
-                        Math.max(0, (student.totalFee || 0) - (student.feePaid || 0)) === 0
-                          ? "text-emerald-700"
-                          : "text-red-700"
-                      }
-                    >
-                      ₹
-                      {Math.max(
-                        0,
-                        (student.totalFee || 0) - (student.feePaid || 0)
-                      ).toLocaleString("en-IN")}
-                    </strong>
-                  </span>
+            {/* Student Fee Status Summary & Payment Receipts */}
+            {(student.totalFee ?? 0) > 0 && (() => {
+              let payments: {
+                id: string;
+                amount: number;
+                feeType?: string;
+                mode: string;
+                receiptNo?: string;
+                date: string;
+                remarks?: string;
+              }[] = [];
+              if (student.feePaymentsJson) {
+                try {
+                  const arr = JSON.parse(student.feePaymentsJson);
+                  if (Array.isArray(arr)) payments = arr;
+                } catch {}
+              }
+              const pending = Math.max(
+                0,
+                (student.totalFee || 0) - (student.feePaid || 0)
+              );
+              return (
+                <div className="no-print bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden text-xs">
+                  <div className="px-5 py-3.5 flex flex-wrap items-center justify-between gap-3 bg-slate-50 border-b border-slate-200">
+                    <div className="flex flex-wrap items-center gap-4">
+                      <span>
+                        Total Course Fee:{" "}
+                        <strong className="text-[#0B3D62]">
+                          ₹{(student.totalFee || 0).toLocaleString("en-IN")}
+                        </strong>
+                      </span>
+                      <span>
+                        Fee Paid:{" "}
+                        <strong className="text-emerald-700">
+                          ₹{(student.feePaid || 0).toLocaleString("en-IN")}
+                        </strong>
+                      </span>
+                      <span>
+                        Pending Balance:{" "}
+                        <strong
+                          className={
+                            pending === 0 ? "text-emerald-700" : "text-red-700"
+                          }
+                        >
+                          ₹{pending.toLocaleString("en-IN")}
+                        </strong>
+                      </span>
+                    </div>
+                    {pending === 0 ? (
+                      <span className="px-3 py-1 rounded bg-emerald-100 text-emerald-800 font-extrabold uppercase tracking-wider">
+                        ✓ ALL FEE CLEARED
+                      </span>
+                    ) : (
+                      <span className="px-3 py-1 rounded bg-amber-100 text-amber-900 font-bold">
+                        Pending Fee: ₹{pending.toLocaleString("en-IN")}
+                      </span>
+                    )}
+                  </div>
+                  {payments.length > 0 && (
+                    <div className="p-4 overflow-x-auto">
+                      <p className="font-bold text-[#0B3D62] mb-2 uppercase text-[11px]">
+                        Fee Payment Receipts ({payments.length})
+                      </p>
+                      <table className="w-full border border-slate-200 text-xs">
+                        <thead className="bg-slate-50 text-slate-600">
+                          <tr>
+                            <th className="py-1.5 px-2.5 text-left">Date</th>
+                            <th className="py-1.5 px-2.5 text-left">Fee Received For</th>
+                            <th className="py-1.5 px-2.5 text-left">Mode</th>
+                            <th className="py-1.5 px-2.5 text-left">Receipt / UTR</th>
+                            <th className="py-1.5 px-2.5 text-right">Amount</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {payments.map((p) => (
+                            <tr key={p.id}>
+                              <td className="py-1.5 px-2.5">
+                                {formatDisplayDate(p.date)}
+                              </td>
+                              <td className="py-1.5 px-2.5">
+                                <strong className="text-[#0B3D62]">
+                                  {p.feeType || "Course Fee"}
+                                </strong>
+                                {p.remarks && p.remarks !== p.feeType && (
+                                  <span className="text-slate-500 ml-1">
+                                    ({p.remarks})
+                                  </span>
+                                )}
+                              </td>
+                              <td className="py-1.5 px-2.5 font-semibold">{p.mode}</td>
+                              <td className="py-1.5 px-2.5 font-mono">
+                                {p.receiptNo || "—"}
+                              </td>
+                              <td className="py-1.5 px-2.5 text-right font-bold text-emerald-700">
+                                ₹{Number(p.amount).toLocaleString("en-IN")}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
                 </div>
-                {Math.max(0, (student.totalFee || 0) - (student.feePaid || 0)) === 0 ? (
-                  <span className="px-3 py-1 rounded bg-emerald-100 text-emerald-800 font-extrabold uppercase tracking-wider">
-                    ✓ ALL FEE CLEARED
-                  </span>
-                ) : (
-                  <span className="px-3 py-1 rounded bg-amber-100 text-amber-900 font-bold">
-                    Pending Fee: ₹
-                    {Math.max(
-                      0,
-                      (student.totalFee || 0) - (student.feePaid || 0)
-                    ).toLocaleString("en-IN")}
-                  </span>
-                )}
-              </div>
-            )}
+              );
+            })()}
 
             {/* Switch Tabs */}
             <div className="no-print flex flex-wrap items-center justify-between gap-3">
