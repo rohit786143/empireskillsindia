@@ -94,6 +94,22 @@ export default function StudentZonePage() {
   }
 
   function handlePrint() {
+    if (activeTab === "form") {
+      let styleEl = document.getElementById("esi-portrait-a4-print-style");
+      if (!styleEl) {
+        styleEl = document.createElement("style");
+        styleEl.id = "esi-portrait-a4-print-style";
+        styleEl.innerHTML = `@media print { @page { size: A4 portrait; margin: 0; } }`;
+        document.head.appendChild(styleEl);
+      }
+      document.body.classList.add("print-admission-form-mode");
+      window.print();
+      setTimeout(
+        () => document.body.classList.remove("print-admission-form-mode"),
+        500
+      );
+      return;
+    }
     document.body.classList.add("print-document-mode");
     window.print();
     setTimeout(() => document.body.classList.remove("print-document-mode"), 400);

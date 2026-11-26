@@ -42,11 +42,11 @@ export interface AdmissionFormRecord {
 function CharBoxes({ value, count }: { value: string; count: number }) {
   const chars = (value || "").toUpperCase().split("");
   return (
-    <div className="inline-flex flex-wrap">
+    <div className="inline-flex flex-nowrap">
       {Array.from({ length: count }).map((_, i) => (
         <span
           key={i}
-          className="inline-flex items-center justify-center w-[21px] h-[22px] border border-slate-700 -ml-px text-[11px] font-bold font-mono text-slate-900 bg-white"
+          className="inline-flex items-center justify-center w-[19px] h-[20px] border border-slate-700 -ml-px text-[10.5px] font-bold font-mono text-slate-900 bg-white shrink-0"
         >
           {chars[i] || ""}
         </span>
@@ -128,9 +128,21 @@ export function PrintableAdmissionForm({
   };
 
   function handlePrintForm() {
-    document.body.classList.add("print-document-mode");
+    let styleEl = document.getElementById("esi-portrait-a4-print-style");
+    if (!styleEl) {
+      styleEl = document.createElement("style");
+      styleEl.id = "esi-portrait-a4-print-style";
+      styleEl.innerHTML = `@media print { @page { size: A4 portrait; margin: 0; } }`;
+      document.head.appendChild(styleEl);
+    }
+    const landscapeEl = document.getElementById("esi-landscape-print-style");
+    if (landscapeEl) landscapeEl.remove();
+
+    document.body.classList.add("print-admission-form-mode");
     window.print();
-    setTimeout(() => document.body.classList.remove("print-document-mode"), 500);
+    setTimeout(() => {
+      document.body.classList.remove("print-admission-form-mode");
+    }, 500);
   }
 
   return (
@@ -158,11 +170,11 @@ export function PrintableAdmissionForm({
         </div>
       )}
 
-      <div id="printable-document" className="space-y-8">
+      <div id="printable-document" className="space-y-6">
         {/* ================= PAGE 1: ADMISSION FORM ================= */}
         <div
-          className="bg-white border border-slate-300 shadow-sm mx-auto p-7 text-slate-900 text-[12px]"
-          style={{ maxWidth: "820px", pageBreakAfter: "always" }}
+          className="admission-a4-page bg-white border border-slate-300 shadow-sm mx-auto p-6 text-slate-900 text-[11px]"
+          style={{ width: "794px", maxWidth: "100%" }}
         >
           {/* Top Title */}
           <div className="text-center mb-3">
@@ -184,12 +196,12 @@ export function PrintableAdmissionForm({
                   {record.session}
                 </span>
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-24 font-semibold">Registration No.</span>
-                <CharBoxes value={regNo.replace(/[^A-Z0-9]/gi, "")} count={11} />
+              <div className="flex items-center gap-1.5">
+                <span className="w-24 shrink-0 font-semibold">Registration No.</span>
+                <CharBoxes value={regNo.replace(/[^A-Z0-9]/gi, "")} count={12} />
               </div>
-              <div className="flex items-center gap-2">
-                <span className="w-24 font-semibold">Aadhar No.</span>
+              <div className="flex items-center gap-1.5">
+                <span className="w-24 shrink-0 font-semibold">Aadhar No.</span>
                 <CharBoxes value={(record.aadharNumber || "").replace(/\D/g, "")} count={12} />
               </div>
             </div>
@@ -449,8 +461,8 @@ export function PrintableAdmissionForm({
 
         {/* ================= PAGE 2: ENCLOSURES, SIGNATURE & OFFICE SIGN ================= */}
         <div
-          className="bg-white border border-slate-300 shadow-sm mx-auto p-10 text-slate-900 text-[12px] flex flex-col justify-between"
-          style={{ maxWidth: "820px", minHeight: "1020px", pageBreakAfter: "always" }}
+          className="admission-a4-page bg-white border border-slate-300 shadow-sm mx-auto p-9 text-slate-900 text-[12px] flex flex-col justify-between"
+          style={{ width: "794px", maxWidth: "100%", minHeight: "1060px" }}
         >
           <div className="space-y-8">
             <div>
@@ -549,8 +561,8 @@ export function PrintableAdmissionForm({
 
         {/* ================= PAGE 3: UNDERTAKING & DECLARATION ================= */}
         <div
-          className="bg-white border border-slate-300 shadow-sm mx-auto p-10 text-slate-900 text-[12px]"
-          style={{ maxWidth: "820px", minHeight: "1020px" }}
+          className="admission-a4-page bg-white border border-slate-300 shadow-sm mx-auto p-8 text-slate-900 text-[11.5px]"
+          style={{ width: "794px", maxWidth: "100%", minHeight: "1060px" }}
         >
           <div className="flex items-center justify-between mb-4">
             <BrandLogo height={44} />
