@@ -30,7 +30,7 @@ if ($method === 'GET') {
         array_push($params, $q, $q, $q, $q, $q);
     }
 
-    $sql = 'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee
+    $sql = 'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee, c.fee_breakdown_json AS joined_fee_breakdown
             FROM admission_applications a
             LEFT JOIN courses c ON c.id = a.course_id';
     if (!empty($where)) {
@@ -44,6 +44,7 @@ if ($method === 'GET') {
     while ($row = $stmt->fetch()) {
         $mapped = map_application($row);
         $mapped['courseDuration'] = $row['joined_course_duration'] ?: '1 Year';
+        $mapped['courseFeeBreakdownJson'] = $row['joined_fee_breakdown'] ?? null;
         $mapped['courseTotalFee'] = isset($row['joined_course_fee']) && $row['joined_course_fee'] !== null
             ? (int)$row['joined_course_fee']
             : 0;

@@ -1,11 +1,13 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/official-courses-data.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     json_response(['error' => 'Method not allowed.'], 405);
 }
 
 $pdo = get_db();
+ensure_official_courses_if_empty($pdo);
 
 $notices = array_map(
     'map_notice',

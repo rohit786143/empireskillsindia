@@ -1,11 +1,13 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/official-courses-data.php';
 
 $pdo = get_db();
 $method = $_SERVER['REQUEST_METHOD'];
 
 // GET: single course (?id=... or ?slug=...) OR filtered list
 if ($method === 'GET') {
+    ensure_official_courses_if_empty($pdo);
     $idOrSlug = trim((string)($_GET['id'] ?? $_GET['slug'] ?? ''));
     if ($idOrSlug !== '') {
         $stmt = $pdo->prepare('SELECT * FROM courses WHERE id = ? OR slug = ? OR code = ? LIMIT 1');

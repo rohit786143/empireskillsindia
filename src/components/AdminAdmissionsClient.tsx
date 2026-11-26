@@ -80,6 +80,7 @@ interface ApplicationRow {
   extraDetailsJson?: string | null;
   totalFee?: number;
   courseTotalFee?: number;
+  courseFeeBreakdownJson?: string | null;
   feePaid?: number;
   feePaymentsJson?: string | null;
   photoUrl: string | null;
@@ -611,6 +612,65 @@ export function AdminAdmissionsClient({
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {/* Course Fee Bifurcation Reference Box for Admin */}
+              {feeModalApp.courseFeeBreakdownJson && (() => {
+                try {
+                  const fb = JSON.parse(feeModalApp.courseFeeBreakdownJson) as {
+                    registrationFee?: number;
+                    admissionFee?: number;
+                    monthlyFee?: number;
+                    sem1Fee?: number;
+                    sem2Fee?: number;
+                    examFee?: number;
+                    examFeeNote?: string;
+                  };
+                  return (
+                    <div className="bg-blue-50/70 border border-blue-200 rounded-lg p-3 text-[11px] space-y-1">
+                      <p className="font-bold text-[#0B3D62] uppercase">
+                        Course Fee Bifurcation ({feeModalApp.courseName})
+                      </p>
+                      <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-700">
+                        {(fb.registrationFee ?? 0) > 0 && (
+                          <span>
+                            Registration: <strong>{formatINR(fb.registrationFee!)}</strong>
+                          </span>
+                        )}
+                        {(fb.admissionFee ?? 0) > 0 && (
+                          <span>
+                            Admission: <strong>{formatINR(fb.admissionFee!)}</strong>
+                          </span>
+                        )}
+                        {(fb.monthlyFee ?? 0) > 0 && (
+                          <span>
+                            Monthly: <strong>{formatINR(fb.monthlyFee!)}/mo</strong>
+                          </span>
+                        )}
+                        {(fb.sem1Fee ?? 0) > 0 && (
+                          <span>
+                            1st Sem: <strong>{formatINR(fb.sem1Fee!)}</strong>
+                          </span>
+                        )}
+                        {(fb.sem2Fee ?? 0) > 0 && (
+                          <span>
+                            2nd Sem: <strong>{formatINR(fb.sem2Fee!)}</strong>
+                          </span>
+                        )}
+                        {((fb.examFee ?? 0) > 0 || fb.examFeeNote) && (
+                          <span>
+                            Exam Fee:{" "}
+                            <strong>
+                              {fb.examFeeNote || formatINR(fb.examFee || 0)}
+                            </strong>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                  );
+                } catch {
+                  return null;
+                }
+              })()}
 
               {/* Live Fee Summary */}
               <div className="grid grid-cols-3 gap-3 text-center text-xs">
