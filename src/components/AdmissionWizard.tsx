@@ -7,7 +7,6 @@ import {
   ChevronLeft,
   ChevronRight,
   Upload,
-  Printer,
   FileText,
   User,
   GraduationCap,
@@ -17,12 +16,17 @@ import {
 import {
   ACADEMIC_SESSIONS,
   STUDY_MODES,
-  INSTITUTE_INFO,
+  RELIGION_OPTIONS,
+  HEAR_ABOUT_OPTIONS,
+  ENCLOSURE_DOCUMENTS,
   type QualificationItem,
 } from "@/lib/constants";
-import { formatDisplayDate, formatINR } from "@/lib/generators";
-import { InstituteEmblem } from "./InstituteEmblem";
+import { formatINR } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
+import {
+  PrintableAdmissionForm,
+  type AdmissionFormRecord,
+} from "./PrintableAdmissionForm";
 
 interface CourseOption {
   id: string;
@@ -35,35 +39,11 @@ interface CourseOption {
   registrationFee: number;
 }
 
-interface SubmittedApplication {
-  id: string;
-  applicationRef: string;
-  courseName: string;
-  courseCode: string;
-  session: string;
-  studyMode: string;
-  fullName: string;
-  fatherName: string;
-  motherName: string;
-  dob: string;
-  gender: string;
-  category: string;
-  aadharNumber: string;
-  mobile: string;
-  email: string;
-  address: string;
-  city: string;
-  state: string;
-  pincode: string;
-  photoUrl: string | null;
-  createdAt: string;
-}
-
 const STEPS = [
   { num: 1, label: "Course & Session", icon: FileText },
   { num: 2, label: "Personal Details", icon: User },
   { num: 3, label: "Qualifications", icon: GraduationCap },
-  { num: 4, label: "Documents Upload", icon: Upload },
+  { num: 4, label: "Photo, Sign & Docs", icon: Upload },
   { num: 5, label: "Review & Submit", icon: ClipboardCheck },
 ];
 
@@ -74,40 +54,55 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
   const [step, setStep] = useState(1);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
-  const [submittedApp, setSubmittedApp] = useState<SubmittedApplication | null>(null);
+  const [submittedApp, setSubmittedApp] = useState<AdmissionFormRecord | null>(null);
 
   // Step 1
   const [courseId, setCourseId] = useState(preselectedId);
   const [session, setSession] = useState<string>(ACADEMIC_SESSIONS[0]);
   const [studyMode, setStudyMode] = useState<string>(STUDY_MODES[0]);
 
-  // Step 2
+  // Step 2 (Matches Official Empire Admission Form PDF)
   const [fullName, setFullName] = useState("");
   const [fatherName, setFatherName] = useState("");
   const [motherName, setMotherName] = useState("");
   const [dob, setDob] = useState("");
   const [gender, setGender] = useState("Male");
   const [category, setCategory] = useState("General");
+  const [religion, setReligion] = useState<string>("Hindu");
+  const [nationality, setNationality] = useState("INDIAN");
+  const [identificationMark, setIdentificationMark] = useState("");
   const [aadharNumber, setAadharNumber] = useState("");
   const [mobile, setMobile] = useState("");
+  const [telephone, setTelephone] = useState("");
   const [email, setEmail] = useState("");
   const [address, setAddress] = useState("");
   const [city, setCity] = useState("");
   const [stateName, setStateName] = useState("");
   const [pincode, setPincode] = useState("");
+  const [sameAsPermanent, setSameAsPermanent] = useState(true);
+  const [correspondenceAddress, setCorrespondenceAddress] = useState("");
+  const [hearAbout, setHearAbout] = useState<string[]>(["Internet"]);
+  const [hearAboutOther, setHearAboutOther] = useState("");
 
-  // Step 3
+  // Step 3 (X, XII, Graduation, Post-Graduation, Other)
   const [qualifications, setQualifications] = useState<QualificationItem[]>([
-    { level: "10th (Matriculation)", board: "", passingYear: "", percentage: "" },
-    { level: "12th (Intermediate)", board: "", passingYear: "", percentage: "" },
-    { level: "Graduation (Optional)", board: "", passingYear: "", percentage: "" },
+    { level: "X", subject: "", yearFrom: "", yearTo: "", board: "", passingYear: "", percentage: "" },
+    { level: "XII", subject: "", yearFrom: "", yearTo: "", board: "", passingYear: "", percentage: "" },
+    { level: "Graduation", subject: "", yearFrom: "", yearTo: "", board: "", passingYear: "", percentage: "" },
+    { level: "Post-Graduation", subject: "", yearFrom: "", yearTo: "", board: "", passingYear: "", percentage: "" },
+    { level: "Other", subject: "", yearFrom: "", yearTo: "", board: "", passingYear: "", percentage: "" },
   ]);
 
-  // Step 4
+  // Step 4: Photo, Signature, Marksheet, ID Proof + Enclosures Checklist
   const [photoUrl, setPhotoUrl] = useState<string>("");
   const [signatureUrl, setSignatureUrl] = useState<string>("");
   const [marksheetUrl, setMarksheetUrl] = useState<string>("");
   const [idProofUrl, setIdProofUrl] = useState<string>("");
+  const [enclosedDocs, setEnclosedDocs] = useState<string[]>([
+    ENCLOSURE_DOCUMENTS[0],
+    ENCLOSURE_DOCUMENTS[6],
+    ENCLOSURE_DOCUMENTS[8],
+  ]);
 
   const [declarationAccepted, setDeclarationAccepted] = useState(false);
 
@@ -139,20 +134,39 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
     value: string
   ) {
     setQualifications((prev) =>
-      prev.map((q, idx) => (idx === index ? { ...q, [field]: value } : q))
+      prev.map((q, idx) =>
+        idx === index
+          ? {
+              ...q,
+              [field]: value,
+              ...(field === "yearTo" ? { passingYear: value } : {}),
+            }
+          : q
+      )
     );
+  }
+
+  function toggleCheckbox(list: string[], value: string, setter: (v: string[]) => void) {
+    if (list.includes(value)) setter(list.filter((i) => i !== value));
+    else setter([...list, value]);
   }
 
   function validateStep(currentStep: number): boolean {
     setError("");
-    if (currentStep === 1) {
-      if (!courseId) {
-        setError("Please select a course.");
-        return false;
-      }
+    if (currentStep === 1 && !courseId) {
+      setError("Please select a course.");
+      return false;
     }
     if (currentStep === 2) {
-      if (!fullName.trim() || !fatherName.trim() || !motherName.trim() || !dob || !mobile.trim() || !email.trim() || !address.trim()) {
+      if (
+        !fullName.trim() ||
+        !fatherName.trim() ||
+        !motherName.trim() ||
+        !dob ||
+        !mobile.trim() ||
+        !email.trim() ||
+        !address.trim()
+      ) {
         setError("Please fill in all mandatory personal and contact details.");
         return false;
       }
@@ -163,8 +177,8 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
     }
     if (currentStep === 3) {
       const tenth = qualifications[0];
-      if (!tenth.board.trim() || !tenth.passingYear.trim() || !tenth.percentage.trim()) {
-        setError("Please enter at least your 10th (Matriculation) board, passing year, and percentage.");
+      if (!tenth.board.trim() || !(tenth.yearTo || tenth.passingYear).trim() || !tenth.percentage.trim()) {
+        setError("Please enter at least your 10th (X) Board, Passing Year (To), and % of Marks.");
         return false;
       }
     }
@@ -172,9 +186,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
   }
 
   function goNext() {
-    if (validateStep(step)) {
-      setStep((s) => Math.min(5, s + 1));
-    }
+    if (validateStep(step)) setStep((s) => Math.min(5, s + 1));
   }
 
   function goBack() {
@@ -184,11 +196,24 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
 
   async function handleSubmit() {
     if (!declarationAccepted) {
-      setError("Please accept the candidate declaration before submitting.");
+      setError("Please accept the Undertaking & Declaration before submitting.");
       return;
     }
     setSubmitting(true);
     setError("");
+
+    const fullPermanent = [address, city, stateName, pincode].filter(Boolean).join(", ");
+    const extraDetails = {
+      correspondenceAddress: sameAsPermanent ? fullPermanent : correspondenceAddress,
+      telephone,
+      nationality,
+      religion,
+      identificationMark,
+      hearAbout,
+      hearAboutOther,
+      enclosedDocs,
+    };
+
     try {
       const res = await apiFetch("/admissions.php", {
         method: "POST",
@@ -198,9 +223,9 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
           courseCode: selectedCourse?.code,
           session,
           studyMode,
-          fullName,
-          fatherName,
-          motherName,
+          fullName: fullName.toUpperCase(),
+          fatherName: fatherName.toUpperCase(),
+          motherName: motherName.toUpperCase(),
           dob,
           gender,
           category,
@@ -211,7 +236,10 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
           city,
           state: stateName,
           pincode,
-          qualifications: qualifications.filter((q) => q.board.trim() !== ""),
+          qualifications: qualifications.filter(
+            (q) => q.board.trim() !== "" || (q.subject || "").trim() !== ""
+          ),
+          extraDetails,
           photoUrl: photoUrl || null,
           signatureUrl: signatureUrl || null,
           marksheetUrl: marksheetUrl || null,
@@ -222,7 +250,11 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
       if (!res.ok) {
         setError(data.error || "Failed to submit application.");
       } else {
-        setSubmittedApp(data.application);
+        setSubmittedApp({
+          ...data.application,
+          extraDetailsJson:
+            data.application.extraDetailsJson || JSON.stringify(extraDetails),
+        });
       }
     } catch {
       setError("Network error while submitting application.");
@@ -231,181 +263,29 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
     }
   }
 
-  function printSlip() {
-    document.body.classList.add("print-document-mode");
-    window.print();
-    setTimeout(() => document.body.classList.remove("print-document-mode"), 400);
-  }
-
-  // Acknowledgement Slip View after submission
+  // Post-Submission: Full Auto-Filled 3-Page Official Empire Admission Form
   if (submittedApp) {
     return (
       <div className="space-y-6">
-        <div className="no-print bg-emerald-50 border border-emerald-200 rounded-lg p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
-            <div>
-              <h2 className="text-lg font-bold text-emerald-900">
-                Online Admission Application Submitted Successfully!
-              </h2>
-              <p className="text-sm text-emerald-800">
-                Your Application Reference ID is{" "}
-                <strong className="font-mono bg-white px-2 py-0.5 rounded border border-emerald-300">
-                  {submittedApp.applicationRef}
-                </strong>
-                . Save or print this acknowledgement slip for future reference.
-              </p>
-            </div>
-          </div>
-          <button
-            type="button"
-            onClick={printSlip}
-            className="inline-flex items-center gap-2 px-5 py-2.5 rounded bg-[#0B3D62] hover:bg-[#135589] text-white font-bold text-sm shrink-0"
-          >
-            <Printer className="w-4 h-4" />
-            Print Acknowledgement Slip
-          </button>
-        </div>
-
-        {/* Printable Acknowledgement Slip */}
-        <div
-          id="printable-document"
-          className="bg-white border-2 border-[#0B3D62] rounded-lg p-6 sm:p-8 shadow-sm max-w-4xl mx-auto"
-        >
-          <div className="flex items-center justify-between border-b-2 border-[#0B3D62] pb-4 mb-6">
-            <div className="flex items-center gap-3">
-              <InstituteEmblem size={56} />
-              <div>
-                <h2 className="text-xl font-extrabold text-[#0B3D62]">
-                  {INSTITUTE_INFO.name}
-                </h2>
-                <p className="text-xs font-semibold text-[#D65B14]">
-                  {INSTITUTE_INFO.tagline}
-                </p>
-                <p className="text-[10px] text-slate-500">{INSTITUTE_INFO.regNumber}</p>
-              </div>
-            </div>
-            <div className="text-right">
-              <span className="inline-block px-3 py-1 rounded bg-[#0B3D62] text-white text-xs font-bold uppercase tracking-wider">
-                Admission Acknowledgement Slip
-              </span>
-              <p className="text-xs text-slate-500 mt-1">
-                Date: {formatDisplayDate(submittedApp.createdAt)}
-              </p>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-12 gap-6">
-            <div className="sm:col-span-9">
-              <table className="w-full text-sm border border-slate-200">
-                <tbody className="divide-y divide-slate-200">
-                  <tr className="bg-blue-50/60">
-                    <td className="py-2 px-3 font-bold text-[#0B3D62] w-44">
-                      Application Ref. ID
-                    </td>
-                    <td className="py-2 px-3 font-mono font-extrabold text-[#0B3D62]">
-                      {submittedApp.applicationRef}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-semibold text-slate-600">
-                      Applied Programme
-                    </td>
-                    <td className="py-2 px-3 font-bold text-slate-900">
-                      {submittedApp.courseName} ({submittedApp.courseCode})
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-semibold text-slate-600">
-                      Academic Session / Mode
-                    </td>
-                    <td className="py-2 px-3">
-                      {submittedApp.session} — {submittedApp.studyMode}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-semibold text-slate-600">
-                      Candidate Full Name
-                    </td>
-                    <td className="py-2 px-3 font-bold uppercase">
-                      {submittedApp.fullName}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-semibold text-slate-600">
-                      Father&apos;s / Mother&apos;s Name
-                    </td>
-                    <td className="py-2 px-3">
-                      {submittedApp.fatherName} / {submittedApp.motherName}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-semibold text-slate-600">
-                      DOB / Gender / Category
-                    </td>
-                    <td className="py-2 px-3">
-                      {formatDisplayDate(submittedApp.dob)} | {submittedApp.gender} |{" "}
-                      {submittedApp.category}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-semibold text-slate-600">
-                      Mobile / Email
-                    </td>
-                    <td className="py-2 px-3">
-                      {submittedApp.mobile} | {submittedApp.email}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-semibold text-slate-600">Address</td>
-                    <td className="py-2 px-3">
-                      {submittedApp.address}
-                      {submittedApp.city ? `, ${submittedApp.city}` : ""}
-                      {submittedApp.state ? `, ${submittedApp.state}` : ""}
-                      {submittedApp.pincode ? ` - ${submittedApp.pincode}` : ""}
-                    </td>
-                  </tr>
-                  <tr>
-                    <td className="py-2 px-3 font-semibold text-slate-600">
-                      Application Status
-                    </td>
-                    <td className="py-2 px-3">
-                      <span className="px-2 py-0.5 rounded bg-amber-100 text-amber-800 text-xs font-bold">
-                        PENDING INSTITUTIONAL APPROVAL
-                      </span>
-                    </td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <div className="sm:col-span-3 flex flex-col items-center justify-start gap-3">
-              <div className="w-32 h-36 border-2 border-slate-300 rounded bg-slate-50 flex items-center justify-center overflow-hidden">
-                {submittedApp.photoUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={submittedApp.photoUrl}
-                    alt="Applicant Photograph"
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  <span className="text-[11px] text-slate-400 text-center px-2">
-                    Candidate Photo
-                  </span>
-                )}
-              </div>
-              <p className="text-[11px] text-slate-500 text-center">
-                Enrollment Number will be allotted upon document verification by the Office of
-                the Registrar.
-              </p>
-            </div>
-          </div>
-
-          <div className="mt-6 pt-4 border-t border-slate-200 flex items-center justify-between text-xs text-slate-500">
-            <span>Helpline: {INSTITUTE_INFO.helpline}</span>
-            <span>Computer-Generated Slip • No Signature Required</span>
+        <div className="no-print bg-emerald-50 border border-emerald-200 rounded-lg p-5 flex items-start gap-3">
+          <CheckCircle2 className="w-6 h-6 text-emerald-600 shrink-0 mt-0.5" />
+          <div>
+            <h2 className="text-lg font-bold text-emerald-900">
+              Admission Form Submitted &amp; Auto-Filled Successfully!
+            </h2>
+            <p className="text-sm text-emerald-800 mt-0.5">
+              Registration / Reference No:{" "}
+              <strong className="font-mono bg-white px-2 py-0.5 rounded border border-emerald-300">
+                {submittedApp.applicationRef}
+              </strong>
+              . Niche aapka complete 3-page official Admission Form + Undertaking auto-fill
+              ho chuka hai — isse PDF download / print karke apne paas rakh lein. Admin ke
+              panel me bhi ye form save ho gaya hai.
+            </p>
           </div>
         </div>
+
+        <PrintableAdmissionForm record={submittedApp} />
       </div>
     );
   }
@@ -452,16 +332,16 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
 
       {/* Main Step Card */}
       <div className="bg-white border border-slate-200 border-t-4 border-t-[#0B3D62] rounded-lg p-6 sm:p-8 shadow-sm">
-        {/* STEP 1: Course & Session */}
+        {/* STEP 1 */}
         {step === 1 && (
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold text-[#0B3D62]">
-                Step 1: Programme, Session &amp; Study Mode Selection
+                Step 1: Course / Programme &amp; Session Selection
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Choose the vocational or diploma course you wish to enroll in for Academic
-                Session 2026.
+                Select your course — it will automatically be ticked on your official 3-page
+                Empire Admission Form.
               </p>
             </div>
 
@@ -543,29 +423,29 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
           </div>
         )}
 
-        {/* STEP 2: Personal Details */}
+        {/* STEP 2 */}
         {step === 2 && (
           <div className="space-y-5">
             <div>
               <h2 className="text-xl font-bold text-[#0B3D62]">
-                Step 2: Candidate Personal &amp; Contact Details
+                Step 2: Personal Details (Auto-Filled in CAPITAL Letters on Form)
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Enter details strictly as per your 10th Board Marksheet / Government ID.
+                Enter particulars strictly as per your 10th Certificate / Aadhar Card.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Candidate Full Name *
+                  Student&apos;s Full Name *
                 </label>
                 <input
                   type="text"
                   value={fullName}
                   onChange={(e) => setFullName(e.target.value)}
                   placeholder="As per 10th Marksheet"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded uppercase"
                 />
               </div>
               <div>
@@ -576,7 +456,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   type="text"
                   value={fatherName}
                   onChange={(e) => setFatherName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded uppercase"
                 />
               </div>
               <div>
@@ -587,7 +467,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   type="text"
                   value={motherName}
                   onChange={(e) => setMotherName(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded uppercase"
                 />
               </div>
               <div>
@@ -598,7 +478,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   type="date"
                   value={dob}
                   onChange={(e) => setDob(e.target.value)}
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
                 />
               </div>
               <div>
@@ -612,7 +492,6 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                 >
                   <option>Male</option>
                   <option>Female</option>
-                  <option>Other</option>
                 </select>
               </div>
               <div>
@@ -628,8 +507,34 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   <option>OBC</option>
                   <option>SC</option>
                   <option>ST</option>
-                  <option>EWS</option>
                 </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Religion *
+                </label>
+                <select
+                  value={religion}
+                  onChange={(e) => setReligion(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded bg-white"
+                >
+                  {RELIGION_OPTIONS.map((r) => (
+                    <option key={r} value={r}>
+                      {r}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Nationality
+                </label>
+                <input
+                  type="text"
+                  value={nationality}
+                  onChange={(e) => setNationality(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded uppercase"
+                />
               </div>
               <div>
                 <label className="block text-xs font-bold text-slate-700 mb-1">
@@ -639,8 +544,8 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   type="text"
                   value={aadharNumber}
                   onChange={(e) => setAadharNumber(e.target.value)}
-                  placeholder="XXXX-XXXX-XXXX"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  placeholder="12-digit Aadhar No."
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
                 />
               </div>
               <div>
@@ -652,7 +557,18 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   value={mobile}
                   onChange={(e) => setMobile(e.target.value)}
                   placeholder="9876543210"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Telephone (Optional)
+                </label>
+                <input
+                  type="tel"
+                  value={telephone}
+                  onChange={(e) => setTelephone(e.target.value)}
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
                 />
               </div>
               <div>
@@ -664,23 +580,35 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   placeholder="student@example.com"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
                 />
               </div>
               <div className="sm:col-span-2 lg:col-span-3">
                 <label className="block text-xs font-bold text-slate-700 mb-1">
-                  Complete Residential Address *
+                  Identification Mark (if any)
+                </label>
+                <input
+                  type="text"
+                  value={identificationMark}
+                  onChange={(e) => setIdentificationMark(e.target.value)}
+                  placeholder="e.g., Mole on right cheek / NIL"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
+                />
+              </div>
+              <div className="sm:col-span-2 lg:col-span-3">
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Permanent Address *
                 </label>
                 <input
                   type="text"
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
-                  placeholder="House No., Street, Locality"
-                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  placeholder="House No., Village/Street, Post Office"
+                  className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">City</label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">City / District</label>
                 <input
                   type="text"
                   value={city}
@@ -698,9 +626,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                 />
               </div>
               <div>
-                <label className="block text-xs font-bold text-slate-700 mb-1">
-                  PIN Code
-                </label>
+                <label className="block text-xs font-bold text-slate-700 mb-1">PIN Code</label>
                 <input
                   type="text"
                   value={pincode}
@@ -708,11 +634,58 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
                 />
               </div>
+
+              <div className="sm:col-span-2 lg:col-span-3 space-y-2 pt-1">
+                <label className="inline-flex items-center gap-2 text-xs font-bold text-[#0B3D62] cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={sameAsPermanent}
+                    onChange={(e) => setSameAsPermanent(e.target.checked)}
+                  />
+                  Correspondence Address is same as Permanent Address
+                </label>
+                {!sameAsPermanent && (
+                  <input
+                    type="text"
+                    value={correspondenceAddress}
+                    onChange={(e) => setCorrespondenceAddress(e.target.value)}
+                    placeholder="Enter Complete Correspondence Address"
+                    className="w-full px-3 py-2 text-sm border border-slate-300 rounded"
+                  />
+                )}
+              </div>
+
+              <div className="sm:col-span-2 lg:col-span-3 pt-2 border-t border-slate-200">
+                <label className="block text-xs font-bold text-slate-700 mb-2">
+                  How did you hear about the Academic Programme?
+                </label>
+                <div className="flex flex-wrap gap-3 text-xs">
+                  {HEAR_ABOUT_OPTIONS.map((opt) => (
+                    <label key={opt} className="inline-flex items-center gap-1.5 cursor-pointer">
+                      <input
+                        type="checkbox"
+                        checked={hearAbout.includes(opt)}
+                        onChange={() => toggleCheckbox(hearAbout, opt, setHearAbout)}
+                      />
+                      <span>{opt}</span>
+                    </label>
+                  ))}
+                </div>
+                {hearAbout.includes("Other") && (
+                  <input
+                    type="text"
+                    value={hearAboutOther}
+                    onChange={(e) => setHearAboutOther(e.target.value)}
+                    placeholder="Please specify"
+                    className="mt-2 w-full sm:w-72 px-3 py-1.5 text-xs border border-slate-300 rounded"
+                  />
+                )}
+              </div>
             </div>
           </div>
         )}
 
-        {/* STEP 3: Academic Qualifications */}
+        {/* STEP 3 */}
         {step === 3 && (
           <div className="space-y-5">
             <div>
@@ -720,66 +693,72 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                 Step 3: Academic Qualifications
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Provide your educational qualification details. 10th details are mandatory.
+                10th (X) qualification is mandatory. Other rows are optional.
               </p>
             </div>
 
             <div className="overflow-x-auto">
-              <table className="w-full text-sm border border-slate-200 rounded">
-                <thead className="bg-slate-50 text-xs uppercase text-slate-600">
+              <table className="w-full text-xs border border-slate-200 rounded">
+                <thead className="bg-slate-50 uppercase text-slate-600">
                   <tr>
-                    <th className="py-2.5 px-3 text-left border-b border-slate-200">
-                      Examination Passed
-                    </th>
-                    <th className="py-2.5 px-3 text-left border-b border-slate-200">
-                      Board / University
-                    </th>
-                    <th className="py-2.5 px-3 text-left border-b border-slate-200">
-                      Passing Year
-                    </th>
-                    <th className="py-2.5 px-3 text-left border-b border-slate-200">
-                      Marks / Percentage (%)
-                    </th>
+                    <th className="py-2.5 px-2 text-left border-b border-slate-200">Qualification</th>
+                    <th className="py-2.5 px-2 text-left border-b border-slate-200">Subject</th>
+                    <th className="py-2.5 px-2 text-left border-b border-slate-200 w-20">Year From</th>
+                    <th className="py-2.5 px-2 text-left border-b border-slate-200 w-20">Year To</th>
+                    <th className="py-2.5 px-2 text-left border-b border-slate-200">Board / University</th>
+                    <th className="py-2.5 px-2 text-left border-b border-slate-200 w-24">% Marks</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-200">
                   {qualifications.map((q, idx) => (
                     <tr key={q.level}>
-                      <td className="py-2.5 px-3 font-semibold text-[#0B3D62]">
+                      <td className="py-2 px-2 font-bold text-[#0B3D62]">
                         {q.level}
                         {idx === 0 && <span className="text-red-600"> *</span>}
                       </td>
-                      <td className="py-2 px-3">
+                      <td className="py-2 px-2">
+                        <input
+                          type="text"
+                          value={q.subject || ""}
+                          onChange={(e) => updateQualification(idx, "subject", e.target.value)}
+                          placeholder="e.g., All / Arts / Science"
+                          className="w-full px-2 py-1.5 border border-slate-300 rounded"
+                        />
+                      </td>
+                      <td className="py-2 px-2">
+                        <input
+                          type="text"
+                          value={q.yearFrom || ""}
+                          onChange={(e) => updateQualification(idx, "yearFrom", e.target.value)}
+                          placeholder="2020"
+                          className="w-full px-2 py-1.5 border border-slate-300 rounded"
+                        />
+                      </td>
+                      <td className="py-2 px-2">
+                        <input
+                          type="text"
+                          value={q.yearTo || ""}
+                          onChange={(e) => updateQualification(idx, "yearTo", e.target.value)}
+                          placeholder="2021"
+                          className="w-full px-2 py-1.5 border border-slate-300 rounded"
+                        />
+                      </td>
+                      <td className="py-2 px-2">
                         <input
                           type="text"
                           value={q.board}
-                          onChange={(e) =>
-                            updateQualification(idx, "board", e.target.value)
-                          }
-                          placeholder="e.g., CBSE / UP Board"
-                          className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded"
+                          onChange={(e) => updateQualification(idx, "board", e.target.value)}
+                          placeholder="e.g., HPBOSE / CBSE"
+                          className="w-full px-2 py-1.5 border border-slate-300 rounded"
                         />
                       </td>
-                      <td className="py-2 px-3">
-                        <input
-                          type="text"
-                          value={q.passingYear}
-                          onChange={(e) =>
-                            updateQualification(idx, "passingYear", e.target.value)
-                          }
-                          placeholder="e.g., 2022"
-                          className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded"
-                        />
-                      </td>
-                      <td className="py-2 px-3">
+                      <td className="py-2 px-2">
                         <input
                           type="text"
                           value={q.percentage}
-                          onChange={(e) =>
-                            updateQualification(idx, "percentage", e.target.value)
-                          }
+                          onChange={(e) => updateQualification(idx, "percentage", e.target.value)}
                           placeholder="e.g., 78%"
-                          className="w-full px-2.5 py-1.5 text-sm border border-slate-300 rounded"
+                          className="w-full px-2 py-1.5 border border-slate-300 rounded"
                         />
                       </td>
                     </tr>
@@ -790,32 +769,32 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
           </div>
         )}
 
-        {/* STEP 4: Document Uploads */}
+        {/* STEP 4: Photo, Signature, Documents & Enclosures Checklist */}
         {step === 4 && (
-          <div className="space-y-5">
+          <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold text-[#0B3D62]">
-                Step 4: Document Uploads (with Live Preview)
+                Step 4: Upload Candidate Photo, Signature &amp; Documents
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Upload clear scanned images (JPG/PNG, max 2 MB each). Passport photo is used
-                on your Student ID Card and Certificate.
+                Uploaded Photograph and Signature are automatically embedded on your 3-page
+                printable Admission Form, Undertaking, Student ID Card &amp; Certificate.
               </p>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
               {[
                 {
-                  label: "Passport Size Photograph",
+                  label: "Candidate Passport Size Photograph *",
                   value: photoUrl,
                   setter: setPhotoUrl,
-                  hint: "Recent color photograph",
+                  hint: "Recent colored passport photo (JPG/PNG, max 2 MB)",
                 },
                 {
-                  label: "Candidate Signature",
+                  label: "Candidate Signature *",
                   value: signatureUrl,
                   setter: setSignatureUrl,
-                  hint: "Signed on white paper",
+                  hint: "Clear signature on white paper (JPG/PNG, max 2 MB)",
                 },
                 {
                   label: "Last Qualifying Marksheet",
@@ -857,19 +836,43 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                 </div>
               ))}
             </div>
+
+            {/* Enclosures Checklist (Page 2 of PDF) */}
+            <div className="border border-slate-200 rounded-lg p-4 bg-slate-50/50 space-y-2">
+              <p className="text-xs font-bold text-[#0B3D62]">
+                Enclosures Checklist (Tick copies you are enclosing with the Admission Form):
+              </p>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-xs">
+                {ENCLOSURE_DOCUMENTS.map((doc, idx) => (
+                  <label key={doc} className="flex items-start gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={enclosedDocs.includes(doc)}
+                      onChange={() =>
+                        toggleCheckbox(enclosedDocs, doc, setEnclosedDocs)
+                      }
+                      className="mt-0.5"
+                    />
+                    <span>
+                      {idx + 1}. {doc}
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
           </div>
         )}
 
-        {/* STEP 5: Review & Submit */}
+        {/* STEP 5 */}
         {step === 5 && (
           <div className="space-y-6">
             <div>
               <h2 className="text-xl font-bold text-[#0B3D62]">
-                Step 5: Review Application &amp; Final Submission
+                Step 5: Review Details &amp; Accept Undertaking
               </h2>
               <p className="text-xs text-slate-500 mt-1">
-                Verify all particulars carefully before submitting your official admission
-                application.
+                Upon submission, your official 3-page Empire Admission Form &amp; Undertaking
+                will be generated automatically for download/printing.
               </p>
             </div>
 
@@ -887,21 +890,23 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                 </strong>
               </div>
               <div>
-                <span className="text-xs text-slate-500 block">Candidate Name</span>
-                <strong>{fullName}</strong>
+                <span className="text-xs text-slate-500 block">Student Name</span>
+                <strong className="uppercase">{fullName}</strong>
               </div>
               <div>
                 <span className="text-xs text-slate-500 block">
                   Father&apos;s / Mother&apos;s Name
                 </span>
-                <strong>
+                <strong className="uppercase">
                   {fatherName} / {motherName}
                 </strong>
               </div>
               <div>
-                <span className="text-xs text-slate-500 block">DOB / Gender / Category</span>
+                <span className="text-xs text-slate-500 block">
+                  DOB / Gender / Category / Religion
+                </span>
                 <strong>
-                  {dob} | {gender} | {category}
+                  {dob} | {gender} | {category} | {religion}
                 </strong>
               </div>
               <div>
@@ -911,7 +916,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                 </strong>
               </div>
               <div className="md:col-span-2">
-                <span className="text-xs text-slate-500 block">Address</span>
+                <span className="text-xs text-slate-500 block">Permanent Address</span>
                 <strong>
                   {address} {city} {stateName} {pincode}
                 </strong>
@@ -926,10 +931,10 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                 className="mt-0.5 rounded border-amber-400"
               />
               <span>
-                <strong>Candidate Declaration:</strong> I hereby declare that all statements
-                and documents submitted in this online admission form are true and correct to
-                the best of my knowledge. I understand that my admission is subject to
-                verification by Empire Skills India.
+                <strong>Undertaking &amp; Declaration:</strong> I solemnly affirm &amp;
+                declare that I have read the contents of the Institute Prospectus and all 11
+                terms of the Undertaking. All particulars and uploaded photo/signature/documents
+                are true and correct to the best of my knowledge.
               </span>
             </label>
           </div>
@@ -962,7 +967,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm disabled:opacity-50 transition-colors"
             >
               <CheckCircle2 className="w-4 h-4" />
-              {submitting ? "Submitting Application..." : "Submit Admission Form"}
+              {submitting ? "Submitting & Generating Form..." : "Submit & Generate 3-Page Form"}
             </button>
           )}
         </div>

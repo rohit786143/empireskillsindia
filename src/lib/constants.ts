@@ -5,10 +5,60 @@ export interface SyllabusModule {
 
 export interface QualificationItem {
   level: string;
+  subject?: string;
+  yearFrom?: string;
+  yearTo?: string;
   board: string;
   passingYear: string;
   percentage: string;
 }
+
+export interface AdmissionExtraDetails {
+  correspondenceAddress?: string;
+  telephone?: string;
+  nationality?: string;
+  religion?: string;
+  identificationMark?: string;
+  hearAbout?: string[];
+  hearAboutOther?: string;
+  enclosedDocs?: string[];
+}
+
+export const RELIGION_OPTIONS = ["Hindu", "Muslim", "Sikh", "Other"] as const;
+
+export const HEAR_ABOUT_OPTIONS = [
+  "Poster",
+  "Radio",
+  "T.V.",
+  "Newspaper",
+  "Education Fair",
+  "Internet",
+  "Friend",
+  "Other",
+] as const;
+
+export const ENCLOSURE_DOCUMENTS = [
+  "Matriculation (10th) certificate/Proof of Age",
+  "Detailed mark card (10+2) or Equivalent Exam",
+  "Detailed mark card of Diploma/Graduation/ or equivalent Exam",
+  "Domicile Certificate",
+  "Employment registration Card",
+  "Reservation (SC/ST/OBC/PH/Ex-Serviceman etc.) Certificate/Caste Certificate",
+  "Passport/Aadhar Card/Voter Card/Driving License",
+  "Proof of annual parental income from all sources (in case of candidates for Scholarship).",
+  "Four Colored passport size photographs",
+] as const;
+
+export const PDF_COURSE_CHECKBOXES = [
+  "DCA",
+  "TallyPrime",
+  "Professional Accounts",
+  "Stenography (Eng/Hindi)",
+  "Fashion Designing",
+  "Hair & Skin Care",
+  "Basic Computer",
+  "CCA",
+] as const;
 
 export interface SubjectResultItem {
   subject: string;

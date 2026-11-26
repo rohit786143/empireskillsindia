@@ -12,10 +12,12 @@ import {
   X,
   User,
   Trash2,
+  Printer,
 } from "lucide-react";
 import { ACADEMIC_SESSIONS, STUDY_MODES } from "@/lib/constants";
 import { formatDisplayDate } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
+import { PrintableAdmissionForm } from "./PrintableAdmissionForm";
 
 interface ApplicationRow {
   id: string;
@@ -41,6 +43,7 @@ interface ApplicationRow {
   state: string;
   pincode: string;
   qualificationsJson: string;
+  extraDetailsJson?: string | null;
   photoUrl: string | null;
   signatureUrl: string | null;
   marksheetUrl: string | null;
@@ -69,6 +72,7 @@ export function AdminAdmissionsClient({
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ApplicationRow | null>(null);
+  const [printFormApp, setPrintFormApp] = useState<ApplicationRow | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
   const [addModalOpen, setAddModalOpen] = useState(false);
 
@@ -332,6 +336,16 @@ export function AdminAdmissionsClient({
                     <div className="flex items-center justify-end gap-1.5">
                       <button
                         type="button"
+                        onClick={() => setPrintFormApp(app)}
+                        className="inline-flex items-center gap-1 px-2 py-1.5 rounded bg-[#0B3D62] hover:bg-[#135589] text-white font-bold"
+                        title="Download / Print 3-Page Official Admission Form"
+                      >
+                        <Printer className="w-3.5 h-3.5" />
+                        Form
+                      </button>
+
+                      <button
+                        type="button"
                         onClick={() => setSelected(app)}
                         className="p-1.5 rounded border border-slate-300 text-slate-700 hover:bg-slate-100"
                         title="View Details & Documents"
@@ -390,6 +404,26 @@ export function AdminAdmissionsClient({
           </tbody>
         </table>
       </div>
+
+      {/* Full-Screen Printable 3-Page Official Admission Form View */}
+      {printFormApp && (
+        <div className="space-y-4">
+          <div className="no-print flex items-center justify-between bg-blue-50 border border-blue-200 rounded-lg px-4 py-2.5">
+            <span className="text-xs font-bold text-[#0B3D62]">
+              Official 3-Page Admission Form — {printFormApp.fullName} (
+              {printFormApp.enrollmentNumber || printFormApp.applicationRef})
+            </span>
+            <button
+              type="button"
+              onClick={() => setPrintFormApp(null)}
+              className="inline-flex items-center gap-1 text-xs font-bold text-slate-700 hover:text-[#0B3D62]"
+            >
+              <X className="w-4 h-4" /> Close Form Preview
+            </button>
+          </div>
+          <PrintableAdmissionForm record={printFormApp} />
+        </div>
+      )}
 
       {/* View Application Details Modal */}
       {selected && (

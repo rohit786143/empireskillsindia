@@ -12,8 +12,10 @@ import {
   AlertCircle,
   ShieldCheck,
   User,
+  FileText,
 } from "lucide-react";
 import { InstituteEmblem } from "@/components/InstituteEmblem";
+import { PrintableAdmissionForm } from "@/components/PrintableAdmissionForm";
 import { INSTITUTE_INFO, type SubjectResultItem } from "@/lib/constants";
 import { formatDisplayDate } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
@@ -36,7 +38,14 @@ interface StudentRecord {
   address: string;
   city: string;
   state: string;
+  pincode?: string;
+  category?: string;
+  aadharNumber?: string;
+  qualificationsJson?: string;
+  extraDetailsJson?: string | null;
   photoUrl: string | null;
+  signatureUrl?: string | null;
+  createdAt?: string;
   isCompleted: boolean;
   marksObtained: number | null;
   totalMarks: number | null;
@@ -54,7 +63,7 @@ export default function StudentZonePage() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [student, setStudent] = useState<StudentRecord | null>(null);
-  const [activeTab, setActiveTab] = useState<"result" | "idcard">("result");
+  const [activeTab, setActiveTab] = useState<"result" | "idcard" | "form">("result");
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
@@ -227,6 +236,18 @@ export default function StudentZonePage() {
                 >
                   <CreditCard className="w-4 h-4" />
                   Download Student ID Card
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setActiveTab("form")}
+                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded text-sm font-bold border transition-colors ${
+                    activeTab === "form"
+                      ? "bg-[#0B3D62] text-white border-[#0B3D62]"
+                      : "bg-white text-slate-700 border-slate-300 hover:border-[#0B3D62]"
+                  }`}
+                >
+                  <FileText className="w-4 h-4" />
+                  Download Admission Form
                 </button>
               </div>
 
@@ -480,6 +501,39 @@ export default function StudentZonePage() {
                   </div>
                 </div>
               </div>
+            )}
+
+            {/* TAB 3: DOWNLOAD 3-PAGE OFFICIAL ADMISSION FORM */}
+            {activeTab === "form" && (
+              <PrintableAdmissionForm
+                showPrintBar={false}
+                record={{
+                  applicationRef: student.applicationRef,
+                  enrollmentNumber: student.enrollmentNumber,
+                  courseName: student.courseName,
+                  courseCode: student.courseCode,
+                  session: student.session,
+                  studyMode: student.studyMode,
+                  fullName: student.fullName,
+                  fatherName: student.fatherName,
+                  motherName: student.motherName,
+                  dob: student.dob,
+                  gender: student.gender,
+                  category: student.category || "General",
+                  aadharNumber: student.aadharNumber || "",
+                  mobile: student.mobile,
+                  email: student.email,
+                  address: student.address,
+                  city: student.city,
+                  state: student.state,
+                  pincode: student.pincode,
+                  qualificationsJson: student.qualificationsJson,
+                  extraDetailsJson: student.extraDetailsJson,
+                  photoUrl: student.photoUrl,
+                  signatureUrl: student.signatureUrl,
+                  createdAt: student.createdAt,
+                }}
+              />
             )}
           </div>
         )}

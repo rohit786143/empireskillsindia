@@ -86,6 +86,7 @@ CREATE TABLE IF NOT EXISTS `admission_applications` (
   `state` VARCHAR(100) NOT NULL DEFAULT '',
   `pincode` VARCHAR(20) NOT NULL DEFAULT '',
   `qualifications_json` LONGTEXT NOT NULL,
+  `extra_details_json` LONGTEXT DEFAULT NULL,
   `photo_url` LONGTEXT DEFAULT NULL,
   `signature_url` LONGTEXT DEFAULT NULL,
   `marksheet_url` LONGTEXT DEFAULT NULL,

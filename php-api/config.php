@@ -211,6 +211,7 @@ function map_application(array $r): array {
         'state'              => $r['state'],
         'pincode'            => $r['pincode'],
         'qualificationsJson' => $r['qualifications_json'],
+        'extraDetailsJson'   => $r['extra_details_json'] ?? null,
         'photoUrl'           => $r['photo_url'],
         'signatureUrl'       => $r['signature_url'],
         'marksheetUrl'       => $r['marksheet_url'],

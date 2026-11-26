@@ -95,13 +95,27 @@ if ($method === 'POST') {
         ? $body['qualifications']
         : json_encode($body['qualifications'] ?? [], JSON_UNESCAPED_UNICODE);
 
+    $extraDetailsJson = null;
+    if (isset($body['extraDetails'])) {
+        $extraDetailsJson = is_string($body['extraDetails'])
+            ? $body['extraDetails']
+            : json_encode($body['extraDetails'], JSON_UNESCAPED_UNICODE);
+    }
+
+    // Ensure extra_details_json column exists even if SQL v2 wasn't manually run yet
+    try {
+        $pdo->exec('ALTER TABLE admission_applications ADD COLUMN extra_details_json LONGTEXT DEFAULT NULL');
+    } catch (PDOException $e) {
+        // Column already exists
+    }
+
     $id = generate_cuid();
     $stmt = $pdo->prepare(
         'INSERT INTO admission_applications
         (id, application_ref, status, enrollment_number, course_id, course_name, course_code, session, study_mode,
          full_name, father_name, mother_name, dob, gender, category, aadhar_number, mobile, email,
-         address, city, state, pincode, qualifications_json, photo_url, signature_url, marksheet_url, id_proof_url, approved_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+         address, city, state, pincode, qualifications_json, extra_details_json, photo_url, signature_url, marksheet_url, id_proof_url, approved_at)
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $id,
@@ -127,6 +141,7 @@ if ($method === 'POST') {
         trim((string)($body['state'] ?? '')),
         trim((string)($body['pincode'] ?? '')),
         $qualificationsJson,
+        $extraDetailsJson,
         !empty($body['photoUrl']) ? $body['photoUrl'] : null,
         !empty($body['signatureUrl']) ? $body['signatureUrl'] : null,
         !empty($body['marksheetUrl']) ? $body['marksheetUrl'] : null,
