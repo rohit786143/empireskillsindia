@@ -30,7 +30,7 @@ if ($method === 'GET') {
         array_push($params, $q, $q, $q, $q, $q);
     }
 
-    $sql = 'SELECT a.*, c.duration AS joined_course_duration, (c.fee + c.registration_fee) AS joined_course_fee
+    $sql = 'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee
             FROM admission_applications a
             LEFT JOIN courses c ON c.id = a.course_id';
     if (!empty($where)) {

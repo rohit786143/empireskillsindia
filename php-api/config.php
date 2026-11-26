@@ -162,6 +162,7 @@ function map_course(array $r): array {
         'overview'                => $r['overview'],
         'syllabusJson'            => $r['syllabus_json'],
         'careerOpportunitiesJson' => $r['career_opportunities_json'],
+        'feeBreakdownJson'        => $r['fee_breakdown_json'] ?? null,
         'featured'                => (bool)$r['featured'],
         'isActive'                => (bool)$r['is_active'],
         'createdAt'               => $r['created_at'],

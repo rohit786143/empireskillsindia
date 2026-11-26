@@ -67,21 +67,38 @@ export interface SubjectResultItem {
   grade: string;
 }
 
+export interface FeeBreakdown {
+  registrationFee?: number;
+  admissionFee?: number;
+  monthlyFee?: number;
+  sem1Fee?: number;
+  sem2Fee?: number;
+  courseFee?: number;
+  examFee?: number;
+  examFeeNote?: string;
+}
+
 export const COURSE_CATEGORIES = [
   "All",
   "Computer & IT",
-  "Vocational & Technical",
-  "Management & Accounting",
-  "Teacher Training",
-  "Short-Term Skill",
+  "Accounting & Finance",
+  "NIELIT Courses",
+  "Fashion Designing",
+  "Hair & Skin Care",
+  "Stenography",
 ] as const;
 
 export const COURSE_DURATIONS = [
   "All",
+  "1 Month",
   "3 Months",
   "6 Months",
   "1 Year",
-  "2 Years",
+  "20 Hours",
+  "36 Hours",
+  "80 Hours",
+  "126 Hours",
+  "200 Hours",
 ] as const;
 
 export const COURSE_ELIGIBILITIES = [

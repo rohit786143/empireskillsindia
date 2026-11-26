@@ -14,7 +14,7 @@ if ($enrollmentNumber === '' || $dob === '') {
 
 $pdo = get_db();
 $stmt = $pdo->prepare(
-    'SELECT a.*, c.duration AS joined_course_duration, (c.fee + c.registration_fee) AS joined_course_fee
+    'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee
      FROM admission_applications a
      LEFT JOIN courses c ON c.id = a.course_id
      WHERE UPPER(a.enrollment_number) = ? AND a.dob = ? AND a.status = "APPROVED"

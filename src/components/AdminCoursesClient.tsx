@@ -20,6 +20,7 @@ interface CourseItem {
   overview: string;
   syllabusJson: string;
   careerOpportunitiesJson: string;
+  feeBreakdownJson?: string | null;
   isActive: boolean;
 }
 
@@ -32,6 +33,9 @@ const EMPTY_FORM = {
   eligibility: "10th Pass",
   fee: 6500,
   registrationFee: 500,
+  admissionFee: 1500,
+  monthlyFee: 1500,
+  examFee: 1000,
   studyMode: "Regular / Online",
   overview: "",
   syllabusText: "Module 1: Core Fundamentals\n- Introduction & Practical Lab\n- Assessment & Project",
@@ -77,6 +81,15 @@ export function AdminCoursesClient({
       careersText = "";
     }
 
+    let fb: { admissionFee?: number; monthlyFee?: number; examFee?: number } = {};
+    if (c.feeBreakdownJson) {
+      try {
+        fb = JSON.parse(c.feeBreakdownJson);
+      } catch {
+        fb = {};
+      }
+    }
+
     setForm({
       id: c.id,
       code: c.code,
@@ -86,6 +99,9 @@ export function AdminCoursesClient({
       eligibility: c.eligibility,
       fee: c.fee,
       registrationFee: c.registrationFee,
+      admissionFee: fb.admissionFee ?? 0,
+      monthlyFee: fb.monthlyFee ?? 0,
+      examFee: fb.examFee ?? 0,
       studyMode: c.studyMode,
       overview: c.overview,
       syllabusText,
@@ -130,6 +146,13 @@ export function AdminCoursesClient({
         eligibility: form.eligibility,
         fee: Number(form.fee),
         registrationFee: Number(form.registrationFee),
+        feeBreakdown: {
+          registrationFee: Number(form.registrationFee),
+          admissionFee: Number(form.admissionFee),
+          monthlyFee: Number(form.monthlyFee),
+          courseFee: Number(form.fee),
+          examFee: Number(form.examFee),
+        },
         studyMode: form.studyMode,
         overview: form.overview,
         syllabus: parseSyllabus(form.syllabusText),
@@ -357,14 +380,14 @@ export function AdminCoursesClient({
                 </div>
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
-                    Tuition Fee (INR) *
+                    Course Fee (INR) *
                   </label>
                   <input
                     required
                     type="number"
                     value={form.fee}
                     onChange={(e) => setForm({ ...form, fee: Number(e.target.value) })}
-                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                    className="w-full px-3 py-2 border border-slate-300 rounded font-bold"
                   />
                 </div>
                 <div>
@@ -376,6 +399,45 @@ export function AdminCoursesClient({
                     value={form.registrationFee}
                     onChange={(e) =>
                       setForm({ ...form, registrationFee: Number(e.target.value) })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Admission Fee (INR)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.admissionFee}
+                    onChange={(e) =>
+                      setForm({ ...form, admissionFee: Number(e.target.value) })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Monthly Fee (INR)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.monthlyFee}
+                    onChange={(e) =>
+                      setForm({ ...form, monthlyFee: Number(e.target.value) })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Examination Fee (INR)
+                  </label>
+                  <input
+                    type="number"
+                    value={form.examFee}
+                    onChange={(e) =>
+                      setForm({ ...form, examFee: Number(e.target.value) })
                     }
                     className="w-full px-3 py-2 border border-slate-300 rounded"
                   />

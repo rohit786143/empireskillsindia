@@ -413,9 +413,9 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                   <strong className="text-[#0B3D62]">{selectedCourse.eligibility}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Total Fee (Incl. Reg.)</span>
+                  <span className="text-slate-500 block">Course Fee</span>
                   <strong className="text-[#0B3D62]">
-                    {formatINR(selectedCourse.fee + selectedCourse.registrationFee)}
+                    {formatINR(selectedCourse.fee)}
                   </strong>
                 </div>
               </div>

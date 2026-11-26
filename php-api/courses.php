@@ -79,12 +79,17 @@ if ($method === 'POST') {
     $careersJson = is_string($body['careerOpportunities'] ?? null)
         ? $body['careerOpportunities']
         : json_encode($body['careerOpportunities'] ?? [], JSON_UNESCAPED_UNICODE);
+    $feeBreakdownJson = isset($body['feeBreakdown'])
+        ? (is_string($body['feeBreakdown']) ? $body['feeBreakdown'] : json_encode($body['feeBreakdown'], JSON_UNESCAPED_UNICODE))
+        : null;
+
+    try { $pdo->exec('ALTER TABLE courses ADD COLUMN fee_breakdown_json LONGTEXT DEFAULT NULL'); } catch (PDOException $e) {}
 
     $id = generate_cuid();
     try {
         $stmt = $pdo->prepare(
-            'INSERT INTO courses (id, code, slug, title, category, duration, eligibility, fee, registration_fee, study_mode, overview, syllabus_json, career_opportunities_json, featured, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO courses (id, code, slug, title, category, duration, eligibility, fee, registration_fee, study_mode, overview, syllabus_json, career_opportunities_json, fee_breakdown_json, featured, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $id,
@@ -100,6 +105,7 @@ if ($method === 'POST') {
             $overview,
             $syllabusJson,
             $careersJson,
+            $feeBreakdownJson,
             isset($body['featured']) ? ($body['featured'] ? 1 : 0) : 1,
             isset($body['isActive']) ? ($body['isActive'] ? 1 : 0) : 1,
         ]);
@@ -160,6 +166,11 @@ if ($method === 'PATCH' || $method === 'PUT') {
     if (array_key_exists('careerOpportunities', $body)) {
         $fields[] = '`career_opportunities_json` = ?';
         $params[] = is_string($body['careerOpportunities']) ? $body['careerOpportunities'] : json_encode($body['careerOpportunities'], JSON_UNESCAPED_UNICODE);
+    }
+    if (array_key_exists('feeBreakdown', $body)) {
+        try { $pdo->exec('ALTER TABLE courses ADD COLUMN fee_breakdown_json LONGTEXT DEFAULT NULL'); } catch (PDOException $e) {}
+        $fields[] = '`fee_breakdown_json` = ?';
+        $params[] = is_string($body['feeBreakdown']) ? $body['feeBreakdown'] : json_encode($body['feeBreakdown'], JSON_UNESCAPED_UNICODE);
     }
 
     if (!empty($fields)) {

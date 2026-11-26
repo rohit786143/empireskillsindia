@@ -15,7 +15,7 @@ import {
   Monitor,
 } from "lucide-react";
 import { formatINR } from "@/lib/generators";
-import type { SyllabusModule } from "@/lib/constants";
+import type { SyllabusModule, FeeBreakdown } from "@/lib/constants";
 import { apiFetch } from "@/lib/api";
 
 interface CourseDetail {
@@ -32,6 +32,7 @@ interface CourseDetail {
   overview: string;
   syllabusJson: string;
   careerOpportunitiesJson: string;
+  feeBreakdownJson?: string | null;
 }
 
 function CourseDetailInner() {
@@ -84,6 +85,7 @@ function CourseDetailInner() {
 
   let syllabus: SyllabusModule[] = [];
   let careers: string[] = [];
+  let feeBreakdown: FeeBreakdown = {};
   try {
     syllabus = JSON.parse(course.syllabusJson) as SyllabusModule[];
   } catch {
@@ -93,6 +95,13 @@ function CourseDetailInner() {
     careers = JSON.parse(course.careerOpportunitiesJson) as string[];
   } catch {
     careers = [];
+  }
+  if (course.feeBreakdownJson) {
+    try {
+      feeBreakdown = JSON.parse(course.feeBreakdownJson) as FeeBreakdown;
+    } catch {
+      feeBreakdown = {};
+    }
   }
 
   return (
@@ -228,24 +237,63 @@ function CourseDetailInner() {
                 </dt>
                 <dd className="font-bold text-[#0B3D62]">{course.studyMode}</dd>
               </div>
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <dt className="text-slate-500 inline-flex items-center gap-2">
-                  <IndianRupee className="w-4 h-4 text-emerald-700" /> Tuition Fee
-                </dt>
-                <dd className="font-bold text-[#0B3D62]">{formatINR(course.fee)}</dd>
-              </div>
-              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
-                <dt className="text-slate-500">Registration Fee</dt>
-                <dd className="font-semibold text-slate-700">
-                  {formatINR(course.registrationFee)}
-                </dd>
-              </div>
+              {(feeBreakdown.registrationFee ?? course.registrationFee) > 0 && (
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <dt className="text-slate-500">Registration Fee</dt>
+                  <dd className="font-semibold text-slate-700">
+                    {formatINR(feeBreakdown.registrationFee ?? course.registrationFee)}
+                  </dd>
+                </div>
+              )}
+              {(feeBreakdown.admissionFee ?? 0) > 0 && (
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <dt className="text-slate-500">Admission Fee</dt>
+                  <dd className="font-semibold text-slate-700">
+                    {formatINR(feeBreakdown.admissionFee || 0)}
+                  </dd>
+                </div>
+              )}
+              {(feeBreakdown.monthlyFee ?? 0) > 0 && (
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <dt className="text-slate-500">Monthly Fee</dt>
+                  <dd className="font-semibold text-slate-700">
+                    {formatINR(feeBreakdown.monthlyFee || 0)} / month
+                  </dd>
+                </div>
+              )}
+              {(feeBreakdown.sem1Fee ?? 0) > 0 && (
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <dt className="text-slate-500">1st Semester Fee</dt>
+                  <dd className="font-semibold text-slate-700">
+                    {formatINR(feeBreakdown.sem1Fee || 0)}
+                  </dd>
+                </div>
+              )}
+              {(feeBreakdown.sem2Fee ?? 0) > 0 && (
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <dt className="text-slate-500">2nd Semester Fee</dt>
+                  <dd className="font-semibold text-slate-700">
+                    {formatINR(feeBreakdown.sem2Fee || 0)}
+                  </dd>
+                </div>
+              )}
               <div className="flex items-center justify-between pt-2 bg-blue-50/70 p-3 rounded border border-blue-100">
-                <dt className="font-bold text-[#0B3D62]">Total Payable Fee</dt>
-                <dd className="text-lg font-extrabold text-[#0B3D62]">
-                  {formatINR(course.fee + course.registrationFee)}
+                <dt className="font-bold text-[#0B3D62] inline-flex items-center gap-1.5">
+                  <IndianRupee className="w-4 h-4 text-emerald-700" />
+                  Total Course Fee
+                </dt>
+                <dd className="text-lg font-extrabold text-[#D65B14]">
+                  {formatINR(course.fee)}
                 </dd>
               </div>
+              {((feeBreakdown.examFee ?? 0) > 0 || feeBreakdown.examFeeNote) && (
+                <div className="flex items-center justify-between py-1.5 px-3 bg-amber-50 rounded border border-amber-200 text-xs">
+                  <dt className="font-semibold text-amber-900">Examination Fee</dt>
+                  <dd className="font-bold text-amber-950">
+                    {feeBreakdown.examFeeNote || formatINR(feeBreakdown.examFee || 0)}
+                  </dd>
+                </div>
+              )}
             </dl>
 
             <Link
