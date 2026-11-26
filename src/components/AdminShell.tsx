@@ -6,6 +6,7 @@ import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
   Users,
+  IndianRupee,
   Award,
   FileCheck2,
   BookOpen,
@@ -29,6 +30,7 @@ interface AdminShellProps {
 const ADMIN_NAV = [
   { label: "Dashboard Overview", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Admissions & Students", href: "/admin/admissions", icon: Users },
+  { label: "Fee Management", href: "/admin/fees", icon: IndianRupee },
   {
     label: "Certificate Generator",
     href: "/admin/certificates/generate",
