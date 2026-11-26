@@ -54,6 +54,6 @@ jobs:
           set net:timeout 30
           set net:max-retries 4
           set net:reconnect-interval-base 3
-          mirror --reverse --parallel=2 --only-newer --ignore-time --exclude ^php-api/config\.php$ --exclude ^\.git ./deploy "$TARGET_DIR"
+          mirror --reverse --parallel=2 --overwrite --exclude ^php-api/config\.php$ --exclude ^\.git ./deploy "$TARGET_DIR"
           bye
           EOF
