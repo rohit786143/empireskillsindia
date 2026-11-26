@@ -1,0 +1,40 @@
+name: Auto Deploy to Hostinger (empireskillsindia.com)
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    name: Deploy Static Site & PHP API to Hostinger
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Prepare clean deploy folder (preserving live config.php)
+        run: |
+          mkdir -p deploy
+          cp -r out/. deploy/
+          mkdir -p deploy/php-api
+          cp -r php-api/. deploy/php-api/
+          # Never overwrite Hostinger's live MySQL credentials in php-api/config.php
+          rm -f deploy/php-api/config.php
+
+      - name: Sync files to Hostinger public_html via FTP
+        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
+        with:
+          server: ${{ secrets.FTP_SERVER }}
+          username: ${{ secrets.FTP_USERNAME }}
+          password: ${{ secrets.FTP_PASSWORD }}
+          local-dir: ./deploy/
+          server-dir: ./
+          dangerous-clean-slate: false
+          exclude: |
+            **/.git*
+            **/.git*/**
+            php-api/config.php
+            **/php-api/config.php
