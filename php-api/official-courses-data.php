@@ -85,7 +85,7 @@ function get_official_19_courses(): array {
          "Government-recognized NIELIT 'O' Level (1 Year / 2 Semesters) IT foundation diploma widely accepted for Government & PSU computer jobs.",
          '[{"moduleTitle":"1st Semester (M1-R5 & M2-R5)","topics":["IT Tools and Network Basics (M1-R5)","Web Designing & Publishing (M2-R5)"]},{"moduleTitle":"2nd Semester (M3-R5, M4-R5 & Project)","topics":["Programming and Problem Solving through Python (M3-R5)","Internet of Things (IoT) & Applications (M4-R5)","Practical Exams & Project Submission"]}]',
          '["Government Junior Programmer / IT Assistant","Web Designer","Python Junior Developer","Office Automation Specialist"]',
-         '{"registrationFee":500,"admissionFee":5000,"sem1Fee":9000,"sem2Fee":9000,"courseFee":23500,"examFee":4200,"examFeeNote":"₹4,200* (₹2,100* per sem)"}'],
+         '{"registrationFee":500,"admissionFee":5000,"sem1Fee":9000,"sem2Fee":9000,"courseFee":23500,"examFee":4200,"examFeeNote":"₹4,200 (₹2,100 + ₹2,100)"}'],
 
         ['nielit_acc', 'NIELIT-ACC-202', 'acc-awareness-in-computer-concepts', 'ACC - Awareness in Computer Concepts', 'NIELIT Courses', '20 Hours', '10th Pass', 1500, 0, 'Regular',
          'NIELIT 20-Hour Awareness in Computer Concepts programme introducing basic computer skills, internet, and digital services.',

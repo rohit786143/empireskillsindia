@@ -3,15 +3,24 @@
 
 function enrich_course(array $rawRow, array $mapped): array {
     $fbJson = $rawRow['fee_breakdown_json'] ?? ($mapped['feeBreakdownJson'] ?? null);
-    $mapped['feeBreakdownJson'] = $fbJson;
+    $fb = $fbJson ? json_decode($fbJson, true) : [];
+    if (!is_array($fb)) $fb = [];
 
-    $examFee = 0;
-    if ($fbJson) {
-        $fb = json_decode($fbJson, true);
-        if (is_array($fb) && isset($fb['examFee'])) {
-            $examFee = (int)$fb['examFee'];
-        }
+    // Ensure 'O' Level (NIELIT) always includes Sem1 (9000), Sem2 (9000) & Exam Fee (4200 = 2100 + 2100)
+    $code = strtoupper((string)($mapped['code'] ?? ''));
+    if ($code === 'NIELIT-OLV-201' && empty($fb['examFee'])) {
+        $fb['registrationFee'] = $fb['registrationFee'] ?? 500;
+        $fb['admissionFee']    = $fb['admissionFee'] ?? 5000;
+        $fb['sem1Fee']         = $fb['sem1Fee'] ?? 9000;
+        $fb['sem2Fee']         = $fb['sem2Fee'] ?? 9000;
+        $fb['courseFee']       = (int)$mapped['fee'];
+        $fb['examFee']         = 4200;
+        $fb['examFeeNote']     = '₹4,200 (₹2,100 + ₹2,100)';
+        $fbJson = json_encode($fb, JSON_UNESCAPED_UNICODE);
     }
+
+    $mapped['feeBreakdownJson'] = $fbJson;
+    $examFee = isset($fb['examFee']) ? (int)$fb['examFee'] : 0;
     $mapped['examFee'] = $examFee;
     $mapped['grandTotalFee'] = (int)$mapped['fee'] + $examFee;
     return $mapped;
