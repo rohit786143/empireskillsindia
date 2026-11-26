@@ -125,16 +125,15 @@
   }
 
   body.print-admission-form-mode .admission-a4-page {
-    width: 210mm !important;
-    max-width: 210mm !important;
-    height: 296mm !important;
-    min-height: 296mm !important;
-    max-height: 296mm !important;
-    padding: 10mm 12mm !important;
-    margin: 0 !important;
+    width: 196mm !important;
+    max-width: 100% !important;
+    height: auto !important;
+    min-height: 0 !important;
+    padding: 6mm 8mm !important;
+    margin: 0 auto !important;
     border: none !important;
     box-shadow: none !important;
-    overflow: hidden !important;
+    overflow: visible !important;
     box-sizing: border-box !important;
     break-after: page !important;
     page-break-after: always !important;

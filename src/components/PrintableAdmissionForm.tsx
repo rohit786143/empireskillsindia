@@ -461,18 +461,18 @@ export function PrintableAdmissionForm({
 
         {/* ================= PAGE 2: ENCLOSURES, SIGNATURE & OFFICE SIGN ================= */}
         <div
-          className="admission-a4-page bg-white border border-slate-300 shadow-sm mx-auto p-9 text-slate-900 text-[12px] flex flex-col justify-between"
-          style={{ width: "794px", maxWidth: "100%", minHeight: "1060px" }}
+          className="admission-a4-page bg-white border border-slate-300 shadow-sm mx-auto p-7 text-slate-900 text-[11.5px] flex flex-col justify-between"
+          style={{ width: "794px", maxWidth: "100%" }}
         >
-          <div className="space-y-8">
+          <div className="space-y-5">
             <div>
-              <p className="font-bold text-sm mb-3">
+              <p className="font-bold text-[13px] mb-2.5">
                 Following 3 sets of attested copies should be enclosed with the Application
                 Form: (Tick Appropriate One&apos;s)
               </p>
-              <ol className="space-y-2 text-xs pl-2">
+              <ol className="space-y-1.5 text-[11.5px] pl-1">
                 {ENCLOSURE_DOCUMENTS.map((doc, idx) => (
-                  <li key={doc} className="flex items-start gap-2.5">
+                  <li key={doc} className="flex items-start gap-2">
                     <TickBox checked={(extra.enclosedDocs || []).includes(doc)} />
                     <span>
                       {idx + 1}. {doc}
@@ -483,19 +483,19 @@ export function PrintableAdmissionForm({
             </div>
 
             {/* Left Thumb Impression & Uploaded Candidate Signature */}
-            <div className="grid grid-cols-2 gap-10 pt-8">
-              <div className="border border-slate-800 h-32 p-2.5 flex flex-col justify-between">
-                <span className="text-xs font-semibold">Left Thumb Impression</span>
+            <div className="grid grid-cols-2 gap-8 pt-3">
+              <div className="border border-slate-800 h-24 p-2 flex flex-col justify-between">
+                <span className="text-[11px] font-semibold">Left Thumb Impression</span>
               </div>
-              <div className="border border-slate-800 h-32 p-2.5 flex flex-col justify-between">
-                <span className="text-xs font-semibold">Signature</span>
+              <div className="border border-slate-800 h-24 p-2 flex flex-col justify-between">
+                <span className="text-[11px] font-semibold">Signature</span>
                 <div className="flex-1 flex items-center justify-center overflow-hidden">
                   {record.signatureUrl ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       src={record.signatureUrl}
                       alt="Candidate Signature"
-                      className="max-h-20 object-contain"
+                      className="max-h-16 object-contain"
                     />
                   ) : null}
                 </div>
@@ -503,7 +503,7 @@ export function PrintableAdmissionForm({
             </div>
 
             {/* Declaration */}
-            <div className="space-y-2 pt-4 text-xs">
+            <div className="space-y-1.5 pt-2 text-[11.5px]">
               <p>
                 I have read &ldquo;Training Programme&rdquo; Brochure and I undertake to abide
                 by the rules laid down in it.
@@ -516,15 +516,15 @@ export function PrintableAdmissionForm({
           </div>
 
           {/* Signatures Footer */}
-          <div className="space-y-12 pt-10 text-xs">
+          <div className="space-y-8 pt-8 text-[11.5px]">
             <div className="flex justify-end">
-              <div className="text-center w-64">
+              <div className="text-center w-60">
                 {record.signatureUrl && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={record.signatureUrl}
                     alt="Candidate Signature"
-                    className="h-10 mx-auto object-contain mb-1"
+                    className="h-9 mx-auto object-contain mb-1"
                   />
                 )}
                 <div className="border-t border-dotted border-slate-800 pt-1 font-semibold">
@@ -536,7 +536,7 @@ export function PrintableAdmissionForm({
             <div className="flex items-center justify-between gap-8">
               <div className="w-56">
                 <span className="font-semibold">Date: </span>
-                <span className="inline-block border-b border-slate-800 w-40 px-2 font-bold">
+                <span className="inline-block border-b border-slate-800 w-36 px-2 font-bold">
                   {formattedSlashDate}
                 </span>
               </div>
@@ -546,7 +546,7 @@ export function PrintableAdmissionForm({
               </div>
             </div>
 
-            <div className="flex items-center justify-between gap-8 pt-6">
+            <div className="flex items-center justify-between gap-8 pt-4">
               <div className="w-60">
                 <span className="font-semibold">Centre Seal: </span>
                 <span className="inline-block border-b border-slate-800 w-36" />
@@ -561,30 +561,30 @@ export function PrintableAdmissionForm({
 
         {/* ================= PAGE 3: UNDERTAKING & DECLARATION ================= */}
         <div
-          className="admission-a4-page bg-white border border-slate-300 shadow-sm mx-auto p-8 text-slate-900 text-[11.5px]"
-          style={{ width: "794px", maxWidth: "100%", minHeight: "1060px" }}
+          className="admission-a4-page bg-white border border-slate-300 shadow-sm mx-auto p-6 text-slate-900 text-[10.5px]"
+          style={{ width: "794px", maxWidth: "100%" }}
         >
-          <div className="flex items-center justify-between mb-4">
-            <BrandLogo height={44} />
-            <div className="text-xs font-mono font-bold text-[#0B3D62]">
+          <div className="flex items-center justify-between mb-2">
+            <BrandLogo height={36} />
+            <div className="text-[11px] font-mono font-bold text-[#0B3D62]">
               Ref: {regNo}
             </div>
           </div>
 
-          <div className="text-center mb-5">
-            <span className="inline-block bg-[#8B1E24] text-white font-bold tracking-[0.18em] px-4 py-1 text-sm uppercase">
+          <div className="text-center mb-3">
+            <span className="inline-block bg-[#8B1E24] text-white font-bold tracking-[0.18em] px-4 py-0.5 text-xs uppercase">
               UNDERTAKING
             </span>
           </div>
 
-          <ol className="list-decimal pl-5 space-y-2.5 text-[11.5px] leading-relaxed text-justify">
+          <ol className="list-decimal pl-5 space-y-1.5 text-[10.5px] leading-snug text-justify">
             <li>
               I{" "}
-              <span className="inline-block border-b border-slate-800 px-3 font-bold uppercase text-[#0B3D62] min-w-[210px]">
+              <span className="inline-block border-b border-slate-800 px-3 font-bold uppercase text-[#0B3D62] min-w-[200px]">
                 {record.fullName}
               </span>{" "}
               S/o, D/o{" "}
-              <span className="inline-block border-b border-slate-800 px-3 font-bold uppercase text-[#0B3D62] min-w-[200px]">
+              <span className="inline-block border-b border-slate-800 px-3 font-bold uppercase text-[#0B3D62] min-w-[190px]">
                 {record.fatherName}
               </span>{" "}
               Do hereby undertake that the particulars submitted to the Institute are true and
@@ -645,29 +645,29 @@ export function PrintableAdmissionForm({
             </li>
           </ol>
 
-          <div className="flex justify-end mt-6">
-            <div className="text-center w-52">
+          <div className="flex justify-end mt-3">
+            <div className="text-center w-48">
               {record.signatureUrl && (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={record.signatureUrl}
                   alt="Candidate Signature"
-                  className="h-9 mx-auto object-contain mb-1"
+                  className="h-8 mx-auto object-contain mb-0.5"
                 />
               )}
-              <div className="border-t border-slate-700 pt-1 text-[11px] font-semibold">
+              <div className="border-t border-slate-700 pt-0.5 text-[10px] font-semibold">
                 Signature of the Candidate
               </div>
             </div>
           </div>
 
-          <div className="text-center my-5">
-            <span className="inline-block bg-[#8B1E24] text-white font-bold tracking-[0.18em] px-4 py-1 text-sm uppercase">
+          <div className="text-center my-2.5">
+            <span className="inline-block bg-[#8B1E24] text-white font-bold tracking-[0.18em] px-4 py-0.5 text-xs uppercase">
               DECLARATION
             </span>
           </div>
 
-          <p className="text-[11.5px] leading-relaxed text-justify">
+          <p className="text-[10.5px] leading-snug text-justify">
             I hereby solemnly affirm &amp; declare that I have read the contents of Institute
             Prospectus clearly and have understood the points mentioned in the undertaking. I
             shall abide by the rules and regulations of the Institute as mentioned in the
@@ -676,7 +676,7 @@ export function PrintableAdmissionForm({
             the best of my knowledge &amp; belief.
           </p>
 
-          <div className="flex items-center justify-between mt-6 text-xs">
+          <div className="flex items-center justify-between mt-3 text-[11px]">
             <div>
               <span className="font-semibold">Dated: </span>
               <span className="inline-block border-b border-slate-800 px-3 font-bold">
@@ -688,7 +688,7 @@ export function PrintableAdmissionForm({
             </div>
           </div>
 
-          <div className="mt-5 text-[10.5px] italic text-slate-700 space-y-1 border-t border-slate-200 pt-3">
+          <div className="mt-3 text-[9.5px] italic text-slate-700 space-y-0.5 border-t border-slate-200 pt-2">
             <p>
               <strong>Note: (i)</strong> Incomplete Application form shall not be accepted.
             </p>
@@ -706,7 +706,7 @@ export function PrintableAdmissionForm({
             </p>
           </div>
 
-          <div className="flex items-end justify-between mt-10 text-xs font-semibold">
+          <div className="flex items-end justify-between mt-5 text-[11px] font-semibold">
             <div>Signature of the parent/Guardian</div>
             <div className="text-center">
               {record.signatureUrl && (
@@ -714,7 +714,7 @@ export function PrintableAdmissionForm({
                 <img
                   src={record.signatureUrl}
                   alt="Candidate Signature"
-                  className="h-9 mx-auto object-contain mb-1"
+                  className="h-8 mx-auto object-contain mb-0.5"
                 />
               )}
               <div>Signature of the Candidate</div>
