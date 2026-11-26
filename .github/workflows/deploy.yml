@@ -15,36 +15,8 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v4
 
-      - name: Sanitize FTP host and auto-detect Hostinger public_html path
-        id: ftp
-        env:
-          RAW_SERVER: ${{ secrets.FTP_SERVER }}
-          FTP_USER: ${{ secrets.FTP_USERNAME }}
-          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
-        run: |
-          CLEAN_HOST=$(echo "$RAW_SERVER" | sed -E 's#^[a-zA-Z]+://##; s#/.*$##; s#[[:space:]]##g')
-          echo "host=$CLEAN_HOST" >> "$GITHUB_OUTPUT"
-
-          ROOT_LIST=$(curl -s --list-only --user "$FTP_USER:$FTP_PASS" "ftp://$CLEAN_HOST/" || true)
-          echo "FTP root entries:"
-          echo "$ROOT_LIST"
-
-          TARGET_DIR="./"
-          if echo "$ROOT_LIST" | grep -qx "php-api"; then
-            TARGET_DIR="./"
-          elif echo "$ROOT_LIST" | grep -qx "domains"; then
-            DOM_LIST=$(curl -s --list-only --user "$FTP_USER:$FTP_PASS" "ftp://$CLEAN_HOST/domains/empireskillsindia.com/" || true)
-            if echo "$DOM_LIST" | grep -qx "public_html"; then
-              TARGET_DIR="./domains/empireskillsindia.com/public_html/"
-            else
-              TARGET_DIR="./public_html/"
-            fi
-          elif echo "$ROOT_LIST" | grep -qx "public_html"; then
-            TARGET_DIR="./public_html/"
-          fi
-
-          echo "Detected Hostinger web root: $TARGET_DIR"
-          echo "dir=$TARGET_DIR" >> "$GITHUB_OUTPUT"
+      - name: Install lftp
+        run: sudo apt-get update -qq && sudo apt-get install -y -qq lftp
 
       - name: Prepare clean deploy folder (preserving live config.php)
         run: |
@@ -52,22 +24,36 @@ jobs:
           cp -r out/. deploy/
           mkdir -p deploy/php-api
           cp -r php-api/. deploy/php-api/
-          # Never overwrite Hostinger's live MySQL credentials in php-api/config.php
           rm -f deploy/php-api/config.php
 
-      - name: Sync files to Hostinger public_html via FTP
-        uses: SamKirkland/FTP-Deploy-Action@v4.3.5
-        with:
-          server: ${{ steps.ftp.outputs.host }}
-          username: ${{ secrets.FTP_USERNAME }}
-          password: ${{ secrets.FTP_PASSWORD }}
-          port: 21
-          protocol: ftp
-          local-dir: ./deploy/
-          server-dir: ${{ steps.ftp.outputs.dir }}
-          dangerous-clean-slate: false
-          exclude: |
-            **/.git*
-            **/.git*/**
-            php-api/config.php
-            **/php-api/config.php
+      - name: Mirror files to Hostinger public_html via lftp
+        env:
+          RAW_SERVER: ${{ secrets.FTP_SERVER }}
+          FTP_USER: ${{ secrets.FTP_USERNAME }}
+          FTP_PASS: ${{ secrets.FTP_PASSWORD }}
+        run: |
+          CLEAN_HOST=$(echo "$RAW_SERVER" | sed -E 's#^[a-zA-Z]+://##; s#/.*$##; s#[[:space:]]##g')
+
+          ROOT_LIST=$(lftp -u "$FTP_USER","$FTP_PASS" "$CLEAN_HOST" -e "set ssl:verify-certificate no; set ftp:passive-mode true; set net:max-retries 2; cls -1; bye" 2>/dev/null || true)
+          echo "FTP root entries:"
+          echo "$ROOT_LIST"
+
+          TARGET_DIR="."
+          if echo "$ROOT_LIST" | grep -qxE "php-api/?"; then
+            TARGET_DIR="."
+          elif echo "$ROOT_LIST" | grep -qxE "domains/?"; then
+            TARGET_DIR="domains/empireskillsindia.com/public_html"
+          elif echo "$ROOT_LIST" | grep -qxE "public_html/?"; then
+            TARGET_DIR="public_html"
+          fi
+          echo "Deploying into Hostinger directory: $TARGET_DIR"
+
+          lftp -u "$FTP_USER","$FTP_PASS" "$CLEAN_HOST" <<EOF
+          set ssl:verify-certificate no
+          set ftp:passive-mode true
+          set net:timeout 30
+          set net:max-retries 4
+          set net:reconnect-interval-base 3
+          mirror --reverse --parallel=2 --only-newer --ignore-time --exclude ^php-api/config\.php$ --exclude ^\.git ./deploy "$TARGET_DIR"
+          bye
+          EOF
