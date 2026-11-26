@@ -276,41 +276,67 @@ export function CoursesExplorerGrid({ courses }: { courses: PublicCourse[] }) {
                   </span>
                   <span className="font-semibold">{course.eligibility}</span>
                 </div>
-                <div className="flex items-center justify-between">
-                  <span className="inline-flex items-center gap-1 text-slate-500">
-                    <IndianRupee className="w-3.5 h-3.5 text-emerald-700" />
-                    Total Course Fee
-                  </span>
-                  <span className="font-extrabold text-[#D65B14]">
-                    {formatINR(course.fee)}
-                  </span>
-                </div>
-                {course.feeBreakdownJson && (() => {
-                  try {
-                    const fb = JSON.parse(course.feeBreakdownJson) as {
-                      registrationFee?: number;
-                      admissionFee?: number;
-                      monthlyFee?: number;
-                      sem1Fee?: number;
-                      sem2Fee?: number;
-                      examFee?: number;
-                    };
-                    const parts: string[] = [];
-                    if (fb.registrationFee) parts.push(`Reg ₹${fb.registrationFee}`);
-                    if (fb.admissionFee) parts.push(`Adm ₹${fb.admissionFee}`);
-                    if (fb.monthlyFee) parts.push(`Monthly ₹${fb.monthlyFee}/mo`);
-                    if (fb.sem1Fee) parts.push(`Sem1 ₹${fb.sem1Fee}`);
-                    if (fb.sem2Fee) parts.push(`Sem2 ₹${fb.sem2Fee}`);
-                    if (fb.examFee) parts.push(`Exam ₹${fb.examFee}`);
-                    if (parts.length === 0) return null;
-                    return (
-                      <div className="pt-1.5 text-[10px] text-slate-500 leading-snug bg-slate-50 px-2 py-1.5 rounded border border-slate-100">
-                        {parts.join(" • ")}
-                      </div>
-                    );
-                  } catch {
-                    return null;
+                {(() => {
+                  let fb: {
+                    registrationFee?: number;
+                    admissionFee?: number;
+                    monthlyFee?: number;
+                    sem1Fee?: number;
+                    sem2Fee?: number;
+                    examFee?: number;
+                    examFeeNote?: string;
+                  } = {};
+                  if (course.feeBreakdownJson) {
+                    try {
+                      fb = JSON.parse(course.feeBreakdownJson);
+                    } catch {}
                   }
+                  const examFee = fb.examFee || 0;
+                  const grandTotal = course.fee + examFee;
+                  const parts: string[] = [];
+                  if (fb.registrationFee) parts.push(`Reg ₹${fb.registrationFee}`);
+                  if (fb.admissionFee) parts.push(`Adm ₹${fb.admissionFee}`);
+                  if (fb.monthlyFee) parts.push(`Monthly ₹${fb.monthlyFee}/mo`);
+                  if (fb.sem1Fee) parts.push(`Sem1 ₹${fb.sem1Fee}`);
+                  if (fb.sem2Fee) parts.push(`Sem2 ₹${fb.sem2Fee}`);
+                  if (examFee > 0) parts.push(`Exam ₹${examFee}`);
+
+                  return (
+                    <>
+                      <div className="flex items-center justify-between">
+                        <span className="inline-flex items-center gap-1 text-slate-500">
+                          <IndianRupee className="w-3.5 h-3.5 text-emerald-700" />
+                          Course Fee
+                        </span>
+                        <span className="font-bold text-[#0B3D62]">
+                          {formatINR(course.fee)}
+                        </span>
+                      </div>
+                      {examFee > 0 && (
+                        <>
+                          <div className="flex items-center justify-between">
+                            <span className="text-slate-500">Exam Fee</span>
+                            <span className="font-semibold text-slate-700">
+                              {fb.examFeeNote || formatINR(examFee)}
+                            </span>
+                          </div>
+                          <div className="flex items-center justify-between pt-1 border-t border-slate-100">
+                            <span className="font-bold text-[#0B3D62]">
+                              Total (Course + Exam)
+                            </span>
+                            <span className="font-extrabold text-[#D65B14]">
+                              {formatINR(grandTotal)}
+                            </span>
+                          </div>
+                        </>
+                      )}
+                      {parts.length > 0 && (
+                        <div className="pt-1.5 text-[10px] text-slate-600 leading-snug bg-slate-50 px-2 py-1.5 rounded border border-slate-100">
+                          {parts.join(" • ")}
+                        </div>
+                      )}
+                    </>
+                  );
                 })()}
               </div>
             </div>

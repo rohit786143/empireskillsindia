@@ -200,8 +200,9 @@ export function CoursesDirectoryClient({ courses }: { courses: PublicCourse[] })
                 <th className="py-3 px-3 text-right">Registration Fee</th>
                 <th className="py-3 px-3 text-right">Admission Fee</th>
                 <th className="py-3 px-3 text-right">Monthly / Sem Fee</th>
-                <th className="py-3 px-3 text-right bg-[#072A44]">Total Course Fee</th>
-                <th className="py-3 px-3 text-right">Examination Fee</th>
+                <th className="py-3 px-3 text-right">Course Fee</th>
+                <th className="py-3 px-3 text-right">Exam Fee</th>
+                <th className="py-3 px-3 text-right bg-[#072A44]">Total (Course + Exam)</th>
                 <th className="py-3 px-4 text-right">Action</th>
               </tr>
             </thead>
@@ -243,11 +244,14 @@ export function CoursesDirectoryClient({ courses }: { courses: PublicCourse[] })
                         ? `1st: ${formatINR(sem1)} | 2nd: ${formatINR(sem2)}`
                         : "—"}
                     </td>
-                    <td className="py-3 px-3 text-right font-extrabold text-[#D65B14] bg-amber-50/50 text-sm">
+                    <td className="py-3 px-3 text-right font-bold text-[#0B3D62]">
                       {formatINR(course.fee)}
                     </td>
                     <td className="py-3 px-3 text-right font-semibold text-slate-700">
                       {fb.examFeeNote || (exam > 0 ? formatINR(exam) : "—")}
+                    </td>
+                    <td className="py-3 px-3 text-right font-extrabold text-[#D65B14] bg-amber-50/50 text-sm">
+                      {formatINR(course.fee + exam)}
                     </td>
                     <td className="py-3 px-4 text-right whitespace-nowrap">
                       <div className="inline-flex gap-1.5">

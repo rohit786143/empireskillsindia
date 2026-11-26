@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/enrichers.php';
 
 $pdo = get_db();
 $method = $_SERVER['REQUEST_METHOD'];
@@ -42,15 +43,8 @@ if ($method === 'GET') {
     $stmt->execute($params);
     $apps = [];
     while ($row = $stmt->fetch()) {
-        $mapped = map_application($row);
+        $mapped = enrich_application($row, map_application($row));
         $mapped['courseDuration'] = $row['joined_course_duration'] ?: '1 Year';
-        $mapped['courseFeeBreakdownJson'] = $row['joined_fee_breakdown'] ?? null;
-        $mapped['courseTotalFee'] = isset($row['joined_course_fee']) && $row['joined_course_fee'] !== null
-            ? (int)$row['joined_course_fee']
-            : 0;
-        if ($mapped['totalFee'] <= 0 && $mapped['courseTotalFee'] > 0) {
-            $mapped['totalFee'] = $mapped['courseTotalFee'];
-        }
         $apps[] = $mapped;
     }
 
@@ -288,9 +282,17 @@ if ($method === 'PATCH' || $method === 'PUT') {
         $pdo->prepare('UPDATE admission_applications SET ' . implode(', ', $fields) . ' WHERE id = ?')->execute($params);
     }
 
-    $upd = $pdo->prepare('SELECT * FROM admission_applications WHERE id = ?');
+    $upd = $pdo->prepare(
+        'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee, c.fee_breakdown_json AS joined_fee_breakdown
+         FROM admission_applications a
+         LEFT JOIN courses c ON c.id = a.course_id
+         WHERE a.id = ?'
+    );
     $upd->execute([$id]);
-    json_response(['application' => map_application($upd->fetch())]);
+    $updRow = $upd->fetch();
+    $mappedUpd = enrich_application($updRow, map_application($updRow));
+    $mappedUpd['courseDuration'] = $updRow['joined_course_duration'] ?: '1 Year';
+    json_response(['application' => $mappedUpd]);
 }
 
 // DELETE [Admin]

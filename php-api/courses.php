@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/official-courses-data.php';
+require_once __DIR__ . '/enrichers.php';
 
 $pdo = get_db();
 $method = $_SERVER['REQUEST_METHOD'];
@@ -16,7 +17,7 @@ if ($method === 'GET') {
         if (!$row) {
             json_response(['error' => 'Course not found.'], 404);
         }
-        json_response(['course' => map_course($row)]);
+        json_response(['course' => enrich_course($row, map_course($row))]);
     }
 
     $where = [];
@@ -53,7 +54,10 @@ if ($method === 'GET') {
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    $courses = array_map('map_course', $stmt->fetchAll());
+    $courses = [];
+    foreach ($stmt->fetchAll() as $rc) {
+        $courses[] = enrich_course($rc, map_course($rc));
+    }
     json_response(['courses' => $courses]);
 }
 
@@ -117,7 +121,8 @@ if ($method === 'POST') {
 
     $row = $pdo->prepare('SELECT * FROM courses WHERE id = ?');
     $row->execute([$id]);
-    json_response(['course' => map_course($row->fetch())], 201);
+    $created = $row->fetch();
+    json_response(['course' => enrich_course($created, map_course($created))], 201);
 }
 
 // PATCH / PUT: update course [Admin]
@@ -185,7 +190,7 @@ if ($method === 'PATCH' || $method === 'PUT') {
     $row->execute([$id]);
     $found = $row->fetch();
     if (!$found) json_response(['error' => 'Course not found.'], 404);
-    json_response(['course' => map_course($found)]);
+    json_response(['course' => enrich_course($found, map_course($found))]);
 }
 
 // DELETE: delete course [Admin]

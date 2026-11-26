@@ -342,6 +342,7 @@ export function AdminCoursesClient({
               <th className="py-3 px-3 text-right">Monthly / Sem Fee</th>
               <th className="py-3 px-3 text-right">Course Fee</th>
               <th className="py-3 px-3 text-right">Exam Fee</th>
+              <th className="py-3 px-3 text-right bg-[#072A44]">Grand Total</th>
               <th className="py-3 px-3 text-right">Actions</th>
             </tr>
           </thead>
@@ -376,11 +377,14 @@ export function AdminCoursesClient({
                       ? `S1: ${formatINR(sem1)} / S2: ${formatINR(sem2)}`
                       : "—"}
                   </td>
-                  <td className="py-3 px-3 text-right font-extrabold text-[#D65B14] bg-amber-50/40">
+                  <td className="py-3 px-3 text-right font-bold text-[#0B3D62]">
                     {formatINR(c.fee)}
                   </td>
                   <td className="py-3 px-3 text-right">
                     {fb.examFeeNote || (exam > 0 ? formatINR(exam) : "—")}
+                  </td>
+                  <td className="py-3 px-3 text-right font-extrabold text-[#D65B14] bg-amber-50/50">
+                    {formatINR(c.fee + exam)}
                   </td>
                   <td className="py-3 px-3">
                     <div className="flex items-center justify-end gap-1.5">
@@ -660,7 +664,21 @@ export function AdminCoursesClient({
                           form.monthlyFee * monthsCount
                       )}
                     </strong>
-                    {form.examFee > 0 && ` (+ Exam Fee ${formatINR(form.examFee)})`}
+                    {form.examFee > 0 && (
+                      <>
+                        {" "}
+                        + Exam Fee ({formatINR(form.examFee)}) ={" "}
+                        <strong className="text-[#0B3D62]">
+                          Grand Total{" "}
+                          {formatINR(
+                            form.registrationFee +
+                              form.admissionFee +
+                              form.monthlyFee * monthsCount +
+                              form.examFee
+                          )}
+                        </strong>
+                      </>
+                    )}
                   </p>
                 )}
               </div>

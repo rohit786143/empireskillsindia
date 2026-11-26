@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/official-courses-data.php';
+require_once __DIR__ . '/enrichers.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     json_response(['error' => 'Method not allowed.'], 405);
@@ -13,10 +14,11 @@ $notices = array_map(
     'map_notice',
     $pdo->query('SELECT * FROM notices WHERE is_active = 1 ORDER BY published_date DESC, created_at DESC')->fetchAll()
 );
-$courses = array_map(
-    'map_course',
-    $pdo->query('SELECT * FROM courses WHERE is_active = 1 ORDER BY featured DESC, created_at ASC')->fetchAll()
-);
+$rawCourses = $pdo->query('SELECT * FROM courses WHERE is_active = 1 ORDER BY featured DESC, created_at ASC')->fetchAll();
+$courses = [];
+foreach ($rawCourses as $rc) {
+    $courses[] = enrich_course($rc, map_course($rc));
+}
 $studentCount = (int)$pdo->query('SELECT COUNT(*) FROM admission_applications WHERE status = "APPROVED"')->fetchColumn();
 $certCount = (int)$pdo->query('SELECT COUNT(*) FROM certificates WHERE status = "VALID"')->fetchColumn();
 

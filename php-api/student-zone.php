@@ -1,5 +1,6 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/enrichers.php';
 
 if ($_SERVER['REQUEST_METHOD'] !== 'GET') {
     json_response(['error' => 'Method not allowed.'], 405);
@@ -14,7 +15,7 @@ if ($enrollmentNumber === '' || $dob === '') {
 
 $pdo = get_db();
 $stmt = $pdo->prepare(
-    'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee
+    'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee, c.fee_breakdown_json AS joined_fee_breakdown
      FROM admission_applications a
      LEFT JOIN courses c ON c.id = a.course_id
      WHERE UPPER(a.enrollment_number) = ? AND a.dob = ? AND a.status = "APPROVED"
@@ -38,10 +39,7 @@ $cStmt = $pdo->prepare(
 $cStmt->execute([$row['id'], $enrollmentNumber]);
 $certs = $cStmt->fetchAll();
 
-$student = map_application($row);
-if ($student['totalFee'] <= 0 && !empty($row['joined_course_fee'])) {
-    $student['totalFee'] = (int)$row['joined_course_fee'];
-}
+$student = enrich_application($row, map_application($row));
 $student['course'] = ['duration' => $row['joined_course_duration'] ?: '1 Year'];
 $student['certificates'] = $certs;
 

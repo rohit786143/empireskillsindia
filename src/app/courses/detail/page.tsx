@@ -277,23 +277,27 @@ function CourseDetailInner() {
                   </dd>
                 </div>
               )}
-              <div className="flex items-center justify-between pt-2 bg-blue-50/70 p-3 rounded border border-blue-100">
-                <dt className="font-bold text-[#0B3D62] inline-flex items-center gap-1.5">
-                  <IndianRupee className="w-4 h-4 text-emerald-700" />
-                  Total Course Fee
-                </dt>
-                <dd className="text-lg font-extrabold text-[#D65B14]">
-                  {formatINR(course.fee)}
-                </dd>
+              <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                <dt className="font-bold text-[#0B3D62]">Course Fee</dt>
+                <dd className="font-bold text-[#0B3D62]">{formatINR(course.fee)}</dd>
               </div>
               {((feeBreakdown.examFee ?? 0) > 0 || feeBreakdown.examFeeNote) && (
-                <div className="flex items-center justify-between py-1.5 px-3 bg-amber-50 rounded border border-amber-200 text-xs">
-                  <dt className="font-semibold text-amber-900">Examination Fee</dt>
-                  <dd className="font-bold text-amber-950">
+                <div className="flex items-center justify-between py-1.5 border-b border-slate-100">
+                  <dt className="text-slate-600 font-semibold">Examination Fee</dt>
+                  <dd className="font-bold text-amber-800">
                     {feeBreakdown.examFeeNote || formatINR(feeBreakdown.examFee || 0)}
                   </dd>
                 </div>
               )}
+              <div className="flex items-center justify-between pt-2 bg-blue-50/70 p-3 rounded border border-blue-100">
+                <dt className="font-bold text-[#0B3D62] inline-flex items-center gap-1.5">
+                  <IndianRupee className="w-4 h-4 text-emerald-700" />
+                  Total Payable (Course + Exam)
+                </dt>
+                <dd className="text-lg font-extrabold text-[#D65B14]">
+                  {formatINR(course.fee + (feeBreakdown.examFee || 0))}
+                </dd>
+              </div>
             </dl>
 
             <Link
