@@ -10,6 +10,7 @@ import {
   Building2,
   Inbox,
   Wallet,
+  Receipt,
   Award,
   FileCheck2,
   ShieldCheck,
@@ -41,6 +42,7 @@ const ADMIN_NAV = [
   { label: "Franchise Admissions", href: "/admin/franchise-admissions", icon: Inbox },
   { label: "Franchise Centers", href: "/admin/franchises", icon: Building2 },
   { label: "Franchise Ledger", href: "/admin/franchise-ledger", icon: Wallet },
+  { label: "Payment Requests", href: "/admin/payment-requests", icon: Receipt },
   { label: "Fee Management", href: "/admin/fees", icon: IndianRupee },
   {
     label: "Certificate Generator",
