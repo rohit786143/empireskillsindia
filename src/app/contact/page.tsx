@@ -2,10 +2,11 @@
 
 import React, { useState } from "react";
 import { MapPin, Phone, Mail, Clock, Send, CheckCircle2, Facebook, Instagram } from "lucide-react";
-import { INSTITUTE_INFO } from "@/lib/constants";
 import { apiFetch } from "@/lib/api";
+import { useSiteSettings } from "@/lib/useSiteSettings";
 
 export default function ContactPage() {
+  const siteSettings = useSiteSettings();
   const [form, setForm] = useState({
     name: "",
     email: "",
@@ -76,23 +77,23 @@ export default function ContactPage() {
                 <MapPin className="w-5 h-5 text-[#D65B14] shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-[#0B3D62]">Campus Address</p>
-                  <p className="text-slate-600">{INSTITUTE_INFO.address}</p>
+                  <p className="text-slate-600">{siteSettings.address}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Phone className="w-5 h-5 text-[#135589] shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-[#0B3D62]">Official Helpline</p>
-                  <p className="text-slate-600">{INSTITUTE_INFO.helpline}</p>
+                  <p className="text-slate-600">{siteSettings.helpline}</p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
                 <Mail className="w-5 h-5 text-[#135589] shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-[#0B3D62]">Email Desks</p>
-                  <p className="text-slate-600">General: {INSTITUTE_INFO.email}</p>
+                  <p className="text-slate-600">General: {siteSettings.email}</p>
                   <p className="text-slate-600">
-                    Admissions: {INSTITUTE_INFO.admissionsEmail}
+                    Admissions: {siteSettings.admissionsEmail}
                   </p>
                 </div>
               </div>
@@ -100,30 +101,34 @@ export default function ContactPage() {
                 <Clock className="w-5 h-5 text-emerald-700 shrink-0 mt-0.5" />
                 <div>
                   <p className="font-bold text-[#0B3D62]">Office Hours</p>
-                  <p className="text-slate-600">{INSTITUTE_INFO.officeHours}</p>
+                  <p className="text-slate-600">{siteSettings.officeHours}</p>
                 </div>
               </div>
               <div className="pt-3 border-t border-slate-200">
                 <p className="font-bold text-[#0B3D62] mb-2">Connect on Social Media</p>
                 <div className="flex flex-wrap gap-2">
-                  <a
-                    href={INSTITUTE_INFO.facebook}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-[#1877F2] hover:bg-[#1565C0] text-white text-xs font-bold transition-colors"
-                  >
-                    <Facebook className="w-4 h-4" />
-                    Facebook Page
-                  </a>
-                  <a
-                    href={INSTITUTE_INFO.instagram}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-[#E4405F] hover:bg-[#C13584] text-white text-xs font-bold transition-colors"
-                  >
-                    <Instagram className="w-4 h-4" />
-                    Instagram
-                  </a>
+                  {siteSettings.facebook && (
+                    <a
+                      href={siteSettings.facebook}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-[#1877F2] hover:bg-[#1565C0] text-white text-xs font-bold transition-colors"
+                    >
+                      <Facebook className="w-4 h-4" />
+                      Facebook Page
+                    </a>
+                  )}
+                  {siteSettings.instagram && (
+                    <a
+                      href={siteSettings.instagram}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-[#E4405F] hover:bg-[#C13584] text-white text-xs font-bold transition-colors"
+                    >
+                      <Instagram className="w-4 h-4" />
+                      Instagram
+                    </a>
+                  )}
                 </div>
               </div>
             </div>

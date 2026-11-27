@@ -13,6 +13,8 @@ import {
   FileCheck2,
   BookOpen,
   Megaphone,
+  Image as ImageIcon,
+  Settings,
   LogOut,
   KeyRound,
   ExternalLink,
@@ -44,6 +46,8 @@ const ADMIN_NAV = [
   { label: "Certificate Registry", href: "/admin/certificates", icon: FileCheck2 },
   { label: "Course Manager", href: "/admin/courses", icon: BookOpen },
   { label: "Notice Board Manager", href: "/admin/notices", icon: Megaphone },
+  { label: "Photo Gallery Manager", href: "/admin/gallery", icon: ImageIcon },
+  { label: "Contact & Settings", href: "/admin/settings", icon: Settings },
 ];
 
 export function AdminShell(props: AdminShellProps) {

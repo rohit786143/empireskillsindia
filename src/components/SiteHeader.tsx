@@ -18,8 +18,8 @@ import {
   Instagram,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
-import { INSTITUTE_INFO } from "@/lib/constants";
 import { apiFetch } from "@/lib/api";
+import { useSiteSettings } from "@/lib/useSiteSettings";
 
 interface TickerNotice {
   id: string;
@@ -41,6 +41,7 @@ const NAV_LINKS = [
 
 export function SiteHeader() {
   const pathname = usePathname();
+  const siteSettings = useSiteSettings();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [tickerNotices, setTickerNotices] = useState<TickerNotice[]>([]);
 
@@ -78,31 +79,35 @@ export function SiteHeader() {
           <div className="flex flex-wrap items-center gap-4">
             <span className="inline-flex items-center gap-1.5 text-slate-200">
               <Phone className="w-3.5 h-3.5 text-[#FF9B5E]" />
-              <span className="font-medium">Helpline:</span> {INSTITUTE_INFO.helpline}
+              <span className="font-medium">Helpline:</span> {siteSettings.helpline}
             </span>
             <span className="hidden md:inline-flex items-center gap-1.5 text-slate-200">
               <Mail className="w-3.5 h-3.5 text-[#FF9B5E]" />
-              {INSTITUTE_INFO.email}
+              {siteSettings.email}
             </span>
             <div className="inline-flex items-center gap-1.5">
-              <a
-                href={INSTITUTE_INFO.facebook}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Empire Skills India Facebook"
-                className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/10 hover:bg-[#1877F2] text-white transition-colors"
-              >
-                <Facebook className="w-3.5 h-3.5" />
-              </a>
-              <a
-                href={INSTITUTE_INFO.instagram}
-                target="_blank"
-                rel="noopener noreferrer"
-                aria-label="Empire Skills India Instagram"
-                className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/10 hover:bg-[#E4405F] text-white transition-colors"
-              >
-                <Instagram className="w-3.5 h-3.5" />
-              </a>
+              {siteSettings.facebook && (
+                <a
+                  href={siteSettings.facebook}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Empire Skills India Facebook"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/10 hover:bg-[#1877F2] text-white transition-colors"
+                >
+                  <Facebook className="w-3.5 h-3.5" />
+                </a>
+              )}
+              {siteSettings.instagram && (
+                <a
+                  href={siteSettings.instagram}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  aria-label="Empire Skills India Instagram"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/10 hover:bg-[#E4405F] text-white transition-colors"
+                >
+                  <Instagram className="w-3.5 h-3.5" />
+                </a>
+              )}
             </div>
           </div>
 
@@ -181,11 +186,8 @@ export function SiteHeader() {
             <Link href="/" className="flex items-center gap-3.5 group">
               <BrandLogo height={48} className="shrink-0" />
               <div className="hidden sm:block border-l border-slate-200 pl-3.5">
-                <p className="text-[11px] font-bold text-[#D65B14] leading-snug">
-                  {INSTITUTE_INFO.tagline}
-                </p>
-                <p className="text-[10px] text-slate-500 font-medium tracking-wide uppercase mt-0.5">
-                  {INSTITUTE_INFO.regNumber}
+                <p className="text-xs font-bold text-[#D65B14] leading-snug whitespace-nowrap">
+                  An ISO 9001:2015
                 </p>
               </div>
             </Link>

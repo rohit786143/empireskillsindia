@@ -1,139 +1,70 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Camera, X, ChevronLeft, ChevronRight, Sparkles } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface GalleryPhoto {
-  id: number;
+  id: string;
   src: string;
   title: string;
   event: string;
-  category: "Chief Guest & Felicitation" | "Cultural Performances" | "Annual Function & Team";
+  category: string;
 }
 
-const GALLERY_PHOTOS: GalleryPhoto[] = [
-  {
-    id: 1,
-    src: "/gallery/gallery-01.jpg",
-    title: "Chief Guest Felicitation Ceremony",
-    event: "Annual Function — Empire Skills India",
-    category: "Chief Guest & Felicitation",
-  },
-  {
-    id: 2,
-    src: "/gallery/gallery-02.jpg",
-    title: "Traditional Group Folk Dance Performance",
-    event: "Empire Skills India Annual Celebration",
-    category: "Cultural Performances",
-  },
-  {
-    id: 3,
-    src: "/gallery/gallery-03.jpg",
-    title: "Himachali Traditional Cultural Showcase",
-    event: "Annual Function Stage Performance",
-    category: "Cultural Performances",
-  },
-  {
-    id: 4,
-    src: "/gallery/gallery-04.jpg",
-    title: "Honouring Leadership with Traditional Himachali Cap",
-    event: "Annual Function 2025",
-    category: "Chief Guest & Felicitation",
-  },
-  {
-    id: 5,
-    src: "/gallery/gallery-05.jpg",
-    title: "Devotional Welcome Dance by Students",
-    event: "Annual Function 2025",
-    category: "Cultural Performances",
-  },
-  {
-    id: 6,
-    src: "/gallery/gallery-06.jpg",
-    title: "Vibrant Student Dance Presentation",
-    event: "Annual Function 2025",
-    category: "Cultural Performances",
-  },
-  {
-    id: 7,
-    src: "/gallery/gallery-07.jpg",
-    title: "Director's Address — Sankalp: Skills for Success",
-    event: "Annual Function 2025",
-    category: "Annual Function & Team",
-  },
-  {
-    id: 8,
-    src: "/gallery/gallery-08.jpg",
-    title: "Traditional Himachali Natti Performance",
-    event: "Annual Function 2025",
-    category: "Cultural Performances",
-  },
-  {
-    id: 9,
-    src: "/gallery/gallery-09.jpg",
-    title: "Memento Presentation with Chief Guest & Faculty",
-    event: "Annual Function 2025",
-    category: "Chief Guest & Felicitation",
-  },
-  {
-    id: 10,
-    src: "/gallery/gallery-10.jpg",
-    title: "Empire Skills India Faculty with Chief Guest",
-    event: "Annual Function 2025",
-    category: "Annual Function & Team",
-  },
-  {
-    id: 11,
-    src: "/gallery/gallery-11.jpg",
-    title: "Institute Leadership & Organizing Team",
-    event: "Annual Function 2025",
-    category: "Annual Function & Team",
-  },
-  {
-    id: 12,
-    src: "/gallery/gallery-12.jpg",
-    title: "Warm Welcome Reception",
-    event: "Empire Innovate Fest & Annual Day",
-    category: "Annual Function & Team",
-  },
-  {
-    id: 13,
-    src: "/gallery/gallery-13.jpg",
-    title: "Arrival of Chief Guest & Dignitaries",
-    event: "Empire Innovate Fest — Annual Day",
-    category: "Chief Guest & Felicitation",
-  },
-  {
-    id: 14,
-    src: "/gallery/gallery-14.jpg",
-    title: "Traditional Himachali Cap & Shawl Honour",
-    event: "Empire Innovate Fest — Annual Day Celebration",
-    category: "Chief Guest & Felicitation",
-  },
-  {
-    id: 15,
-    src: "/gallery/gallery-15.jpg",
-    title: "Presenting Sacred Souvenir to Chief Guest",
-    event: "Empire Innovate Fest — Annual Day Celebration",
-    category: "Chief Guest & Felicitation",
-  },
+const DEFAULT_GALLERY_PHOTOS: GalleryPhoto[] = [
+  { id: "gal_01", src: "/gallery/gallery-01.jpg", title: "Chief Guest Felicitation Ceremony", event: "Annual Function — Empire Skills India", category: "Chief Guest & Felicitation" },
+  { id: "gal_02", src: "/gallery/gallery-02.jpg", title: "Traditional Group Folk Dance Performance", event: "Empire Skills India Annual Celebration", category: "Cultural Performances" },
+  { id: "gal_03", src: "/gallery/gallery-03.jpg", title: "Himachali Traditional Cultural Showcase", event: "Annual Function Stage Performance", category: "Cultural Performances" },
+  { id: "gal_04", src: "/gallery/gallery-04.jpg", title: "Honouring Leadership with Traditional Himachali Cap", event: "Annual Function 2025", category: "Chief Guest & Felicitation" },
+  { id: "gal_05", src: "/gallery/gallery-05.jpg", title: "Devotional Welcome Dance by Students", event: "Annual Function 2025", category: "Cultural Performances" },
+  { id: "gal_06", src: "/gallery/gallery-06.jpg", title: "Vibrant Student Dance Presentation", event: "Annual Function 2025", category: "Cultural Performances" },
+  { id: "gal_07", src: "/gallery/gallery-07.jpg", title: "Director's Address — Sankalp: Skills for Success", event: "Annual Function 2025", category: "Annual Function & Team" },
+  { id: "gal_08", src: "/gallery/gallery-08.jpg", title: "Traditional Himachali Natti Performance", event: "Annual Function 2025", category: "Cultural Performances" },
+  { id: "gal_09", src: "/gallery/gallery-09.jpg", title: "Memento Presentation with Chief Guest & Faculty", event: "Annual Function 2025", category: "Chief Guest & Felicitation" },
+  { id: "gal_10", src: "/gallery/gallery-10.jpg", title: "Empire Skills India Faculty with Chief Guest", event: "Annual Function 2025", category: "Annual Function & Team" },
+  { id: "gal_11", src: "/gallery/gallery-11.jpg", title: "Institute Leadership & Organizing Team", event: "Annual Function 2025", category: "Annual Function & Team" },
+  { id: "gal_12", src: "/gallery/gallery-12.jpg", title: "Warm Welcome Reception", event: "Empire Innovate Fest & Annual Day", category: "Annual Function & Team" },
+  { id: "gal_13", src: "/gallery/gallery-13.jpg", title: "Arrival of Chief Guest & Dignitaries", event: "Empire Innovate Fest — Annual Day", category: "Chief Guest & Felicitation" },
+  { id: "gal_14", src: "/gallery/gallery-14.jpg", title: "Traditional Himachali Cap & Shawl Honour", event: "Empire Innovate Fest — Annual Day Celebration", category: "Chief Guest & Felicitation" },
+  { id: "gal_15", src: "/gallery/gallery-15.jpg", title: "Presenting Sacred Souvenir to Chief Guest", event: "Empire Innovate Fest — Annual Day Celebration", category: "Chief Guest & Felicitation" },
+  { id: "gal_16", src: "/gallery/gallery-16.jpg", title: "Guest of Honour Award Presentation", event: "Empire Innovate Fest — Annual Prize Distribution", category: "Chief Guest & Felicitation" },
+  { id: "gal_17", src: "/gallery/gallery-17.jpg", title: "Director's Keynote Speech at Annual Day", event: "Empire Innovate Fest — Annual Day Celebration", category: "Annual Function & Team" },
+  { id: "gal_18", src: "/gallery/gallery-18.jpg", title: "Honouring Guest of Honour with Memento", event: "Empire Innovate Fest — Annual Prize Distribution", category: "Chief Guest & Felicitation" },
+  { id: "gal_19", src: "/gallery/gallery-19.jpg", title: "Empire Skills India Team with Chief Guest", event: "Empire Innovate Fest — Annual Day Celebration", category: "Annual Function & Team" },
+  { id: "gal_20", src: "/gallery/gallery-20.jpg", title: "Faculty & Dignitaries Stage Felicitation", event: "Annual Day & Prize Distribution Ceremony", category: "Chief Guest & Felicitation" },
+  { id: "gal_21", src: "/gallery/gallery-21.jpg", title: "Traditional Lamp Welcome by Students & Faculty", event: "Empire Innovate Fest — Annual Day", category: "Cultural Performances" },
+  { id: "gal_22", src: "/gallery/gallery-22.jpg", title: "Certificate Distribution to Meritorious Student", event: "Empire Innovate Fest — Annual Day Celebration", category: "Chief Guest & Felicitation" },
+  { id: "gal_23", src: "/gallery/gallery-23.jpg", title: "Floral Welcome of Dignitaries", event: "Empire Innovate Fest — Annual Day", category: "Annual Function & Team" },
+  { id: "gal_24", src: "/gallery/gallery-24.jpg", title: "Empire Skills India Faculty Group Photo", event: "Empire Innovate Fest — Annual Day", category: "Annual Function & Team" },
+  { id: "gal_25", src: "/gallery/gallery-25.jpg", title: "Traditional Deep-Prajwalan & Cultural Welcome Dance", event: "Empire Innovate Fest — Annual Day Celebration", category: "Cultural Performances" },
 ];
 
-const CATEGORIES = [
-  "All Photos",
-  "Chief Guest & Felicitation",
-  "Cultural Performances",
-  "Annual Function & Team",
-] as const;
-
 export default function PhotoGalleryPage() {
+  const [photos, setPhotos] = useState<GalleryPhoto[]>(DEFAULT_GALLERY_PHOTOS);
   const [selectedCategory, setSelectedCategory] = useState<string>("All Photos");
   const [lightboxIdx, setLightboxIdx] = useState<number | null>(null);
 
+  useEffect(() => {
+    apiFetch(`/gallery.php?_t=${Date.now()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.photos && Array.isArray(d.photos) && d.photos.length > 0) {
+          setPhotos(d.photos);
+        }
+      })
+      .catch(() => {});
+  }, []);
+
+  const categories = useMemo(() => {
+    const uniq = Array.from(new Set(photos.map((p) => p.category).filter(Boolean)));
+    return ["All Photos", ...uniq];
+  }, [photos]);
+
   const visiblePhotos =
     selectedCategory === "All Photos"
-      ? GALLERY_PHOTOS
-      : GALLERY_PHOTOS.filter((p) => p.category === selectedCategory);
+      ? photos
+      : photos.filter((p) => p.category === selectedCategory);
 
   useEffect(() => {
     if (lightboxIdx === null) return;
@@ -178,11 +109,11 @@ export default function PhotoGalleryPage() {
         {/* Category Filter Tabs */}
         <div className="bg-white border border-slate-200 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 shadow-sm">
           <div className="flex flex-wrap gap-2">
-            {CATEGORIES.map((cat) => {
+            {categories.map((cat) => {
               const count =
                 cat === "All Photos"
-                  ? GALLERY_PHOTOS.length
-                  : GALLERY_PHOTOS.filter((p) => p.category === cat).length;
+                  ? photos.length
+                  : photos.filter((p) => p.category === cat).length;
               const active = selectedCategory === cat;
               return (
                 <button
