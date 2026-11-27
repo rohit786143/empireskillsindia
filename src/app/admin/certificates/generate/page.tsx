@@ -52,22 +52,34 @@ function GeneratorLoader() {
       apiFetch("/courses.php").then((r) => (r.ok ? r.json() : { courses: [] })),
     ])
       .then(([appData, courseData]) => {
-        const mapped = ((appData.applications || []) as RawApp[]).map((s) => ({
-          id: s.id,
-          enrollmentNumber: s.enrollmentNumber,
-          fullName: s.fullName,
-          fatherName: s.fatherName,
-          dob: s.dob,
-          courseName: s.courseName,
-          courseCode: s.courseCode,
-          duration: s.courseDuration || "1 Year",
-          session: s.session,
-          photoUrl: s.photoUrl,
-          isCompleted: s.isCompleted,
-          franchiseId: s.franchiseId || null,
-        }));
+        const isNielit = (code?: string, title?: string, cat?: string) =>
+          (code || "").toUpperCase().includes("NIELIT") ||
+          (title || "").toUpperCase().includes("NIELIT") ||
+          (cat || "").toUpperCase().includes("NIELIT");
+
+        const mapped = ((appData.applications || []) as RawApp[])
+          .filter((s) => !isNielit(s.courseCode, s.courseName))
+          .map((s) => ({
+            id: s.id,
+            enrollmentNumber: s.enrollmentNumber,
+            fullName: s.fullName,
+            fatherName: s.fatherName,
+            dob: s.dob,
+            courseName: s.courseName,
+            courseCode: s.courseCode,
+            duration: s.courseDuration || "1 Year",
+            session: s.session,
+            photoUrl: s.photoUrl,
+            isCompleted: s.isCompleted,
+            franchiseId: s.franchiseId || null,
+          }));
         setStudents(mapped);
-        setCourses(courseData.courses || []);
+        setCourses(
+          (courseData.courses || []).filter(
+            (c: { code?: string; title?: string; category?: string }) =>
+              !isNielit(c.code, c.title, c.category)
+          )
+        );
       })
       .finally(() => setLoading(false));
   }, []);

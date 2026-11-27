@@ -14,11 +14,10 @@ import {
 } from "lucide-react";
 import {
   NoticeBoardSection,
-  CoursesExplorerGrid,
   type PublicNotice,
   type PublicCourse,
 } from "@/components/HomeClientSections";
-import { OurCertificationsSection } from "@/components/OurCertificationsSection";
+import { StudentReviewsSection } from "@/components/StudentReviewsSection";
 import { HeroGallerySlider } from "@/components/HeroGallerySlider";
 import { apiFetch } from "@/lib/api";
 
@@ -273,14 +272,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Courses Explorer Grid */}
+      {/* 4. Student Voices & Alumni Reviews (4-Card Right-to-Left Slider) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <CoursesExplorerGrid courses={courses} />
-      </div>
-
-      {/* 5. Our Certifications & Official Accreditations */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <OurCertificationsSection />
+        <StudentReviewsSection />
       </div>
     </div>
   );

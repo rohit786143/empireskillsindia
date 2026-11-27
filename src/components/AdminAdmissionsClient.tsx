@@ -578,15 +578,24 @@ export function AdminAdmissionsClient({
                         </button>
                       )}
 
-                      {app.status === "APPROVED" && (
-                        <Link
-                          href={`/admin/certificates/generate?studentId=${app.id}`}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-bold"
-                        >
-                          <Award className="w-3.5 h-3.5" />
-                          Certificate
-                        </Link>
-                      )}
+                      {app.status === "APPROVED" &&
+                        ((app.courseCode || "").toUpperCase().includes("NIELIT") ||
+                        (app.courseName || "").toUpperCase().includes("NIELIT") ? (
+                          <span
+                            title="NIELIT course certificates are issued directly by NIELIT"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-slate-100 text-slate-600 border border-slate-200 font-bold text-[10px]"
+                          >
+                            Issued by NIELIT
+                          </span>
+                        ) : (
+                          <Link
+                            href={`/admin/certificates/generate?studentId=${app.id}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-bold"
+                          >
+                            <Award className="w-3.5 h-3.5" />
+                            Certificate
+                          </Link>
+                        ))}
 
                       <button
                         type="button"

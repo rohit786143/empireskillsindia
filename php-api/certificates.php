@@ -74,6 +74,15 @@ if ($method === 'POST') {
             json_response(['error' => 'Enrolled student record not found.'], 404);
         }
 
+        // NIELIT courses are certified directly by NIELIT (not Empire Skills India)
+        $isNielit = (stripos((string)($student['course_code'] ?? ''), 'NIELIT') !== false)
+            || (stripos((string)($student['course_name'] ?? ''), 'NIELIT') !== false);
+        if ($isNielit) {
+            json_response([
+                'error' => 'Certificates for NIELIT courses are issued directly by NIELIT and cannot be generated here.',
+            ], 400);
+        }
+
         $enrollmentNumber = $student['enrollment_number'] ?: generate_enrollment_number($pdo);
         $marksObtained = isset($body['marksObtained']) && $body['marksObtained'] !== ''
             ? (int)$body['marksObtained']
@@ -169,6 +178,12 @@ if ($method === 'POST') {
 
     if ($studentName === '' || $fatherName === '' || $courseName === '' || $duration === '') {
         json_response(['error' => "Student name, father's name, course name, and duration are required."], 400);
+    }
+
+    if (stripos($courseName, 'NIELIT') !== false || stripos((string)($body['courseCode'] ?? ''), 'NIELIT') !== false) {
+        json_response([
+            'error' => 'Certificates for NIELIT courses are issued directly by NIELIT and cannot be generated here.',
+        ], 400);
     }
 
     $enrollmentNumber = trim((string)($body['enrollmentNumber'] ?? '')) ?: generate_enrollment_number($pdo);

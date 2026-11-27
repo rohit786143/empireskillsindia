@@ -16,6 +16,7 @@ import {
   BookOpen,
   Megaphone,
   Image as ImageIcon,
+  MessageSquareHeart,
   Settings,
   LogOut,
   KeyRound,
@@ -55,6 +56,7 @@ const ADMIN_NAV = [
   { label: "Course Manager", href: "/admin/courses", icon: BookOpen },
   { label: "Notice Board Manager", href: "/admin/notices", icon: Megaphone },
   { label: "Photo Gallery Manager", href: "/admin/gallery", icon: ImageIcon },
+  { label: "Student Reviews", href: "/admin/reviews", icon: MessageSquareHeart },
   { label: "Contact & Settings", href: "/admin/settings", icon: Settings },
 ];
 
