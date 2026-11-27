@@ -180,23 +180,23 @@ export function SiteHeader() {
 
       {/* Main Sticky Header */}
       <div className="sticky top-0 z-40 bg-white border-b-2 border-[#0B3D62] shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between py-3 gap-4">
+        <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6">
+          <div className="flex items-center justify-between py-2.5 gap-3">
             {/* Brand Identity */}
-            <Link href="/" className="flex items-center gap-3.5 group">
-              <BrandLogo height={48} className="shrink-0" />
-              <div className="hidden sm:block border-l border-slate-200 pl-3.5 leading-tight">
-                <p className="text-xs font-extrabold text-[#D65B14] tracking-wide whitespace-nowrap">
+            <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
+              <BrandLogo height={42} className="shrink-0" />
+              <div className="hidden sm:block border-l border-slate-200 pl-2.5 leading-tight shrink-0">
+                <p className="text-[11px] font-extrabold text-[#D65B14] tracking-wide whitespace-nowrap">
                   An ISO 9001:2015 Certified
                 </p>
-                <p className="text-[10px] font-semibold text-[#0B3D62] mt-0.5 whitespace-nowrap">
+                <p className="text-[9.5px] font-semibold text-[#0B3D62] mt-0.5 whitespace-nowrap">
                   Reg. with Govt. of India, Ministry of Corporate Affairs
                 </p>
               </div>
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-1" aria-label="Main Navigation">
+            <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1" aria-label="Main Navigation">
               {NAV_LINKS.map((item) => {
                 const isActive =
                   item.href === "/"
@@ -206,7 +206,7 @@ export function SiteHeader() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-3 py-2 rounded text-sm font-semibold transition-colors ${
+                    className={`px-2 xl:px-2.5 py-2 rounded text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-colors ${
                       isActive
                         ? "bg-[#0B3D62] text-white"
                         : "text-slate-700 hover:bg-slate-100 hover:text-[#0B3D62]"
