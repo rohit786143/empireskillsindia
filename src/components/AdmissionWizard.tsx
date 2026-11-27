@@ -21,6 +21,7 @@ import {
   HEAR_ABOUT_OPTIONS,
   ENCLOSURE_DOCUMENTS,
   type QualificationItem,
+  type FeeBreakdown,
 } from "@/lib/constants";
 import { formatINR } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
@@ -38,6 +39,20 @@ interface CourseOption {
   eligibility: string;
   fee: number;
   registrationFee: number;
+  feeBreakdownJson?: string | null;
+}
+
+function getCourseTotalFee(course: CourseOption): number {
+  let examFee = 0;
+  if (course.feeBreakdownJson) {
+    try {
+      const fb = JSON.parse(course.feeBreakdownJson) as FeeBreakdown;
+      examFee = Number(fb.examFee ?? 0) || 0;
+    } catch {
+      examFee = 0;
+    }
+  }
+  return (Number(course.fee) || 0) + examFee;
 }
 
 export interface FranchiseCenterOption {
@@ -399,7 +414,7 @@ export function AdmissionWizard({
                 >
                   {courses.map((c) => (
                     <option key={c.id} value={c.id}>
-                      [{c.code}] {c.title} — {c.duration} ({formatINR(c.fee)})
+                      [{c.code}] {c.title} — {c.duration} ({formatINR(getCourseTotalFee(c))})
                     </option>
                   ))}
                 </select>
@@ -512,9 +527,9 @@ export function AdmissionWizard({
                   <strong className="text-[#0B3D62]">{selectedCourse.eligibility}</strong>
                 </div>
                 <div>
-                  <span className="text-slate-500 block">Course Fee</span>
+                  <span className="text-slate-500 block">Total Fee (Course + Exam)</span>
                   <strong className="text-[#0B3D62]">
-                    {formatINR(selectedCourse.fee)}
+                    {formatINR(getCourseTotalFee(selectedCourse))}
                   </strong>
                 </div>
               </div>

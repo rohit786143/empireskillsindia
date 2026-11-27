@@ -16,6 +16,7 @@ interface CourseOption {
   eligibility: string;
   fee: number;
   registrationFee: number;
+  feeBreakdownJson?: string | null;
 }
 
 export default function AdmissionPage() {
