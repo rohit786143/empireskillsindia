@@ -31,7 +31,7 @@ $defaults = [
         'Mandi • Batch 2025',
         5,
         'The practical computer lab sessions and faculty guidance at Empire Skills India helped me build real office automation skills and land my first job.',
-        null,
+        '/reviews/student-01.jpg',
         1,
     ],
     [
@@ -41,7 +41,7 @@ $defaults = [
         'Sundarnagar • Batch 2025',
         5,
         'Learning Tally PRIME with live GST filing and accounting case studies gave me complete confidence to work independently as an accounts executive.',
-        null,
+        '/reviews/student-02.jpg',
         1,
     ],
     [
@@ -51,7 +51,7 @@ $defaults = [
         'Mandi • Batch 2025',
         5,
         'Structured syllabus coverage, regular mock tests, and supportive teachers made preparing for NIELIT examinations smooth and stress-free.',
-        null,
+        '/reviews/student-03.jpg',
         1,
     ],
     [
@@ -61,7 +61,7 @@ $defaults = [
         'Mandi • Batch 2025',
         5,
         'Hands-on garment drafting, stitching labs, and annual showcase events gave me the skills and confidence to start my own boutique.',
-        null,
+        '/reviews/student-04.jpg',
         1,
     ],
     [
@@ -71,7 +71,7 @@ $defaults = [
         'Mandi • Batch 2026',
         5,
         'Transparent fee structure, friendly atmosphere, and step-by-step practical training make Empire Skills India the best skill institute in Himachal.',
-        null,
+        '/reviews/student-05.jpg',
         1,
     ],
     [
@@ -81,7 +81,7 @@ $defaults = [
         'Mandi • Batch 2025',
         5,
         'Every module focuses on real practical demonstrations and modern beauty techniques. I am truly grateful to the trainers for their constant support.',
-        null,
+        '/reviews/student-06.jpg',
         1,
     ],
 ];
@@ -95,6 +95,14 @@ if ($count === 0) {
     );
     foreach ($defaults as $d) {
         $ins->execute($d);
+    }
+} else {
+    // Backfill default Indian student portraits for seeded reviews that have no photo yet
+    $upd = $pdo->prepare(
+        "UPDATE student_reviews SET photo_url = ? WHERE id = ? AND (photo_url IS NULL OR photo_url = '')"
+    );
+    foreach ($defaults as $d) {
+        $upd->execute([$d[6], $d[0]]);
     }
 }
 

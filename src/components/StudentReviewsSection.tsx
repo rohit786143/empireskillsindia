@@ -23,7 +23,7 @@ const DEFAULT_REVIEWS: StudentReviewItem[] = [
     rating: 5,
     reviewText:
       "The practical computer lab sessions and faculty guidance at Empire Skills India helped me build real office automation skills and land my first job.",
-    photoUrl: null,
+    photoUrl: "/reviews/student-01.jpg",
   },
   {
     id: "rev_02",
@@ -33,7 +33,7 @@ const DEFAULT_REVIEWS: StudentReviewItem[] = [
     rating: 5,
     reviewText:
       "Learning Tally PRIME with live GST filing and accounting case studies gave me complete confidence to work independently as an accounts executive.",
-    photoUrl: null,
+    photoUrl: "/reviews/student-02.jpg",
   },
   {
     id: "rev_03",
@@ -43,7 +43,7 @@ const DEFAULT_REVIEWS: StudentReviewItem[] = [
     rating: 5,
     reviewText:
       "Structured syllabus coverage, regular mock tests, and supportive teachers made preparing for NIELIT examinations smooth and stress-free.",
-    photoUrl: null,
+    photoUrl: "/reviews/student-03.jpg",
   },
   {
     id: "rev_04",
@@ -53,7 +53,27 @@ const DEFAULT_REVIEWS: StudentReviewItem[] = [
     rating: 5,
     reviewText:
       "Hands-on garment drafting, stitching labs, and annual showcase events gave me the skills and confidence to start my own boutique.",
-    photoUrl: null,
+    photoUrl: "/reviews/student-04.jpg",
+  },
+  {
+    id: "rev_05",
+    studentName: "Karan Chauhan",
+    courseName: "Basic + Tally PRIME",
+    batchLabel: "Mandi • Batch 2026",
+    rating: 5,
+    reviewText:
+      "Transparent fee structure, friendly atmosphere, and step-by-step practical training make Empire Skills India the best skill institute in Himachal.",
+    photoUrl: "/reviews/student-05.jpg",
+  },
+  {
+    id: "rev_06",
+    studentName: "Simran Kaur",
+    courseName: "Diploma in Hair & Skin Care",
+    batchLabel: "Mandi • Batch 2025",
+    rating: 5,
+    reviewText:
+      "Every module focuses on real practical demonstrations and modern beauty techniques. I am truly grateful to the trainers for their constant support.",
+    photoUrl: "/reviews/student-06.jpg",
   },
 ];
 
