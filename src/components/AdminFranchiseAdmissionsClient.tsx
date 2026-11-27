@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import { formatDisplayDate, formatINR } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
+import { useAdminCenter } from "./AdminCenterContext";
 import {
   PrintableAdmissionForm,
   type AdmissionFormRecord,
@@ -66,8 +67,10 @@ export function AdminFranchiseAdmissionsClient({
 }) {
   const [applications, setApplications] =
     useState<FranchiseAppRow[]>(initialApplications);
+  const { selectedCenterId, setSelectedCenterId } = useAdminCenter();
   const [filterTab, setFilterTab] = useState<string>("FORWARDED_TO_MAIN");
-  const [centerFilter, setCenterFilter] = useState<string>("ALL");
+  const centerFilter = selectedCenterId;
+  const setCenterFilter = setSelectedCenterId;
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [printApp, setPrintApp] = useState<FranchiseAppRow | null>(null);

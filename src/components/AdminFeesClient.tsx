@@ -10,9 +10,11 @@ import {
   Printer,
   X,
   Users,
+  Building2,
 } from "lucide-react";
 import { formatDisplayDate, formatINR } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
+import { useAdminCenter } from "./AdminCenterContext";
 
 interface FeePaymentEntry {
   id: string;
@@ -43,6 +45,9 @@ interface StudentFeeRow {
   courseFeeBreakdownJson?: string | null;
   feePaid: number;
   feePaymentsJson?: string | null;
+  franchiseId?: string | null;
+  franchiseName?: string | null;
+  franchiseCode?: string | null;
   approvedAt?: string | null;
   createdAt: string;
 }
@@ -99,6 +104,7 @@ export function AdminFeesClient({
   initialStudents: StudentFeeRow[];
 }) {
   const [students, setStudents] = useState<StudentFeeRow[]>(initialStudents);
+  const { centers, selectedCenterId, setSelectedCenterId } = useAdminCenter();
   const [activeTab, setActiveTab] = useState<"students" | "ledger">("students");
   const [feeFilter, setFeeFilter] = useState<"ALL" | "PENDING" | "CLEARED">("ALL");
   const [search, setSearch] = useState("");
@@ -114,12 +120,17 @@ export function AdminFeesClient({
   const [remarks, setRemarks] = useState("");
   const [saving, setSaving] = useState(false);
 
+  const centerStudents = useMemo(() => {
+    if (!selectedCenterId || selectedCenterId === "ALL") return students;
+    return students.filter((s) => s.franchiseId === selectedCenterId);
+  }, [students, selectedCenterId]);
+
   const summary = useMemo(() => {
     let totalExpected = 0;
     let totalCollected = 0;
     let totalPending = 0;
     let clearedCount = 0;
-    for (const s of students) {
+    for (const s of centerStudents) {
       const t = s.totalFee || s.courseTotalFee || 0;
       const p = s.feePaid || 0;
       const pend = Math.max(0, t - p);
@@ -129,10 +140,10 @@ export function AdminFeesClient({
       if (t > 0 && pend === 0) clearedCount++;
     }
     return { totalExpected, totalCollected, totalPending, clearedCount };
-  }, [students]);
+  }, [centerStudents]);
 
   const filteredStudents = useMemo(() => {
-    return students.filter((s) => {
+    return centerStudents.filter((s) => {
       const t = s.totalFee || s.courseTotalFee || 0;
       const p = s.feePaid || 0;
       const pend = Math.max(0, t - p);
@@ -140,19 +151,19 @@ export function AdminFeesClient({
       if (feeFilter === "CLEARED" && !(t > 0 && pend === 0)) return false;
       if (search.trim()) {
         const q = search.trim().toLowerCase();
-        const hay = `${s.fullName} ${s.enrollmentNumber || ""} ${s.applicationRef} ${s.courseName} ${s.mobile}`.toLowerCase();
+        const hay = `${s.fullName} ${s.enrollmentNumber || ""} ${s.applicationRef} ${s.courseName} ${s.mobile} ${s.franchiseName || ""} ${s.franchiseCode || ""}`.toLowerCase();
         if (!hay.includes(q)) return false;
       }
       return true;
     });
-  }, [students, feeFilter, search]);
+  }, [centerStudents, feeFilter, search]);
 
   const masterLedger = useMemo(() => {
     const rows: {
       payment: FeePaymentEntry;
       student: StudentFeeRow;
     }[] = [];
-    for (const s of students) {
+    for (const s of centerStudents) {
       for (const p of parsePayments(s.feePaymentsJson)) {
         rows.push({ payment: p, student: s });
       }
@@ -165,11 +176,11 @@ export function AdminFeesClient({
     if (!search.trim()) return rows;
     const q = search.trim().toLowerCase();
     return rows.filter(({ payment, student }) =>
-      `${student.fullName} ${student.enrollmentNumber || ""} ${student.courseName} ${payment.feeType || ""} ${payment.mode} ${payment.receiptNo || ""} ${payment.remarks || ""}`
+      `${student.fullName} ${student.enrollmentNumber || ""} ${student.courseName} ${student.franchiseName || ""} ${payment.feeType || ""} ${payment.mode} ${payment.receiptNo || ""} ${payment.remarks || ""}`
         .toLowerCase()
         .includes(q)
     );
-  }, [students, search]);
+  }, [centerStudents, search]);
 
   function openCollectModal(s: StudentFeeRow) {
     const t = s.totalFee || s.courseTotalFee || 0;
@@ -269,7 +280,7 @@ export function AdminFeesClient({
             {formatINR(summary.totalExpected)}
           </div>
           <p className="text-[11px] text-slate-500 mt-0.5">
-            Across {students.length} enrolled students
+            Across {centerStudents.length} enrolled students
           </p>
         </div>
 
@@ -321,7 +332,7 @@ export function AdminFeesClient({
                 : "bg-slate-50 text-slate-700 border-slate-200"
             }`}
           >
-            <Users className="w-3.5 h-3.5" /> Student-Wise Fee Details ({students.length})
+            <Users className="w-3.5 h-3.5" /> Student-Wise Fee Details ({centerStudents.length})
           </button>
           <button
             type="button"
@@ -355,15 +366,30 @@ export function AdminFeesClient({
           )}
         </div>
 
-        <div className="relative w-full lg:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search student, enrollment, receipt..."
-            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
-          />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <select
+            value={selectedCenterId}
+            onChange={(e) => setSelectedCenterId(e.target.value)}
+            className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded bg-white text-[#0B3D62] focus:outline-none focus:ring-2 focus:ring-[#135589]"
+          >
+            <option value="ALL">All Study Centers ({centers.length})</option>
+            {centers.map((c) => (
+              <option key={c.id} value={c.id}>
+                [{c.centerCode}] {c.centerName}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search student, enrollment, receipt..."
+              className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+            />
+          </div>
         </div>
       </div>
 
@@ -408,6 +434,13 @@ export function AdminFeesClient({
                             {s.enrollmentNumber || s.applicationRef}
                           </p>
                           <p className="text-[10px] text-slate-500">{s.mobile}</p>
+                          {s.franchiseName && (
+                            <span className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-[#D65B14] font-bold text-[10px]">
+                              <Building2 className="w-3 h-3" />
+                              {s.franchiseCode ? `[${s.franchiseCode}] ` : ""}
+                              {s.franchiseName}
+                            </span>
+                          )}
                         </td>
                         <td className="py-3 px-3">
                           <p className="font-semibold text-slate-800">{s.courseName}</p>

@@ -1,7 +1,9 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/franchise-schema.php';
 
 $pdo = get_db();
+ensure_franchise_schema($pdo);
 $method = $_SERVER['REQUEST_METHOD'];
 
 // GET: list all certificates [Admin]
@@ -20,22 +22,32 @@ if ($method === 'GET') {
     $where = [];
     $params = [];
     if (!empty($_GET['status']) && $_GET['status'] !== 'ALL') {
-        $where[] = 'status = ?';
+        $where[] = 'c.status = ?';
         $params[] = $_GET['status'];
     }
     if (!empty($_GET['q'])) {
         $q = '%' . trim((string)$_GET['q']) . '%';
-        $where[] = '(certificate_number LIKE ? OR enrollment_number LIKE ? OR student_name LIKE ? OR course_name LIKE ?)';
+        $where[] = '(c.certificate_number LIKE ? OR c.enrollment_number LIKE ? OR c.student_name LIKE ? OR c.course_name LIKE ?)';
         array_push($params, $q, $q, $q, $q);
     }
 
-    $sql = 'SELECT * FROM certificates';
+    $sql = 'SELECT c.*, a.franchise_id AS joined_franchise_id, a.franchise_name AS joined_franchise_name, a.franchise_code AS joined_franchise_code
+            FROM certificates c
+            LEFT JOIN admission_applications a ON (c.application_id = a.id OR (c.application_id IS NULL AND c.enrollment_number = a.enrollment_number))';
     if (!empty($where)) $sql .= ' WHERE ' . implode(' AND ', $where);
-    $sql .= ' ORDER BY created_at DESC';
+    $sql .= ' ORDER BY c.created_at DESC';
 
     $stmt = $pdo->prepare($sql);
     $stmt->execute($params);
-    json_response(['certificates' => array_map('map_certificate', $stmt->fetchAll())]);
+    $certs = [];
+    while ($r = $stmt->fetch()) {
+        $m = map_certificate($r);
+        $m['franchiseId'] = $r['joined_franchise_id'] ?? null;
+        $m['franchiseName'] = $r['joined_franchise_name'] ?? null;
+        $m['franchiseCode'] = $r['joined_franchise_code'] ?? null;
+        $certs[] = $m;
+    }
+    json_response(['certificates' => $certs]);
 }
 
 // POST: generate certificate (From Enrolled Student OR Direct Quick Generator) [Admin]

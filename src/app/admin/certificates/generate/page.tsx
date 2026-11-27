@@ -2,6 +2,7 @@
 
 import React, { Suspense, useEffect, useState } from "react";
 import { AdminGuard } from "@/components/AdminGuard";
+import { useAdminCenter } from "@/components/AdminCenterContext";
 import { AdminCertificateGeneratorClient } from "@/components/AdminCertificateGeneratorClient";
 import { apiFetch } from "@/lib/api";
 
@@ -17,9 +18,13 @@ interface RawApp {
   session: string;
   photoUrl: string | null;
   isCompleted: boolean;
+  franchiseId?: string | null;
+  franchiseName?: string | null;
+  franchiseCode?: string | null;
 }
 
 function GeneratorLoader() {
+  const { selectedCenterId } = useAdminCenter();
   const [students, setStudents] = useState<
     {
       id: string;
@@ -33,6 +38,7 @@ function GeneratorLoader() {
       session: string;
       photoUrl: string | null;
       isCompleted: boolean;
+      franchiseId?: string | null;
     }[]
   >([]);
   const [courses, setCourses] = useState([]);
@@ -58,12 +64,18 @@ function GeneratorLoader() {
           session: s.session,
           photoUrl: s.photoUrl,
           isCompleted: s.isCompleted,
+          franchiseId: s.franchiseId || null,
         }));
         setStudents(mapped);
         setCourses(courseData.courses || []);
       })
       .finally(() => setLoading(false));
   }, []);
+
+  const visibleStudents =
+    selectedCenterId && selectedCenterId !== "ALL"
+      ? students.filter((s) => s.franchiseId === selectedCenterId)
+      : students;
 
   if (loading) {
     return (
@@ -81,7 +93,7 @@ function GeneratorLoader() {
         </div>
       }
     >
-      <AdminCertificateGeneratorClient students={students} courses={courses} />
+      <AdminCertificateGeneratorClient students={visibleStudents} courses={courses} />
     </Suspense>
   );
 }

@@ -22,6 +22,7 @@ import {
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { apiFetch } from "@/lib/api";
+import { AdminCenterProvider, useAdminCenter } from "./AdminCenterContext";
 
 interface AdminShellProps {
   adminName: string;
@@ -45,9 +46,19 @@ const ADMIN_NAV = [
   { label: "Notice Board Manager", href: "/admin/notices", icon: Megaphone },
 ];
 
-export function AdminShell({ adminName, adminEmail, children }: AdminShellProps) {
+export function AdminShell(props: AdminShellProps) {
+  return (
+    <AdminCenterProvider>
+      <AdminShellInner {...props} />
+    </AdminCenterProvider>
+  );
+}
+
+function AdminShellInner({ adminName, adminEmail, children }: AdminShellProps) {
   const pathname = usePathname();
   const router = useRouter();
+  const { centers, selectedCenterId, setSelectedCenterId, selectedCenter } =
+    useAdminCenter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
@@ -109,6 +120,26 @@ export function AdminShell({ adminName, adminEmail, children }: AdminShellProps)
           >
             <X className="w-5 h-5" />
           </button>
+        </div>
+
+        {/* Center-Wise Filter Switcher in Left Sidebar */}
+        <div className="px-3 pt-3 pb-2 border-b border-white/15 bg-[#072A44]/60">
+          <label className="block text-[10px] font-bold uppercase tracking-wider text-[#FFB380] mb-1.5 flex items-center gap-1">
+            <Building2 className="w-3 h-3" />
+            Filter By Study Center
+          </label>
+          <select
+            value={selectedCenterId}
+            onChange={(e) => setSelectedCenterId(e.target.value)}
+            className="w-full px-2.5 py-1.5 rounded bg-[#0B3D62] border border-white/25 text-white text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#F07228]"
+          >
+            <option value="ALL">All Study Centers ({centers.length})</option>
+            {centers.map((c) => (
+              <option key={c.id} value={c.id}>
+                [{c.centerCode}] {c.centerName}
+              </option>
+            ))}
+          </select>
         </div>
 
         <nav className="flex-1 p-3 space-y-1 overflow-y-auto">
@@ -188,6 +219,22 @@ export function AdminShell({ adminName, adminEmail, children }: AdminShellProps)
           </div>
 
           <div className="flex items-center gap-3 text-xs">
+            {selectedCenter && (
+              <div className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 rounded bg-amber-50 border border-amber-300 text-amber-900 font-bold">
+                <Building2 className="w-3.5 h-3.5 text-[#D65B14]" />
+                <span>
+                  [{selectedCenter.centerCode}] {selectedCenter.centerName}
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setSelectedCenterId("ALL")}
+                  title="Show All Centers"
+                  className="ml-1 text-amber-700 hover:text-red-700"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            )}
             <span className="hidden sm:inline-block px-2.5 py-1 rounded bg-slate-100 border border-slate-200 text-slate-600 font-medium">
               {adminEmail}
             </span>

@@ -11,6 +11,7 @@ import {
   CheckCircle2,
   PlusCircle,
   X,
+  Building2,
 } from "lucide-react";
 import {
   PrintableCertificate,
@@ -18,10 +19,14 @@ import {
 } from "./PrintableCertificate";
 import { formatDisplayDate } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
+import { useAdminCenter } from "./AdminCenterContext";
 
 interface CertRow extends CertificateData {
   id: string;
   status: string;
+  franchiseId?: string | null;
+  franchiseName?: string | null;
+  franchiseCode?: string | null;
   createdAt: string;
 }
 
@@ -31,15 +36,19 @@ export function AdminCertificateRegistryClient({
   initialCertificates: CertRow[];
 }) {
   const [certificates, setCertificates] = useState<CertRow[]>(initialCertificates);
+  const { centers, selectedCenterId, setSelectedCenterId } = useAdminCenter();
   const [search, setSearch] = useState("");
   const [previewCert, setPreviewCert] = useState<CertRow | null>(null);
   const [editingCert, setEditingCert] = useState<CertRow | null>(null);
   const [savingEdit, setSavingEdit] = useState(false);
 
   const filtered = certificates.filter((c) => {
+    if (selectedCenterId && selectedCenterId !== "ALL" && c.franchiseId !== selectedCenterId) {
+      return false;
+    }
     if (!search.trim()) return true;
     const q = search.trim().toLowerCase();
-    return `${c.certificateNumber} ${c.enrollmentNumber} ${c.studentName} ${c.courseName}`
+    return `${c.certificateNumber} ${c.enrollmentNumber} ${c.studentName} ${c.courseName} ${c.franchiseName || ""} ${c.franchiseCode || ""}`
       .toLowerCase()
       .includes(q);
   });
@@ -142,17 +151,32 @@ export function AdminCertificateRegistryClient({
         </div>
       )}
 
-      {/* Search */}
-      <div className="no-print bg-white border border-slate-200 rounded-lg p-4 flex items-center justify-between gap-4">
-        <div className="relative w-full sm:w-80">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search certificate no., student, course..."
-            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
-          />
+      {/* Search & Center Filter */}
+      <div className="no-print bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-1">
+          <select
+            value={selectedCenterId}
+            onChange={(e) => setSelectedCenterId(e.target.value)}
+            className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded bg-white text-[#0B3D62] focus:outline-none focus:ring-2 focus:ring-[#135589]"
+          >
+            <option value="ALL">All Study Centers ({centers.length})</option>
+            {centers.map((c) => (
+              <option key={c.id} value={c.id}>
+                [{c.centerCode}] {c.centerName}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative w-full sm:w-80">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search certificate no., student, course..."
+              className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+            />
+          </div>
         </div>
         <span className="text-xs font-semibold text-slate-500 shrink-0">
           Total: {filtered.length} certificates
@@ -195,6 +219,13 @@ export function AdminCertificateRegistryClient({
                     <div className="text-[11px] text-slate-500">
                       S/o {cert.fatherName}
                     </div>
+                    {cert.franchiseName && (
+                      <span className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-[#D65B14] font-bold text-[10px]">
+                        <Building2 className="w-3 h-3" />
+                        {cert.franchiseCode ? `[${cert.franchiseCode}] ` : ""}
+                        {cert.franchiseName}
+                      </span>
+                    )}
                   </td>
                   <td className="py-3 px-4">
                     <div className="font-semibold text-slate-800">{cert.courseName}</div>

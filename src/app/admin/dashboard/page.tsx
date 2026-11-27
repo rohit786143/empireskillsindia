@@ -12,6 +12,7 @@ import {
   PlusCircle,
 } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
+import { useAdminCenter } from "@/components/AdminCenterContext";
 import { formatDisplayDate } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
 
@@ -42,6 +43,7 @@ interface RecentCert {
 }
 
 function DashboardContent() {
+  const { selectedCenterId } = useAdminCenter();
   const [stats, setStats] = useState<DashboardStats>({
     totalApplications: 0,
     pendingApprovals: 0,
@@ -54,7 +56,12 @@ function DashboardContent() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch("/admin-stats.php")
+    setLoading(true);
+    const qs =
+      selectedCenterId && selectedCenterId !== "ALL"
+        ? `?franchiseId=${encodeURIComponent(selectedCenterId)}`
+        : "";
+    apiFetch(`/admin-stats.php${qs}`)
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return;
@@ -63,7 +70,7 @@ function DashboardContent() {
         setRecentCertificates(data.recentCertificates || []);
       })
       .finally(() => setLoading(false));
-  }, []);
+  }, [selectedCenterId]);
 
   const cards = [
     {

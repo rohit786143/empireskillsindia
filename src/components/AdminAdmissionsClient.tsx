@@ -14,11 +14,13 @@ import {
   Trash2,
   Printer,
   IndianRupee,
+  Building2,
 } from "lucide-react";
 import { ACADEMIC_SESSIONS, STUDY_MODES } from "@/lib/constants";
 import { formatDisplayDate, formatINR } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
 import { PrintableAdmissionForm } from "./PrintableAdmissionForm";
+import { useAdminCenter } from "./AdminCenterContext";
 
 interface FeePaymentEntry {
   id: string;
@@ -90,6 +92,9 @@ interface ApplicationRow {
   isCompleted: boolean;
   grade: string | null;
   percentage: number | null;
+  franchiseId?: string | null;
+  franchiseName?: string | null;
+  franchiseCode?: string | null;
   createdAt: string;
 }
 
@@ -108,6 +113,7 @@ export function AdminAdmissionsClient({
 }) {
   const [applications, setApplications] =
     useState<ApplicationRow[]>(initialApplications);
+  const { centers, selectedCenterId, setSelectedCenterId } = useAdminCenter();
   const [statusFilter, setStatusFilter] = useState<string>("ALL");
   const [search, setSearch] = useState("");
   const [selected, setSelected] = useState<ApplicationRow | null>(null);
@@ -145,11 +151,16 @@ export function AdminAdmissionsClient({
   const [savingOffline, setSavingOffline] = useState(false);
   const [offlineError, setOfflineError] = useState("");
 
-  const filtered = applications.filter((a) => {
+  const centerFilteredApps =
+    selectedCenterId && selectedCenterId !== "ALL"
+      ? applications.filter((a) => a.franchiseId === selectedCenterId)
+      : applications;
+
+  const filtered = centerFilteredApps.filter((a) => {
     if (statusFilter !== "ALL" && a.status !== statusFilter) return false;
     if (search.trim()) {
       const q = search.trim().toLowerCase();
-      const hay = `${a.fullName} ${a.applicationRef} ${a.enrollmentNumber || ""} ${a.mobile} ${a.courseName}`.toLowerCase();
+      const hay = `${a.fullName} ${a.applicationRef} ${a.enrollmentNumber || ""} ${a.mobile} ${a.courseName} ${a.franchiseName || ""} ${a.franchiseCode || ""}`.toLowerCase();
       if (!hay.includes(q)) return false;
     }
     return true;
@@ -345,7 +356,7 @@ export function AdminAdmissionsClient({
       </div>
 
       {/* Filters */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+      <div className="bg-white border border-slate-200 rounded-lg p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
           {["ALL", "PENDING", "APPROVED", "REJECTED"].map((st) => (
             <button
@@ -360,22 +371,37 @@ export function AdminAdmissionsClient({
             >
               {st} (
               {st === "ALL"
-                ? applications.length
-                : applications.filter((a) => a.status === st).length}
+                ? centerFilteredApps.length
+                : centerFilteredApps.filter((a) => a.status === st).length}
               )
             </button>
           ))}
         </div>
 
-        <div className="relative w-full sm:w-72">
-          <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
-          <input
-            type="text"
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            placeholder="Search name, ref, enrollment..."
-            className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
-          />
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2">
+          <select
+            value={selectedCenterId}
+            onChange={(e) => setSelectedCenterId(e.target.value)}
+            className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded bg-white text-[#0B3D62] focus:outline-none focus:ring-2 focus:ring-[#135589]"
+          >
+            <option value="ALL">All Study Centers ({centers.length})</option>
+            {centers.map((c) => (
+              <option key={c.id} value={c.id}>
+                [{c.centerCode}] {c.centerName}
+              </option>
+            ))}
+          </select>
+
+          <div className="relative w-full sm:w-64">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+            <input
+              type="text"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              placeholder="Search name, ref, enrollment..."
+              className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+            />
+          </div>
         </div>
       </div>
 
@@ -426,6 +452,13 @@ export function AdminAdmissionsClient({
                         <p className="text-[11px] text-slate-500">
                           S/o {app.fatherName} • {app.mobile}
                         </p>
+                        {app.franchiseName && (
+                          <span className="mt-1 inline-flex items-center gap-1 px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-[#D65B14] font-bold text-[10px]">
+                            <Building2 className="w-3 h-3" />
+                            {app.franchiseCode ? `[${app.franchiseCode}] ` : ""}
+                            {app.franchiseName}
+                          </span>
+                        )}
                       </div>
                     </div>
                   </td>
