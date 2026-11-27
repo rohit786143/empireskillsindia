@@ -5,7 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { MapPin, Phone, Mail, Clock, ShieldCheck, Lock, ExternalLink, Facebook, Instagram } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
-import { INSTITUTE_INFO } from "@/lib/constants";
 import { useSiteSettings } from "@/lib/useSiteSettings";
 
 export function SiteFooter() {
@@ -32,10 +31,6 @@ export function SiteFooter() {
               accounting, technical, and teacher training programmes with transparent digital
               certification and verification.
             </p>
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded bg-[#072A44] border border-[#F07228]/40 text-[11px] text-amber-200 font-medium">
-              <ShieldCheck className="w-4 h-4 text-[#FF9B5E] shrink-0" />
-              <span>{INSTITUTE_INFO.regNumber}</span>
-            </div>
           </div>
 
           {/* Column 2: Academic & Quick Links */}
@@ -108,7 +103,7 @@ export function SiteFooter() {
                   className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-[#072A44] hover:bg-slate-900 border border-[#F07228]/50 text-amber-200 text-xs font-semibold transition-colors"
                 >
                   <Lock className="w-3.5 h-3.5 text-[#FF9B5E]" />
-                  Institute Owner Login
+                  Admin Login
                   <ExternalLink className="w-3 h-3 opacity-70" />
                 </Link>
                 <Link
@@ -116,7 +111,7 @@ export function SiteFooter() {
                   className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-[#072A44] hover:bg-slate-900 border border-blue-400/50 text-blue-200 text-xs font-semibold transition-colors"
                 >
                   <Lock className="w-3.5 h-3.5 text-blue-300" />
-                  Franchise Center Login
+                  Partner Login
                   <ExternalLink className="w-3 h-3 opacity-70" />
                 </Link>
               </li>

@@ -138,14 +138,14 @@ export function SiteHeader() {
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-sky-400/50 hover:bg-sky-500/20 text-sky-200 font-medium transition-colors"
             >
               <Building2 className="w-3 h-3" />
-              Franchise Login
+              Partner Login
             </Link>
             <Link
               href="/admin/login"
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-amber-400/50 hover:bg-[#D65B14]/20 text-amber-200 font-medium transition-colors"
             >
               <Lock className="w-3 h-3" />
-              Institute Login
+              Admin Login
             </Link>
           </div>
         </div>
@@ -181,7 +181,7 @@ export function SiteHeader() {
       {/* Main Sticky Header */}
       <div className="sticky top-0 z-40 bg-white border-b-2 border-[#0B3D62] shadow-sm">
         <div className="max-w-[1400px] mx-auto px-3 sm:px-5 lg:px-6">
-          <div className="flex items-center justify-between py-2.5 gap-3">
+          <div className="flex items-center justify-between py-2.5 gap-6 xl:gap-10">
             {/* Brand Identity */}
             <Link href="/" className="flex items-center gap-2.5 shrink-0 group">
               <BrandLogo height={42} className="shrink-0" />
@@ -196,7 +196,7 @@ export function SiteHeader() {
             </Link>
 
             {/* Desktop Navigation */}
-            <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1" aria-label="Main Navigation">
+            <nav className="hidden lg:flex items-center gap-1 xl:gap-1.5 ml-auto" aria-label="Main Navigation">
               {NAV_LINKS.map((item) => {
                 const isActive =
                   item.href === "/"
@@ -206,7 +206,7 @@ export function SiteHeader() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-2 xl:px-2.5 py-2 rounded text-xs xl:text-[13px] font-semibold whitespace-nowrap transition-colors ${
+                    className={`px-2.5 xl:px-3 py-2 rounded text-[12.5px] xl:text-[13.5px] font-semibold whitespace-nowrap transition-colors ${
                       isActive
                         ? "bg-[#0B3D62] text-white"
                         : "text-slate-700 hover:bg-slate-100 hover:text-[#0B3D62]"
