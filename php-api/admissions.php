@@ -31,8 +31,9 @@ if ($method === 'GET') {
         // Main Admin only sees applications that the Franchise has forwarded to Main Institute
         $where[] = 'a.franchise_id IS NOT NULL AND a.franchise_status IN ("FORWARDED_TO_MAIN", "MAIN_APPROVED", "MAIN_REJECTED")';
     } else {
-        // Regular Admissions & Students shows Main-approved enrolled students (and any legacy direct records)
-        $where[] = '(a.franchise_id IS NULL OR a.franchise_status = "MAIN_APPROVED")';
+        // Admissions & Students shows all Main-visible applications (forwarded by centers, approved, rejected, or legacy direct)
+        // Un-forwarded franchise applications (PENDING_FRANCHISE, FRANCHISE_APPROVED, FRANCHISE_REJECTED) stay exclusively in that Franchise's dashboard
+        $where[] = '(a.franchise_id IS NULL OR a.franchise_status IN ("FORWARDED_TO_MAIN", "MAIN_APPROVED", "MAIN_REJECTED"))';
     }
     if (!empty($_GET['franchiseStatus']) && $_GET['franchiseStatus'] !== 'ALL') {
         $where[] = 'a.franchise_status = ?';
