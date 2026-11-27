@@ -28,10 +28,10 @@ if ($method === 'GET') {
         $params[] = $_GET['status'];
     }
     if (($_GET['onlyFranchise'] ?? '') === 'true') {
-        $where[] = 'a.franchise_id IS NOT NULL';
+        // Main Admin only sees applications that the Franchise has forwarded to Main Institute
+        $where[] = 'a.franchise_id IS NOT NULL AND a.franchise_status IN ("FORWARDED_TO_MAIN", "MAIN_APPROVED", "MAIN_REJECTED")';
     } else {
-        // Regular Admissions & Students shows direct admissions + Main-approved franchise students
-        // Un-forwarded franchise applications stay in the Franchise's own dashboard until forwarded
+        // Regular Admissions & Students shows Main-approved enrolled students (and any legacy direct records)
         $where[] = '(a.franchise_id IS NULL OR a.franchise_status = "MAIN_APPROVED")';
     }
     if (!empty($_GET['franchiseStatus']) && $_GET['franchiseStatus'] !== 'ALL') {
@@ -123,7 +123,7 @@ if ($method === 'POST') {
         // Column already exists
     }
 
-    // Handle optional Franchise Study Center selection
+    // Handle mandatory Franchise Study Center selection for public online admissions
     $franchiseId = !empty($body['franchiseId']) ? trim((string)$body['franchiseId']) : null;
     $franchiseName = null;
     $franchiseCode = null;
@@ -139,6 +139,11 @@ if ($method === 'POST') {
         } else {
             $franchiseId = null;
         }
+    }
+
+    // Public students MUST select a valid active Study Center / Franchise
+    if ($admin === null && !$franchiseId) {
+        json_response(['error' => 'Please select a valid Authorized Study Center / Franchise before submitting.'], 400);
     }
 
     $id = generate_cuid();

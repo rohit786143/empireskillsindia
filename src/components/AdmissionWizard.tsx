@@ -242,7 +242,7 @@ export function AdmissionWizard({
           courseId: selectedCourse?.id,
           courseName: selectedCourse?.title,
           courseCode: selectedCourse?.code,
-          franchiseId: franchiseId === "MAIN_INSTITUTE" ? null : franchiseId || null,
+          franchiseId: franchiseId || null,
           session,
           studyMode,
           fullName: fullName.toUpperCase(),
@@ -413,9 +413,6 @@ export function AdmissionWizard({
                   <option value="">
                     -- Please Select Study Center / Authorized Franchise (Required) --
                   </option>
-                  <option value="MAIN_INSTITUTE">
-                    Main Institute — Empire Skills India Head Office (Direct Admission)
-                  </option>
                   {franchises.map((f) => (
                     <option key={f.id} value={f.id}>
                       [{f.centerCode}] {f.centerName}
@@ -427,13 +424,10 @@ export function AdmissionWizard({
                 <p className="text-xs text-slate-700 mt-2">
                   {!franchiseId ? (
                     <span className="font-semibold text-amber-800">
-                      Please select your Study Center (Head Office or an Authorized Franchise Center) to continue.
+                      {franchises.length > 0
+                        ? "Please select your Study Center from the list above to continue."
+                        : "No active Study Centers are currently available. Please contact Empire Skills India."}
                     </span>
-                  ) : franchiseId === "MAIN_INSTITUTE" ? (
-                    <>
-                      <span className="font-bold text-[#0B3D62]">Selected Center:</span> Main
-                      Institute — Empire Skills India Head Office (Direct Admission).
-                    </>
                   ) : (
                     <>
                       <span className="font-bold text-[#0B3D62]">Selected Center:</span>{" "}
@@ -442,7 +436,7 @@ export function AdmissionWizard({
                         if (!sel) return "";
                         return `${sel.centerName} (${sel.centerCode})${sel.address ? ` — ${sel.address}` : ""}${sel.city ? `, ${sel.city}` : ""}`;
                       })()}{" "}
-                      — Your application will go directly to this Franchise Center&apos;s dashboard for review &amp; forwarding to Main Institute.
+                      — Your application will go directly to this Study Center&apos;s dashboard for verification &amp; forwarding to Main Institute.
                     </>
                   )}
                 </p>
@@ -971,14 +965,12 @@ export function AdmissionWizard({
               <div>
                 <span className="text-xs text-slate-500 block">Study Center / Franchise</span>
                 <strong className="text-[#D65B14]">
-                  {franchiseId && franchiseId !== "MAIN_INSTITUTE"
-                    ? (() => {
-                        const f = franchises.find((x) => x.id === franchiseId);
-                        return f
-                          ? `[${f.centerCode}] ${f.centerName} (${f.city})`
-                          : "Authorized Franchise Center";
-                      })()
-                    : "Main Institute — Head Office (Direct)"}
+                  {(() => {
+                    const f = franchises.find((x) => x.id === franchiseId);
+                    return f
+                      ? `[${f.centerCode}] ${f.centerName}${f.city ? ` (${f.city})` : ""}`
+                      : "Selected Study Center";
+                  })()}
                 </strong>
               </div>
               <div>

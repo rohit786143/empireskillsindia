@@ -45,6 +45,7 @@ interface FranchiseAppRow extends AdmissionFormRecord {
   franchiseCode: string | null;
   franchiseStatus: string;
   franchiseRemarks: string | null;
+  remarks?: string | null;
   forwardedAt: string | null;
   totalFee?: number;
   courseTotalFee?: number;
@@ -493,7 +494,13 @@ export function FranchiseDashboardClient() {
                           )}
                           {app.franchiseRemarks && (
                             <div className="text-[11px] text-slate-600 mt-1 bg-slate-100 px-2 py-1 rounded max-w-xs">
-                              <span className="font-semibold">Remarks:</span> {app.franchiseRemarks}
+                              <span className="font-semibold">Your Remark:</span>{" "}
+                              {app.franchiseRemarks}
+                            </div>
+                          )}
+                          {app.remarks && (
+                            <div className="text-[11px] text-[#0B3D62] mt-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded max-w-xs">
+                              <span className="font-bold">Main Admin Remark:</span> {app.remarks}
                             </div>
                           )}
                         </td>
@@ -515,28 +522,10 @@ export function FranchiseDashboardClient() {
                                   type="button"
                                   disabled={isBusy}
                                   onClick={() => executeAction(app.id, "FRANCHISE_APPROVE")}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-700 text-white font-medium transition-colors disabled:opacity-50"
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors disabled:opacity-50"
                                 >
                                   <CheckCircle2 className="w-3.5 h-3.5" />
-                                  Approve
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={isBusy}
-                                  onClick={() => {
-                                    setRemarks(app.franchiseRemarks || "");
-                                    setActionModal({
-                                      app,
-                                      action: "APPROVE_AND_FORWARD",
-                                      title: "Approve & Forward to Main Institute",
-                                      buttonLabel: "Approve & Forward",
-                                      buttonCls: "bg-[#F07228] hover:bg-[#D65B14] text-white",
-                                    });
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-semibold transition-colors disabled:opacity-50"
-                                >
-                                  <Send className="w-3.5 h-3.5" />
-                                  Approve &amp; Forward
+                                  Accept
                                 </button>
                                 <button
                                   type="button"

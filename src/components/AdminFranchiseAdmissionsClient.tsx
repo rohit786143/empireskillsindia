@@ -25,6 +25,7 @@ interface FranchiseAppRow extends AdmissionFormRecord {
   franchiseCode: string | null;
   franchiseStatus: string;
   franchiseRemarks: string | null;
+  remarks?: string | null;
   forwardedAt: string | null;
   totalFee?: number;
   courseTotalFee?: number;
@@ -70,6 +71,11 @@ export function AdminFranchiseAdmissionsClient({
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [printApp, setPrintApp] = useState<FranchiseAppRow | null>(null);
+  const [decisionModal, setDecisionModal] = useState<{
+    app: FranchiseAppRow;
+    action: "APPROVE" | "REJECT";
+  } | null>(null);
+  const [mainRemark, setMainRemark] = useState("");
 
   const uniqueCenters = useMemo(() => {
     const map = new Map<string, string>();
@@ -97,16 +103,19 @@ export function AdminFranchiseAdmissionsClient({
     });
   }, [applications, filterTab, centerFilter, search]);
 
-  async function handleMainDecision(app: FranchiseAppRow, action: "APPROVE" | "REJECT") {
-    if (
-      action === "REJECT" &&
-      !confirm(`Reject application of ${app.fullName} from ${app.franchiseName}?`)
-    ) {
+  async function submitMainDecision() {
+    if (!decisionModal) return;
+    const { app, action } = decisionModal;
+    if (action === "REJECT" && !mainRemark.trim()) {
+      alert("Please enter a remark/reason before rejecting this application.");
       return;
     }
     setBusyId(app.id);
     try {
-      const payload: Record<string, unknown> = { action };
+      const payload: Record<string, unknown> = {
+        action,
+        remarks: mainRemark.trim(),
+      };
       if (action === "APPROVE") {
         payload.totalFee = app.totalFee || app.courseTotalFee || 0;
       }
@@ -119,6 +128,10 @@ export function AdminFranchiseAdmissionsClient({
         setApplications((prev) =>
           prev.map((x) => (x.id === app.id ? { ...x, ...data.application } : x))
         );
+        setDecisionModal(null);
+        setMainRemark("");
+      } else {
+        alert(data?.error || "Action failed.");
       }
     } finally {
       setBusyId(null);
@@ -141,11 +154,10 @@ export function AdminFranchiseAdmissionsClient({
       <div className="bg-white border border-slate-200 rounded-lg p-4 flex flex-col lg:flex-row items-stretch lg:items-center justify-between gap-3">
         <div className="flex flex-wrap gap-1.5">
           {[
-            { key: "FORWARDED_TO_MAIN", label: "Forwarded to Main" },
-            { key: "ALL", label: "All Franchise Apps" },
+            { key: "FORWARDED_TO_MAIN", label: "Forwarded to Main (Action Needed)" },
             { key: "MAIN_APPROVED", label: "Accepted by Main" },
-            { key: "PENDING_FRANCHISE", label: "Pending at Franchise" },
-            { key: "MAIN_REJECTED", label: "Rejected" },
+            { key: "MAIN_REJECTED", label: "Rejected by Main" },
+            { key: "ALL", label: "All Forwarded" },
           ].map((tab) => {
             const count =
               tab.key === "ALL"
@@ -284,8 +296,14 @@ export function AdminFranchiseAdmissionsClient({
                         {badge.label}
                       </span>
                       {app.franchiseRemarks && (
-                        <p className="text-[10px] text-slate-600 mt-1 italic">
-                          &ldquo;{app.franchiseRemarks}&rdquo;
+                        <p className="text-[10px] text-slate-600 mt-1 bg-slate-100 px-2 py-1 rounded">
+                          <span className="font-bold text-slate-700">Franchise Remark:</span>{" "}
+                          {app.franchiseRemarks}
+                        </p>
+                      )}
+                      {app.remarks && (
+                        <p className="text-[10px] text-[#0B3D62] mt-1 bg-blue-50 border border-blue-100 px-2 py-1 rounded">
+                          <span className="font-bold">Main Admin Remark:</span> {app.remarks}
                         </p>
                       )}
                     </td>
@@ -303,7 +321,10 @@ export function AdminFranchiseAdmissionsClient({
                           <button
                             type="button"
                             disabled={busyId === app.id}
-                            onClick={() => handleMainDecision(app, "APPROVE")}
+                            onClick={() => {
+                              setMainRemark(app.remarks || "");
+                              setDecisionModal({ app, action: "APPROVE" });
+                            }}
                             className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-50"
                           >
                             <CheckCircle2 className="w-3.5 h-3.5" /> Accept &amp; Enroll
@@ -315,7 +336,10 @@ export function AdminFranchiseAdmissionsClient({
                             <button
                               type="button"
                               disabled={busyId === app.id}
-                              onClick={() => handleMainDecision(app, "REJECT")}
+                              onClick={() => {
+                                setMainRemark(app.remarks || "");
+                                setDecisionModal({ app, action: "REJECT" });
+                              }}
                               className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold disabled:opacity-50"
                             >
                               <XCircle className="w-3.5 h-3.5" /> Reject
@@ -330,6 +354,81 @@ export function AdminFranchiseAdmissionsClient({
           </tbody>
         </table>
       </div>
+
+      {/* Main Admin Accept / Reject Remark Modal */}
+      {decisionModal && (
+        <div className="no-print fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-sm">
+                {decisionModal.action === "APPROVE"
+                  ? "Accept & Enroll Student"
+                  : "Reject Forwarded Application"}
+              </h3>
+              <button
+                type="button"
+                onClick={() => setDecisionModal(null)}
+                className="text-white/80 hover:text-white"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4">
+              <div className="bg-slate-50 rounded-lg p-3 border border-slate-200 text-xs space-y-1">
+                <div className="font-bold text-slate-900">{decisionModal.app.fullName}</div>
+                <div className="text-slate-600">
+                  {decisionModal.app.courseName} • Ref: {decisionModal.app.applicationRef}
+                </div>
+                <div className="text-[#D65B14] font-semibold">
+                  From Center: [{decisionModal.app.franchiseCode}] {decisionModal.app.franchiseName}
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Main Admin Remark{" "}
+                  {decisionModal.action === "REJECT" ? "(Required) *" : "(Optional)"}
+                </label>
+                <textarea
+                  rows={3}
+                  value={mainRemark}
+                  onChange={(e) => setMainRemark(e.target.value)}
+                  placeholder={
+                    decisionModal.action === "APPROVE"
+                      ? "e.g. Verified and approved for official enrollment..."
+                      : "e.g. Incomplete qualification documents, please re-verify..."
+                  }
+                  className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D62]/20 focus:border-[#0B3D62]"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDecisionModal(null)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  disabled={busyId === decisionModal.app.id}
+                  onClick={submitMainDecision}
+                  className={`px-4 py-2 rounded-lg text-xs font-bold text-white transition-colors disabled:opacity-60 ${
+                    decisionModal.action === "APPROVE"
+                      ? "bg-emerald-700 hover:bg-emerald-800"
+                      : "bg-red-600 hover:bg-red-700"
+                  }`}
+                >
+                  {busyId === decisionModal.app.id
+                    ? "Processing..."
+                    : decisionModal.action === "APPROVE"
+                    ? "Confirm Accept & Enroll"
+                    : "Confirm Reject"}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
