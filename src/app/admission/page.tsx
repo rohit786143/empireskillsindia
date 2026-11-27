@@ -24,9 +24,10 @@ export default function AdmissionPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    const ts = Date.now();
     Promise.all([
-      apiFetch("/courses.php").then((r) => (r.ok ? r.json() : { courses: [] })),
-      apiFetch("/franchises.php?public=true").then((r) =>
+      apiFetch(`/courses.php?_t=${ts}`).then((r) => (r.ok ? r.json() : { courses: [] })),
+      apiFetch(`/franchises.php?public=true&_t=${ts}`).then((r) =>
         r.ok ? r.json() : { franchises: [] }
       ),
     ])

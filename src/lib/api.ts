@@ -15,6 +15,7 @@ export async function apiFetch(
     headers.set("Content-Type", "application/json");
   }
   return fetch(apiUrl(endpoint), {
+    cache: "no-store",
     ...options,
     headers,
     credentials: "include",

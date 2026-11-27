@@ -4,6 +4,8 @@ require_once __DIR__ . '/franchise-schema.php';
 
 $pdo = get_db();
 ensure_franchise_schema($pdo);
+header('Cache-Control: no-store, no-cache, must-revalidate, max-age=0');
+header('Pragma: no-cache');
 $method = $_SERVER['REQUEST_METHOD'];
 
 // GET: public active list (?public=true) OR full Admin list with stats

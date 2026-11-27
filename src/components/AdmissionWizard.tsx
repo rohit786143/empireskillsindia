@@ -12,6 +12,7 @@ import {
   GraduationCap,
   ClipboardCheck,
   AlertCircle,
+  Building2,
 } from "lucide-react";
 import {
   ACADEMIC_SESSIONS,
@@ -380,14 +381,22 @@ export function AdmissionWizard({
                 </select>
               </div>
 
-              <div className="md:col-span-2">
-                <label className="block text-xs font-bold text-slate-700 mb-1.5">
-                  Select Study Center / Authorized Franchise *
-                </label>
+              <div className="md:col-span-2 bg-[#EFF6FF] border-2 border-[#0B3D62]/25 rounded-lg p-4">
+                <div className="flex flex-wrap items-center justify-between gap-2 mb-2">
+                  <label className="text-xs font-extrabold text-[#0B3D62] uppercase tracking-wide flex items-center gap-1.5">
+                    <Building2 className="w-4 h-4 text-[#F07228]" />
+                    Select Study Center / Authorized Franchise *
+                  </label>
+                  <span className="px-2 py-0.5 rounded-full bg-white border border-[#0B3D62]/20 text-[11px] font-bold text-[#0B3D62]">
+                    {franchises.length > 0
+                      ? `${franchises.length} Franchise Center${franchises.length > 1 ? "s" : ""} Available`
+                      : "Head Office"}
+                  </span>
+                </div>
                 <select
                   value={franchiseId}
                   onChange={(e) => setFranchiseId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                  className="w-full px-3.5 py-2.5 text-sm font-semibold text-slate-900 border-2 border-[#0B3D62]/30 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#F07228]"
                 >
                   <option value="">
                     Main Institute — Empire Skills India Head Office (Direct Admission)
@@ -400,10 +409,20 @@ export function AdmissionWizard({
                     </option>
                   ))}
                 </select>
-                <p className="text-[11px] text-slate-500 mt-1">
-                  {franchiseId
-                    ? "Your application will be routed to the selected Franchise Study Center for initial review and forwarding to Main Institute."
-                    : "Direct application to Empire Skills India Head Office."}
+                <p className="text-xs text-slate-700 mt-2">
+                  {franchiseId ? (
+                    <>
+                      <span className="font-bold text-[#0B3D62]">Selected Center:</span>{" "}
+                      {(() => {
+                        const sel = franchises.find((x) => x.id === franchiseId);
+                        if (!sel) return "";
+                        return `${sel.centerName} (${sel.centerCode})${sel.address ? ` — ${sel.address}` : ""}${sel.city ? `, ${sel.city}` : ""}`;
+                      })()}{" "}
+                      — Your application will go directly to this Franchise Center&apos;s dashboard for review &amp; forwarding to Main Institute.
+                    </>
+                  ) : (
+                    "Select your nearest Authorized Franchise Study Center from the list above, or keep Head Office for direct admission."
+                  )}
                 </p>
               </div>
 

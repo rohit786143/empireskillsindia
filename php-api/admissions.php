@@ -29,6 +29,10 @@ if ($method === 'GET') {
     }
     if (($_GET['onlyFranchise'] ?? '') === 'true') {
         $where[] = 'a.franchise_id IS NOT NULL';
+    } else {
+        // Regular Admissions & Students shows direct admissions + Main-approved franchise students
+        // Un-forwarded franchise applications stay in the Franchise's own dashboard until forwarded
+        $where[] = '(a.franchise_id IS NULL OR a.franchise_status = "MAIN_APPROVED")';
     }
     if (!empty($_GET['franchiseStatus']) && $_GET['franchiseStatus'] !== 'ALL') {
         $where[] = 'a.franchise_status = ?';
