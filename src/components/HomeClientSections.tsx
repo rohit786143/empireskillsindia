@@ -48,9 +48,9 @@ export function NoticeBoardSection({ notices }: { notices: PublicNotice[] }) {
   return (
     <div
       id="notice-board"
-      className="bg-white border border-slate-200 rounded-lg shadow-sm overflow-hidden flex flex-col h-full"
+      className="bg-white border border-slate-200/90 rounded-xl shadow-sm overflow-hidden flex flex-col h-full"
     >
-      <div className="bg-[#0B3D62] text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-[#F07228]">
+      <div className="bg-gradient-to-r from-[#072A44] via-[#0B3D62] to-[#135589] text-white px-5 py-3.5 flex items-center justify-between border-b-2 border-[#F07228]">
         <div className="flex items-center gap-2">
           <Megaphone className="w-4 h-4 text-[#FF9B5E]" />
           <h2 className="text-base font-bold tracking-wide uppercase">
@@ -225,10 +225,10 @@ export function CoursesExplorerGrid({ courses }: { courses: PublicCourse[] }) {
               key={category}
               type="button"
               onClick={() => setSelectedCategory(category)}
-              className={`px-3.5 py-2 rounded text-xs sm:text-sm font-semibold border transition-colors ${
+              className={`px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold border transition-all ${
                 active
-                  ? "bg-[#0B3D62] text-white border-[#0B3D62]"
-                  : "bg-white text-slate-700 border-slate-300 hover:border-[#0B3D62] hover:text-[#0B3D62]"
+                  ? "bg-gradient-to-r from-[#0B3D62] to-[#135589] text-white border-[#0B3D62] shadow-sm shadow-[#0B3D62]/20"
+                  : "bg-white text-slate-700 border-slate-300 hover:border-[#135589] hover:text-[#0B3D62] hover:bg-blue-50/40"
               }`}
             >
               {category}
@@ -242,13 +242,13 @@ export function CoursesExplorerGrid({ courses }: { courses: PublicCourse[] }) {
         {filtered.map((course) => (
           <div
             key={course.id}
-            className="bg-white border border-slate-200 rounded-lg shadow-sm hover:shadow-md transition-shadow flex flex-col overflow-hidden"
+            className="bg-white border border-slate-200/90 rounded-xl shadow-sm hover:shadow-xl hover:border-[#135589]/40 hover:-translate-y-1 transition-all duration-200 flex flex-col overflow-hidden group"
           >
-            <div className="bg-slate-50 px-4 py-2.5 border-b border-slate-200 flex items-center justify-between">
+            <div className="bg-gradient-to-r from-[#EFF6FF] via-slate-50 to-[#FFF7ED] px-4 py-2.5 border-b border-slate-200/80 flex items-center justify-between">
               <span className="text-[11px] font-bold text-[#0B3D62] tracking-wide">
                 {course.code}
               </span>
-              <span className="text-[10px] font-semibold px-2 py-0.5 rounded bg-blue-50 text-[#135589] border border-blue-200">
+              <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-white text-[#135589] border border-blue-200 shadow-xs">
                 {course.category}
               </span>
             </div>
@@ -341,16 +341,16 @@ export function CoursesExplorerGrid({ courses }: { courses: PublicCourse[] }) {
               </div>
             </div>
 
-            <div className="px-4 py-3 bg-slate-50 border-t border-slate-200 grid grid-cols-2 gap-2">
+            <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-200/80 grid grid-cols-2 gap-2">
               <Link
                 href={`/courses/detail?slug=${course.slug}`}
-                className="text-center px-2.5 py-2 rounded border border-[#0B3D62] text-[#0B3D62] hover:bg-[#0B3D62] hover:text-white text-xs font-semibold transition-colors"
+                className="text-center px-2.5 py-2 rounded-lg border border-[#0B3D62]/40 text-[#0B3D62] hover:bg-[#0B3D62] hover:text-white text-xs font-semibold transition-all"
               >
                 View Details
               </Link>
               <Link
                 href={`/admission?course=${course.id}`}
-                className="text-center px-2.5 py-2 rounded bg-[#135589] hover:bg-[#0B3D62] text-white text-xs font-semibold transition-colors"
+                className="text-center px-2.5 py-2 rounded-lg bg-gradient-to-r from-[#0B3D62] to-[#135589] hover:from-[#F07228] hover:to-[#D65B14] text-white text-xs font-semibold shadow-xs transition-all"
               >
                 Apply Now
               </Link>

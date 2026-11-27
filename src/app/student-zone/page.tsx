@@ -126,7 +126,7 @@ export default function StudentZonePage() {
 
   return (
     <div className="pb-14">
-      <section className="no-print bg-[#0B3D62] text-white border-b-4 border-[#F07228] py-10">
+      <section className="no-print bg-gradient-to-r from-[#061E33] via-[#0B3D62] to-[#135589] text-white border-b-4 border-[#F07228] py-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-xs font-bold uppercase tracking-widest text-[#FF9B5E]">
             Enrolled Student Self-Service Portal
