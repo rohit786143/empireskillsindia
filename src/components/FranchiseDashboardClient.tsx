@@ -176,6 +176,61 @@ export function FranchiseDashboardClient() {
   const [studentLedgerApp, setStudentLedgerApp] = useState<FranchiseAppRow | null>(null);
   const [viewTxnProof, setViewTxnProof] = useState<{ title: string; url: string; utr?: string } | null>(null);
 
+  // Franchise Pay Admin Royalty Balance Modal
+  const [payAdminApp, setPayAdminApp] = useState<FranchiseAppRow | null>(null);
+  const [payAdminAmount, setPayAdminAmount] = useState("");
+  const [payAdminUtr, setPayAdminUtr] = useState("");
+  const [payAdminDate, setPayAdminDate] = useState(new Date().toISOString().slice(0, 10));
+  const [payAdminProofUrl, setPayAdminProofUrl] = useState("");
+  const [payAdminRemarks, setPayAdminRemarks] = useState("");
+  const [savingPayAdmin, setSavingPayAdmin] = useState(false);
+
+  function openPayAdminModal(app: FranchiseAppRow) {
+    const due = app.franchiseTotalDue || 500;
+    const paid = app.franchisePaidToMain || 0;
+    const bal = Math.max(0, due - paid);
+    if (bal <= 0) return;
+    setPayAdminApp(app);
+    setPayAdminAmount(String(bal));
+    setPayAdminUtr("");
+    setPayAdminDate(new Date().toISOString().slice(0, 10));
+    setPayAdminProofUrl("");
+    setPayAdminRemarks("");
+  }
+
+  async function handlePayAdminSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!payAdminApp || !payAdminUtr.trim() || !payAdminProofUrl) return;
+    setSavingPayAdmin(true);
+    try {
+      const res = await apiFetch(`/franchise-admissions.php?id=${encodeURIComponent(payAdminApp.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          action: "PAY_ADMIN_ROYALTY",
+          amount: Number(payAdminAmount || 0),
+          utr: payAdminUtr.trim(),
+          date: payAdminDate,
+          proofUrl: payAdminProofUrl,
+          remarks: payAdminRemarks.trim(),
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.application) {
+        setApplications((prev) =>
+          prev.map((x) => (x.id === payAdminApp.id ? data.application : x))
+        );
+        if (ledgerApp?.id === payAdminApp.id) {
+          setLedgerApp(data.application);
+        }
+        setPayAdminApp(null);
+      } else {
+        alert(data?.error || "Failed to submit royalty payment.");
+      }
+    } finally {
+      setSavingPayAdmin(false);
+    }
+  }
+
   // Center Payment QR & Bank settings modal
   const [payModalOpen, setPayModalOpen] = useState(false);
   const [payForm, setPayForm] = useState({
@@ -1615,14 +1670,34 @@ export function FranchiseDashboardClient() {
                                     )}
                                   </td>
                                   <td className="py-3 px-4 text-right">
-                                    <button
-                                      type="button"
-                                      onClick={() => setLedgerApp(s)}
-                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B3D62] border border-blue-200 font-bold text-xs"
-                                    >
-                                      <Receipt className="w-3.5 h-3.5" />
-                                      View Ledger
-                                    </button>
+                                    <div className="inline-flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => setLedgerApp(s)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B3D62] border border-blue-200 font-bold text-xs"
+                                      >
+                                        <Receipt className="w-3.5 h-3.5" />
+                                        View Ledger
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={complete}
+                                        onClick={() => openPayAdminModal(s)}
+                                        title={
+                                          complete
+                                            ? "Admin royalty share is already completely paid"
+                                            : `Pay remaining balance (${formatINR(balAdmin)}) to Main Admin`
+                                        }
+                                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold text-xs ${
+                                          complete
+                                            ? "bg-emerald-50 text-emerald-700 border border-emerald-200 opacity-60 cursor-not-allowed"
+                                            : "bg-[#F07228] hover:bg-[#D65B14] text-white shadow-sm"
+                                        }`}
+                                      >
+                                        <IndianRupee className="w-3.5 h-3.5" />
+                                        {complete ? "Paid" : "Pay"}
+                                      </button>
+                                    </div>
                                   </td>
                                 </tr>
                               );
@@ -2448,136 +2523,358 @@ export function FranchiseDashboardClient() {
         </div>
       )}
 
-      {/* Admin Ledger Modal (Franchise-to-Main-Admin ₹500 + 15% Royalty Settlement — Partner Centers Only) */}
-      {ledgerApp && (
-        <div
-          className="no-print fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto"
-          onClick={() => setLedgerApp(null)}
-        >
-          <div
-            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between">
-              <div className="text-sm font-bold">
-                Admin Ledger (₹500 + 15%) — {ledgerApp.fullName}
-              </div>
-              <button type="button" onClick={() => setLedgerApp(null)}>
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-            <div className="p-5 space-y-4 text-xs">
-              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1">
-                <div className="flex justify-between">
-                  <span className="text-slate-500">Course Total Fee:</span>
-                  <strong>{formatINR(ledgerApp.totalFee || ledgerApp.courseTotalFee || 0)}</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">1. Initial Forward Share:</span>
-                  <strong>₹500</strong>
-                </div>
-                <div className="flex justify-between">
-                  <span className="text-slate-500">
-                    2. 15% Royalty on Remaining ({formatINR(ledgerApp.franchiseRemainingBase || 0)}):
-                  </span>
-                  <strong>{formatINR(ledgerApp.franchiseRoyalty15 || 0)}</strong>
-                </div>
-                <div className="flex justify-between pt-1 border-t border-slate-200 font-extrabold text-[#0B3D62]">
-                  <span>Total Payable to Main Admin:</span>
-                  <span>{formatINR(ledgerApp.franchiseTotalDue || 500)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-emerald-700">
-                  <span>Paid to Main Admin:</span>
-                  <span>{formatINR(ledgerApp.franchisePaidToMain || 0)}</span>
-                </div>
-                <div className="flex justify-between font-bold text-red-600">
-                  <span>Pending Balance:</span>
-                  <span>
-                    {formatINR(
-                      ledgerApp.franchisePendingToMain ?? (ledgerApp.franchiseTotalDue || 500)
-                    )}
-                  </span>
-                </div>
-              </div>
+      {/* Admin Ledger Modal (Matches Student Ledger Layout — Shows 3 KPIs + Per-Transaction Proof + Pay Balance) */}
+      {ledgerApp && (() => {
+        const dueTot = ledgerApp.franchiseTotalDue || 500;
+        const paidAdmin = ledgerApp.franchisePaidToMain || 0;
+        const pendAdmin = Math.max(0, dueTot - paidAdmin);
+        const isComplete = pendAdmin === 0;
+        let txns: {
+          id: string;
+          amount: number;
+          feeType?: string;
+          mode: string;
+          receiptNo?: string;
+          date: string;
+          remarks?: string;
+          proofUrl?: string | null;
+        }[] = [];
+        if (ledgerApp.franchisePaymentsJson) {
+          try {
+            const dec = JSON.parse(ledgerApp.franchisePaymentsJson);
+            if (Array.isArray(dec)) txns = dec;
+          } catch {}
+        }
 
-              {(() => {
-                let txns: {
-                  id: string;
-                  amount: number;
-                  feeType?: string;
-                  mode: string;
-                  receiptNo?: string;
-                  date: string;
-                  remarks?: string;
-                }[] = [];
-                if (ledgerApp.franchisePaymentsJson) {
-                  try {
-                    const dec = JSON.parse(ledgerApp.franchisePaymentsJson);
-                    if (Array.isArray(dec)) txns = dec;
-                  } catch {}
-                }
-                return (
-                  <div>
-                    <p className="font-bold text-[#0B3D62] uppercase text-[11px] mb-2">
-                      Recorded Transactions ({txns.length})
-                    </p>
-                    {txns.length === 0 ? (
-                      <p className="text-slate-500 italic">
-                        No payments recorded yet. Pay ₹500 while forwarding to Main Admin.
-                      </p>
+        return (
+          <div
+            className="no-print fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setLedgerApp(null)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-bold">
+                    Admin Ledger (₹500 + 15%) — {ledgerApp.fullName}
+                  </div>
+                  <div className="text-[11px] text-slate-200">
+                    {ledgerApp.courseName} • {ledgerApp.enrollmentNumber || ledgerApp.applicationRef} • Course Fee:{" "}
+                    {formatINR(ledgerApp.totalFee || ledgerApp.courseTotalFee || 0)}
+                  </div>
+                </div>
+                <button type="button" onClick={() => setLedgerApp(null)}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4 text-xs">
+                {/* 3 KPI Summary Cards (Matching Student Ledger) */}
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <span className="text-slate-500 block">Total Admin Share</span>
+                    <strong className="text-base text-[#0B3D62]">{formatINR(dueTot)}</strong>
+                    <span className="block text-[10px] text-slate-400">
+                      ₹500 + 15% ({formatINR(ledgerApp.franchiseRoyalty15 || 0)})
+                    </span>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                    <span className="text-emerald-700 block">Paid to Main Admin</span>
+                    <strong className="text-base text-emerald-800">{formatINR(paidAdmin)}</strong>
+                  </div>
+                  <div
+                    className={`border rounded-lg p-3 ${
+                      isComplete
+                        ? "bg-emerald-100 border-emerald-300"
+                        : "bg-red-50 border-red-200"
+                    }`}
+                  >
+                    <span className="text-slate-600 block">Pending Balance</span>
+                    {isComplete ? (
+                      <strong className="text-xs font-extrabold text-emerald-800">
+                        ✓ COMPLETE PAYMENT
+                      </strong>
                     ) : (
-                      <div className="border border-slate-200 rounded-lg overflow-hidden">
-                        <table className="w-full text-left text-[11px]">
-                          <thead className="bg-slate-100 text-slate-700">
-                            <tr>
-                              <th className="py-2 px-2.5">Date</th>
-                              <th className="py-2 px-2.5">Type</th>
-                              <th className="py-2 px-2.5">Mode / UTR</th>
-                              <th className="py-2 px-2.5 text-right">Amount</th>
-                            </tr>
-                          </thead>
-                          <tbody className="divide-y divide-slate-200">
-                            {txns.map((t) => (
+                      <strong className="text-base text-red-700">{formatINR(pendAdmin)}</strong>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="font-bold text-[#0B3D62] uppercase text-[11px]">
+                      Admin Payment Transactions ({txns.length})
+                    </p>
+                    <button
+                      type="button"
+                      disabled={isComplete}
+                      onClick={() => openPayAdminModal(ledgerApp)}
+                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold text-xs shadow-sm ${
+                        isComplete
+                          ? "bg-emerald-50 text-emerald-700 border border-emerald-200 opacity-60 cursor-not-allowed"
+                          : "bg-[#F07228] hover:bg-[#D65B14] text-white"
+                      }`}
+                    >
+                      <IndianRupee className="w-3.5 h-3.5" />
+                      {isComplete ? "✓ Payment Complete" : "Pay Admin Balance"}
+                    </button>
+                  </div>
+
+                  {txns.length === 0 ? (
+                    <p className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 text-center">
+                      No payments recorded yet. Pay ₹500 while forwarding to Main Admin.
+                    </p>
+                  ) : (
+                    <div className="border border-slate-200 rounded-lg overflow-x-auto">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-slate-100 text-slate-700">
+                          <tr>
+                            <th className="py-2 px-2.5">Date</th>
+                            <th className="py-2 px-2.5">Type</th>
+                            <th className="py-2 px-2.5">Mode / UTR</th>
+                            <th className="py-2 px-2.5 text-right">Amount</th>
+                            <th className="py-2 px-2.5 text-right">Proof</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {txns.map((t, idx) => {
+                            const proofUrl =
+                              t.proofUrl ||
+                              (idx === 0 && (t.feeType || "").includes("500")
+                                ? ledgerApp.franchiseForwardProofUrl
+                                : null);
+                            return (
                               <tr key={t.id}>
-                                <td className="py-2 px-2.5">{formatDisplayDate(t.date)}</td>
-                                <td className="py-2 px-2.5 font-semibold">
+                                <td className="py-2 px-2.5 whitespace-nowrap">
+                                  {formatDisplayDate(t.date)}
+                                </td>
+                                <td className="py-2 px-2.5 font-semibold text-[#0B3D62]">
                                   {t.feeType || "Settlement"}
                                 </td>
                                 <td className="py-2 px-2.5">
-                                  {t.mode} {t.receiptNo ? `(${t.receiptNo})` : ""}
+                                  <span className="font-semibold">{t.mode}</span>
+                                  {t.receiptNo ? (
+                                    <span className="block font-mono text-[10px] text-slate-500">
+                                      UTR/Ref: {t.receiptNo}
+                                    </span>
+                                  ) : null}
                                 </td>
                                 <td className="py-2 px-2.5 text-right font-bold text-emerald-700">
                                   {formatINR(t.amount)}
                                 </td>
+                                <td className="py-2 px-2.5 text-right">
+                                  {proofUrl ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setViewTxnProof({
+                                          title: `${t.feeType || "Admin Payment"} Proof — ${ledgerApp.fullName} (${formatINR(t.amount)})`,
+                                          url: proofUrl,
+                                          utr: t.receiptNo || ledgerApp.franchiseForwardUtr || undefined,
+                                        })
+                                      }
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-blue-50 hover:bg-blue-100 text-[#0B3D62] border border-blue-200 font-bold text-[10px]"
+                                    >
+                                      <Receipt className="w-3 h-3" />
+                                      View Proof
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400">Admin Entry</span>
+                                  )}
+                                </td>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-                );
-              })()}
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
-              {ledgerApp.franchiseForwardProofUrl && (
+      {/* Franchise Pay Admin Royalty Balance Modal */}
+      {payAdminApp && (() => {
+        const dueTot = payAdminApp.franchiseTotalDue || 500;
+        const paidAdmin = payAdminApp.franchisePaidToMain || 0;
+        const maxBal = Math.max(0, dueTot - paidAdmin);
+        return (
+          <div
+            className="no-print fixed inset-0 z-[55] bg-black/70 flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setPayAdminApp(null)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between">
                 <div>
-                  <p className="font-bold text-[#0B3D62] uppercase text-[11px] mb-1.5">
-                    Uploaded ₹500 Forward Payment Proof
+                  <h3 className="font-bold text-sm">
+                    Pay Admin Royalty Balance — {payAdminApp.fullName}
+                  </h3>
+                  <p className="text-[11px] text-slate-200">
+                    Remaining Balance Payable to Main Admin: {formatINR(maxBal)}
                   </p>
-                  <div className="border border-slate-200 rounded-lg p-2 bg-slate-50 flex justify-center">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
-                      src={ledgerApp.franchiseForwardProofUrl}
-                      alt="Forward Payment Proof"
-                      className="max-h-48 object-contain rounded"
+                </div>
+                <button type="button" onClick={() => setPayAdminApp(null)}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <form onSubmit={handlePayAdminSubmit} className="p-5 space-y-4 text-xs">
+                {/* Main Admin Payment QR & Bank Details */}
+                {(adminPayInfo.adminPaymentQrUrl ||
+                  adminPayInfo.adminUpiId ||
+                  adminPayInfo.adminAccountNumber) && (
+                  <div className="bg-[#EFF6FF] border border-[#0B3D62]/25 rounded-xl p-3 flex flex-col sm:flex-row items-center gap-3">
+                    {adminPayInfo.adminPaymentQrUrl && (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={adminPayInfo.adminPaymentQrUrl}
+                        alt="Main Admin Payment QR"
+                        className="w-28 h-28 object-contain border border-slate-200 rounded p-1 bg-white shrink-0"
+                      />
+                    )}
+                    <div className="text-[11px] space-y-0.5 flex-1">
+                      <p className="font-bold text-[#0B3D62]">Pay to Main Admin Account:</p>
+                      {adminPayInfo.adminUpiId && (
+                        <p>
+                          UPI: <strong className="font-mono">{adminPayInfo.adminUpiId}</strong>
+                        </p>
+                      )}
+                      {adminPayInfo.adminBankName && <p>Bank: {adminPayInfo.adminBankName}</p>}
+                      {adminPayInfo.adminAccountHolder && (
+                        <p>A/c Holder: {adminPayInfo.adminAccountHolder}</p>
+                      )}
+                      {adminPayInfo.adminAccountNumber && (
+                        <p>
+                          A/c No.:{" "}
+                          <strong className="font-mono">{adminPayInfo.adminAccountNumber}</strong>
+                        </p>
+                      )}
+                      {adminPayInfo.adminIfscCode && (
+                        <p>
+                          IFSC: <strong className="font-mono">{adminPayInfo.adminIfscCode}</strong>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Amount Paying Now (₹) *
+                    </label>
+                    <input
+                      type="number"
+                      required
+                      min={1}
+                      max={maxBal}
+                      value={payAdminAmount}
+                      onChange={(e) => setPayAdminAmount(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg font-bold text-[#0B3D62]"
+                    />
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">Payment Date *</label>
+                    <input
+                      type="date"
+                      required
+                      value={payAdminDate}
+                      onChange={(e) => setPayAdminDate(e.target.value)}
+                      className="w-full px-3 py-2 border border-slate-300 rounded-lg"
                     />
                   </div>
                 </div>
-              )}
+
+                <div>
+                  <label className="block font-bold text-[#D65B14] mb-1">
+                    UTR / Transaction Reference No. (Mandatory) *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    value={payAdminUtr}
+                    onChange={(e) => setPayAdminUtr(e.target.value)}
+                    placeholder="Enter 12-digit UTR / Transaction No."
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-[#D65B14] mb-1">
+                    Upload Payment Screenshot (Mandatory) *
+                  </label>
+                  <label className="flex items-center justify-center gap-2 border-2 border-dashed border-[#0B3D62]/40 hover:border-[#F07228] rounded-lg p-3 cursor-pointer bg-slate-50 font-bold text-[#0B3D62]">
+                    <Upload className="w-4 h-4" />
+                    {payAdminProofUrl ? "Change Payment Screenshot" : "Upload Payment Screenshot *"}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => {
+                        const f = e.target.files?.[0];
+                        if (!f) return;
+                        if (f.size > 2 * 1024 * 1024) {
+                          alert("Image must be under 2 MB.");
+                          return;
+                        }
+                        const r = new FileReader();
+                        r.onload = () => {
+                          if (typeof r.result === "string") setPayAdminProofUrl(r.result);
+                        };
+                        r.readAsDataURL(f);
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  {payAdminProofUrl && (
+                    <div className="mt-2 p-1.5 border border-emerald-300 bg-emerald-50/40 rounded-lg flex justify-center">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={payAdminProofUrl}
+                        alt="Admin Payment Proof"
+                        className="max-h-32 object-contain rounded"
+                      />
+                    </div>
+                  )}
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Remarks (Optional)</label>
+                  <input
+                    type="text"
+                    value={payAdminRemarks}
+                    onChange={(e) => setPayAdminRemarks(e.target.value)}
+                    placeholder="e.g., Full 15% royalty balance settled"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+
+                <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                  <button
+                    type="button"
+                    onClick={() => setPayAdminApp(null)}
+                    className="px-4 py-2 rounded-lg border border-slate-300 font-semibold"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={savingPayAdmin || !payAdminUtr.trim() || !payAdminProofUrl || maxBal <= 0}
+                    className="px-5 py-2 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-bold disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {savingPayAdmin ? "Submitting..." : "Submit Payment to Admin"}
+                  </button>
+                </div>
+              </form>
             </div>
           </div>
-        </div>
-      )}
+        );
+      })()}
 
       {/* Payment Proof Viewer Modal */}
       {proofApp && proofApp.paymentScreenshotUrl && (

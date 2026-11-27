@@ -163,6 +163,68 @@ if ($method === 'PATCH' || $method === 'PUT') {
         json_response(['application' => $mapped]);
     }
 
+    // Franchise pays remaining 15% Royalty Balance to Main Admin (with mandatory UTR & screenshot proof)
+    if ($action === 'PAY_ADMIN_ROYALTY') {
+        if ($isMainCenter) {
+            json_response(['error' => 'Main Center does not pay franchise royalty.'], 400);
+        }
+        $payAmt = max(0, (int)($body['amount'] ?? 0));
+        $payUtr = trim((string)($body['utr'] ?? ''));
+        $payProof = trim((string)($body['proofUrl'] ?? ''));
+        $payDate = trim((string)($body['date'] ?? '')) ?: date('Y-m-d');
+        $payRemarks = trim((string)($body['remarks'] ?? ''));
+
+        if ($payAmt <= 0 || $payUtr === '' || $payProof === '') {
+            json_response(['error' => 'Valid amount, UTR / Transaction Number, and payment screenshot are all mandatory.'], 400);
+        }
+
+        // Compute current pending admin share
+        $cStmt = $pdo->prepare(
+            'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee, c.fee_breakdown_json AS joined_fee_breakdown
+             FROM admission_applications a LEFT JOIN courses c ON c.id = a.course_id WHERE a.id = ?'
+        );
+        $cStmt->execute([$id]);
+        $cRow = $cStmt->fetch();
+        $enrichedCur = enrich_application($cRow, map_application($cRow));
+        $curPending = (int)($enrichedCur['franchisePendingToMain'] ?? 0);
+
+        if ($curPending <= 0) {
+            json_response(['error' => 'Admin royalty share is already completely paid for this student.'], 400);
+        }
+        if ($payAmt > $curPending) {
+            $payAmt = $curPending;
+        }
+
+        $existingFrPayments = [];
+        if (!empty($existing['franchise_payments_json'])) {
+            $dec = json_decode($existing['franchise_payments_json'], true);
+            if (is_array($dec)) $existingFrPayments = $dec;
+        }
+        $existingFrPayments[] = [
+            'id'         => generate_cuid(),
+            'amount'     => $payAmt,
+            'feeType'    => ($payAmt >= $curPending) ? 'Final Royalty Settlement' : '15% Royalty Installment',
+            'mode'       => 'UPI / Bank',
+            'receiptNo'  => $payUtr,
+            'date'       => $payDate,
+            'recordedAt' => date('Y-m-d H:i:s'),
+            'remarks'    => $payRemarks !== '' ? $payRemarks : 'Royalty balance paid by franchise to Main Admin',
+            'proofUrl'   => $payProof,
+        ];
+        $totalFrPaid = 0;
+        foreach ($existingFrPayments as $ep) {
+            $totalFrPaid += (int)($ep['amount'] ?? 0);
+        }
+        $pdo->prepare('UPDATE admission_applications SET franchise_paid_to_main = ?, franchise_payments_json = ? WHERE id = ?')
+            ->execute([$totalFrPaid, json_encode($existingFrPayments, JSON_UNESCAPED_UNICODE), $id]);
+
+        $cStmt->execute([$id]);
+        $updRow = $cStmt->fetch();
+        $mapped = enrich_application($updRow, map_application($updRow));
+        $mapped['courseDuration'] = $updRow['joined_course_duration'] ?: '1 Year';
+        json_response(['application' => $mapped]);
+    }
+
     // Do not allow franchise to modify once Main Institute has already finalized
     if ($existing['franchise_status'] === 'MAIN_APPROVED') {
         json_response(['error' => 'This application has already been approved & enrolled by Main Institute.'], 400);
@@ -285,6 +347,7 @@ if ($method === 'PATCH' || $method === 'PUT') {
                 'date'       => date('Y-m-d'),
                 'recordedAt' => date('Y-m-d H:i:s'),
                 'remarks'    => $remarks !== '' ? $remarks : 'Paid ₹500 to Main Admin on application forward',
+                'proofUrl'   => $forwardProof,
             ];
             $totalFrPaid = 0;
             foreach ($existingFrPayments as $ep) {
