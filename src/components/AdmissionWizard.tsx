@@ -174,6 +174,10 @@ export function AdmissionWizard({
       setError("Please select a course.");
       return false;
     }
+    if (currentStep === 1 && !franchiseId) {
+      setError("Please select a Study Center / Authorized Franchise before proceeding.");
+      return false;
+    }
     if (currentStep === 2) {
       if (
         !fullName.trim() ||
@@ -238,7 +242,7 @@ export function AdmissionWizard({
           courseId: selectedCourse?.id,
           courseName: selectedCourse?.title,
           courseCode: selectedCourse?.code,
-          franchiseId: franchiseId || null,
+          franchiseId: franchiseId === "MAIN_INSTITUTE" ? null : franchiseId || null,
           session,
           studyMode,
           fullName: fullName.toUpperCase(),
@@ -395,10 +399,21 @@ export function AdmissionWizard({
                 </div>
                 <select
                   value={franchiseId}
-                  onChange={(e) => setFranchiseId(e.target.value)}
-                  className="w-full px-3.5 py-2.5 text-sm font-semibold text-slate-900 border-2 border-[#0B3D62]/30 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#F07228]"
+                  onChange={(e) => {
+                    setFranchiseId(e.target.value);
+                    if (error) setError("");
+                  }}
+                  required
+                  className={`w-full px-3.5 py-2.5 text-sm font-semibold border-2 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-[#F07228] ${
+                    !franchiseId
+                      ? "text-slate-500 border-amber-400"
+                      : "text-slate-900 border-[#0B3D62]/30"
+                  }`}
                 >
                   <option value="">
+                    -- Please Select Study Center / Authorized Franchise (Required) --
+                  </option>
+                  <option value="MAIN_INSTITUTE">
                     Main Institute — Empire Skills India Head Office (Direct Admission)
                   </option>
                   {franchises.map((f) => (
@@ -410,7 +425,16 @@ export function AdmissionWizard({
                   ))}
                 </select>
                 <p className="text-xs text-slate-700 mt-2">
-                  {franchiseId ? (
+                  {!franchiseId ? (
+                    <span className="font-semibold text-amber-800">
+                      Please select your Study Center (Head Office or an Authorized Franchise Center) to continue.
+                    </span>
+                  ) : franchiseId === "MAIN_INSTITUTE" ? (
+                    <>
+                      <span className="font-bold text-[#0B3D62]">Selected Center:</span> Main
+                      Institute — Empire Skills India Head Office (Direct Admission).
+                    </>
+                  ) : (
                     <>
                       <span className="font-bold text-[#0B3D62]">Selected Center:</span>{" "}
                       {(() => {
@@ -420,8 +444,6 @@ export function AdmissionWizard({
                       })()}{" "}
                       — Your application will go directly to this Franchise Center&apos;s dashboard for review &amp; forwarding to Main Institute.
                     </>
-                  ) : (
-                    "Select your nearest Authorized Franchise Study Center from the list above, or keep Head Office for direct admission."
                   )}
                 </p>
               </div>
@@ -949,7 +971,7 @@ export function AdmissionWizard({
               <div>
                 <span className="text-xs text-slate-500 block">Study Center / Franchise</span>
                 <strong className="text-[#D65B14]">
-                  {franchiseId
+                  {franchiseId && franchiseId !== "MAIN_INSTITUTE"
                     ? (() => {
                         const f = franchises.find((x) => x.id === franchiseId);
                         return f
