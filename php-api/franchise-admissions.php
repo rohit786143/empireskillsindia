@@ -127,11 +127,8 @@ if ($method === 'PATCH' || $method === 'PUT') {
         json_response(['error' => 'Application not found for your center.'], 404);
     }
 
-    // Main Center Exclusive: Collect / Record Student Fee directly from Main Center Dashboard
+    // Collect / Record Student Fee directly from Study Center Dashboard (both Main Center & Partner Franchises track student course fees)
     if ($action === 'COLLECT_FEE') {
-        if (!$isMainCenter) {
-            json_response(['error' => 'Fee collection from center dashboard is exclusive to Main Center.'], 403);
-        }
         $payment = $body['payment'] ?? null;
         if (!is_array($payment) || (int)($payment['amount'] ?? 0) <= 0) {
             json_response(['error' => 'Valid payment amount is required.'], 400);
@@ -203,6 +200,34 @@ if ($method === 'PATCH' || $method === 'PUT') {
             $params[] = 'FRANCHISE_APPROVED';
             $fields[] = '`status` = ?';
             $params[] = 'PENDING';
+        }
+
+        // Record initial student fee received on Accept (e.g. ₹500 registration fee) into student's fee ledger
+        $initialFeeAmt = isset($body['initialFeeReceived']) ? max(0, (int)$body['initialFeeReceived']) : 0;
+        if ($initialFeeAmt > 0) {
+            $existingPayments = [];
+            if (!empty($existing['fee_payments_json'])) {
+                $dec = json_decode($existing['fee_payments_json'], true);
+                if (is_array($dec)) $existingPayments = $dec;
+            }
+            $existingPayments[] = [
+                'id'         => generate_cuid(),
+                'amount'     => $initialFeeAmt,
+                'feeType'    => 'Registration / Initial Fee',
+                'mode'       => trim((string)($body['initialFeeMode'] ?? 'UPI / Online')) ?: 'UPI / Online',
+                'receiptNo'  => trim((string)($body['initialFeeReceipt'] ?? ($existing['payment_utr'] ?? ''))),
+                'date'       => date('Y-m-d'),
+                'recordedAt' => date('Y-m-d H:i:s'),
+                'remarks'    => $remarks !== '' ? $remarks : 'Initial fee received at admission acceptance',
+            ];
+            $totalStudentPaid = 0;
+            foreach ($existingPayments as $sp) {
+                $totalStudentPaid += (int)($sp['amount'] ?? 0);
+            }
+            $fields[] = '`fee_paid` = ?';
+            $params[] = $totalStudentPaid;
+            $fields[] = '`fee_payments_json` = ?';
+            $params[] = json_encode($existingPayments, JSON_UNESCAPED_UNICODE);
         }
     } elseif ($action === 'FRANCHISE_REJECT') {
         $fields[] = '`franchise_status` = ?';

@@ -48,8 +48,31 @@ interface StudentFeeRow {
   franchiseId?: string | null;
   franchiseName?: string | null;
   franchiseCode?: string | null;
+  franchiseTotalDue?: number;
+  franchisePaidToMain?: number;
+  franchisePendingToMain?: number;
+  franchiseRoyalty15?: number;
+  franchisePaymentsJson?: string | null;
   approvedAt?: string | null;
   createdAt: string;
+}
+
+function isFranchiseRoyaltyStudent(s: { franchiseId?: string | null; franchiseCode?: string | null }): boolean {
+  return Boolean(s.franchiseId) && (s.franchiseCode || "").toUpperCase() !== "ESI-CTR-001";
+}
+
+function getAdminExpectedFee(s: StudentFeeRow): number {
+  return isFranchiseRoyaltyStudent(s)
+    ? s.franchiseTotalDue || 500
+    : s.totalFee || s.courseTotalFee || 0;
+}
+
+function getAdminPaidFee(s: StudentFeeRow): number {
+  return isFranchiseRoyaltyStudent(s) ? s.franchisePaidToMain || 0 : s.feePaid || 0;
+}
+
+function getAdminPaymentsJson(s: StudentFeeRow): string | null | undefined {
+  return isFranchiseRoyaltyStudent(s) ? s.franchisePaymentsJson : s.feePaymentsJson;
 }
 
 const FEE_HEAD_OPTIONS = [
@@ -131,8 +154,8 @@ export function AdminFeesClient({
     let totalPending = 0;
     let clearedCount = 0;
     for (const s of centerStudents) {
-      const t = s.totalFee || s.courseTotalFee || 0;
-      const p = s.feePaid || 0;
+      const t = getAdminExpectedFee(s);
+      const p = getAdminPaidFee(s);
       const pend = Math.max(0, t - p);
       totalExpected += t;
       totalCollected += p;
@@ -144,8 +167,8 @@ export function AdminFeesClient({
 
   const filteredStudents = useMemo(() => {
     return centerStudents.filter((s) => {
-      const t = s.totalFee || s.courseTotalFee || 0;
-      const p = s.feePaid || 0;
+      const t = getAdminExpectedFee(s);
+      const p = getAdminPaidFee(s);
       const pend = Math.max(0, t - p);
       if (feeFilter === "PENDING" && !(t > 0 && pend > 0)) return false;
       if (feeFilter === "CLEARED" && !(t > 0 && pend === 0)) return false;
@@ -164,7 +187,7 @@ export function AdminFeesClient({
       student: StudentFeeRow;
     }[] = [];
     for (const s of centerStudents) {
-      for (const p of parsePayments(s.feePaymentsJson)) {
+      for (const p of parsePayments(getAdminPaymentsJson(s))) {
         rows.push({ payment: p, student: s });
       }
     }
@@ -183,19 +206,22 @@ export function AdminFeesClient({
   }, [centerStudents, search]);
 
   function openCollectModal(s: StudentFeeRow) {
-    const t = s.totalFee || s.courseTotalFee || 0;
-    const p = s.feePaid || 0;
+    const isFr = isFranchiseRoyaltyStudent(s);
+    const t = getAdminExpectedFee(s);
+    const p = getAdminPaidFee(s);
     const pend = Math.max(0, t - p);
-    const existingCount = parsePayments(s.feePaymentsJson).length;
+    const existingCount = parsePayments(getAdminPaymentsJson(s)).length;
     setSelectedStudent(s);
     setTotalInput(String(t));
     setReceiveInput(String(pend));
     setFeeHead(
-      existingCount === 0
+      isFr
+        ? "15% Royalty Settlement"
+        : existingCount === 0
         ? "Registration + Admission Fee"
         : `Monthly Fee (Month ${Math.min(12, existingCount)})`
     );
-    setPayMode("Cash");
+    setPayMode(isFr ? "UPI" : "Cash");
     setReceiptNo("");
     setPayDate(new Date().toISOString().slice(0, 10));
     setRemarks("");
@@ -206,12 +232,14 @@ export function AdminFeesClient({
     if (!selectedStudent) return;
     setSaving(true);
     try {
-      const payload: Record<string, unknown> = {
-        totalFee: Number(totalInput || 0),
-      };
+      const isFr = isFranchiseRoyaltyStudent(selectedStudent);
+      const payload: Record<string, unknown> = {};
+      if (!isFr) {
+        payload.totalFee = Number(totalInput || 0);
+      }
       const amt = Number(receiveInput || 0);
       if (amt > 0) {
-        payload.payment = {
+        const payObj = {
           amount: amt,
           feeType: feeHead,
           mode: payMode,
@@ -219,6 +247,11 @@ export function AdminFeesClient({
           date: payDate,
           remarks: remarks.trim() || feeHead,
         };
+        if (isFr) {
+          payload.franchisePayment = payObj;
+        } else {
+          payload.payment = payObj;
+        }
       }
       const res = await apiFetch(
         `/admissions.php?id=${encodeURIComponent(selectedStudent.id)}`,
@@ -419,11 +452,12 @@ export function AdminFeesClient({
                   </tr>
                 ) : (
                   filteredStudents.map((s) => {
-                    const total = s.totalFee || s.courseTotalFee || 0;
-                    const paid = s.feePaid || 0;
+                    const isFr = isFranchiseRoyaltyStudent(s);
+                    const total = getAdminExpectedFee(s);
+                    const paid = getAdminPaidFee(s);
                     const pending = Math.max(0, total - paid);
                     const cleared = total > 0 && pending === 0;
-                    const payments = parsePayments(s.feePaymentsJson);
+                    const payments = parsePayments(getAdminPaymentsJson(s));
                     const lastPay = payments[payments.length - 1];
 
                     return (
@@ -458,6 +492,11 @@ export function AdminFeesClient({
                         </td>
                         <td className="py-3 px-3 text-right font-bold text-[#0B3D62]">
                           {total > 0 ? formatINR(total) : "Not Set"}
+                          {isFr && (
+                            <div className="text-[9px] font-semibold text-[#D65B14]">
+                              Admin Share (₹500 + 15%)
+                            </div>
+                          )}
                         </td>
                         <td className="py-3 px-3 text-right font-bold text-emerald-700">
                           {formatINR(paid)}
@@ -470,7 +509,7 @@ export function AdminFeesClient({
                             <span className="text-slate-400">—</span>
                           ) : cleared ? (
                             <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">
-                              ✓ ALL FEE CLEARED
+                              {isFr ? "✓ COMPLETE PAYMENT" : "✓ ALL FEE CLEARED"}
                             </span>
                           ) : (
                             <span className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-800 font-extrabold text-[11px]">
@@ -489,7 +528,13 @@ export function AdminFeesClient({
                             }`}
                           >
                             <IndianRupee className="w-3.5 h-3.5" />
-                            {cleared ? "View Ledger" : "Collect Fee"}
+                            {isFr
+                              ? cleared
+                                ? "Share Ledger"
+                                : "Record Share"
+                              : cleared
+                              ? "View Ledger"
+                              : "Collect Fee"}
                           </button>
                         </td>
                       </tr>
@@ -577,9 +622,10 @@ export function AdminFeesClient({
 
       {/* Collect Fee & Student Payment Ledger Modal */}
       {selectedStudent && (() => {
-        const payments = parsePayments(selectedStudent.feePaymentsJson);
-        const alreadyPaid = selectedStudent.feePaid || 0;
-        const totalNum = Math.max(0, Number(totalInput || 0));
+        const isFr = isFranchiseRoyaltyStudent(selectedStudent);
+        const payments = parsePayments(getAdminPaymentsJson(selectedStudent));
+        const alreadyPaid = getAdminPaidFee(selectedStudent);
+        const totalNum = isFr ? getAdminExpectedFee(selectedStudent) : Math.max(0, Number(totalInput || 0));
         const receiveNow = Math.max(0, Number(receiveInput || 0));
         const newTotalPaid = alreadyPaid + receiveNow;
         const newPending = Math.max(0, totalNum - newTotalPaid);

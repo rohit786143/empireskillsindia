@@ -84,6 +84,7 @@ interface FranchiseAppRow extends AdmissionFormRecord {
   totalFee?: number;
   courseTotalFee?: number;
   feePaid?: number;
+  feePaymentsJson?: string | null;
 }
 
 const STATUS_BADGES: Record<string, { label: string; cls: string }> = {
@@ -119,6 +120,10 @@ export function FranchiseDashboardClient() {
   const [applications, setApplications] = useState<FranchiseAppRow[]>([]);
   const [feeSubmissions, setFeeSubmissions] = useState<FeeSubmissionRow[]>([]);
   const [mainTab, setMainTab] = useState<"applications" | "students" | "fees">("applications");
+  const [partnerFeeSubTab, setPartnerFeeSubTab] = useState<"students" | "royalty">("students");
+  const [initialFeeReceived, setInitialFeeReceived] = useState("500");
+  const [initialFeeMode, setInitialFeeMode] = useState("UPI / Online");
+  const [initialFeeReceipt, setInitialFeeReceipt] = useState("");
   const [courseFilter, setCourseFilter] = useState("ALL");
   const [sessionFilter, setSessionFilter] = useState("ALL");
   const [viewReceiptSub, setViewReceiptSub] = useState<FeeSubmissionRow | null>(null);
@@ -414,7 +419,8 @@ export function FranchiseDashboardClient() {
     action: "FRANCHISE_APPROVE" | "FRANCHISE_REJECT" | "FORWARD_TO_MAIN" | "APPROVE_AND_FORWARD",
     remarkText = "",
     proofUrl = "",
-    utrText = ""
+    utrText = "",
+    initFee?: { amount: number; mode: string; receipt: string }
   ) {
     setBusyId(appId);
     try {
@@ -426,6 +432,13 @@ export function FranchiseDashboardClient() {
           remarks: remarkText.trim(),
           ...(proofUrl ? { forwardPaymentProofUrl: proofUrl } : {}),
           ...(utrText.trim() ? { forwardPaymentUtr: utrText.trim() } : {}),
+          ...(initFee && initFee.amount > 0
+            ? {
+                initialFeeReceived: initFee.amount,
+                initialFeeMode: initFee.mode,
+                initialFeeReceipt: initFee.receipt,
+              }
+            : {}),
         }),
       });
       const data = await res.json();
@@ -593,8 +606,8 @@ export function FranchiseDashboardClient() {
           </Link>
         </div>
 
-        {/* Main Center Exclusive Navigation Tabs (Hidden for all other franchises) */}
-        {isMainCenter && (
+        {/* Navigation Tabs: Main Center (3 Exclusive Tabs) vs Partner Franchises (Applications + Fee & Royalty Management) */}
+        {isMainCenter ? (
           <div className="bg-white rounded-xl border border-slate-200 p-2 flex flex-wrap gap-2 shadow-sm">
             <button
               type="button"
@@ -631,6 +644,31 @@ export function FranchiseDashboardClient() {
               {feeSubmissions.filter((s) => s.status === "PENDING").length} Pending)
             </button>
           </div>
+        ) : (
+          <div className="bg-white rounded-xl border border-slate-200 p-2 flex flex-wrap gap-2 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setMainTab("applications")}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "applications"
+                  ? "bg-[#0B3D62] text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Admission Applications ({applications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainTab("fees")}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "fees"
+                  ? "bg-[#F07228] text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                }`}
+            >
+              <IndianRupee className="w-3.5 h-3.5" />
+              Fee Management (Students Fee &amp; Admin Royalty)
+            </button>
+          </div>
         )}
 
         {/* KPI Cards */}
@@ -665,8 +703,8 @@ export function FranchiseDashboardClient() {
           </div>
         </div>
 
-        {/* Applications Tab (Default for all franchises; Tab 1 for Main Center) */}
-        {(!isMainCenter || mainTab === "applications") && (
+        {/* Applications Tab */}
+        {mainTab === "applications" && (
           <>
             {/* Filters + Search */}
             <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
@@ -781,21 +819,39 @@ export function FranchiseDashboardClient() {
                                 {app.session} • {app.studyMode || "Regular"}
                               </div>
                               {totalCourseFee > 0 && (
-                                <div className="mt-1 space-y-0.5 text-[11px]">
+                                <div className="mt-1 space-y-1 text-[11px]">
                                   <div className="font-semibold text-slate-700">
-                                    Course Fee: {formatINR(totalCourseFee)}
+                                    Student Fee:{" "}
+                                    <strong className="text-emerald-700">
+                                      {formatINR(app.feePaid || 0)}
+                                    </strong>{" "}
+                                    / <strong>{formatINR(totalCourseFee)}</strong>
+                                    {totalCourseFee > (app.feePaid || 0) ? (
+                                      <span className="text-red-600 ml-1">
+                                        (Bal: {formatINR(Math.max(0, totalCourseFee - (app.feePaid || 0)))})
+                                      </span>
+                                    ) : (
+                                      <span className="text-emerald-700 ml-1 font-bold">(Cleared)</span>
+                                    )}
                                   </div>
                                   {!isMainCenter && (
                                     <div className="text-[10px] text-[#0B3D62] bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 inline-block">
                                       Admin Share: <strong>{formatINR(app.franchiseTotalDue || 500)}</strong>{" "}
-                                      (₹500 + 15% = {formatINR(app.franchiseRoyalty15 || 0)}) • Paid:{" "}
+                                      (₹500 + 15%) • Paid:{" "}
                                       <strong className="text-emerald-700">
                                         {formatINR(app.franchisePaidToMain || 0)}
                                       </strong>{" "}
-                                      • Due:{" "}
-                                      <strong className="text-red-600">
-                                        {formatINR(app.franchisePendingToMain ?? (app.franchiseTotalDue || 500))}
-                                      </strong>
+                                      •{" "}
+                                      {(app.franchisePendingToMain ?? (app.franchiseTotalDue || 500)) === 0 ? (
+                                        <strong className="text-emerald-700">✓ Complete Payment</strong>
+                                      ) : (
+                                        <>
+                                          Due:{" "}
+                                          <strong className="text-red-600">
+                                            {formatINR(app.franchisePendingToMain ?? (app.franchiseTotalDue || 500))}
+                                          </strong>
+                                        </>
+                                      )}
                                     </div>
                                   )}
                                 </div>
@@ -864,7 +920,23 @@ export function FranchiseDashboardClient() {
                                     <button
                                       type="button"
                                       disabled={isBusy}
-                                      onClick={() => executeAction(app.id, "FRANCHISE_APPROVE")}
+                                      onClick={() => {
+                                        if (isMainCenter) {
+                                          executeAction(app.id, "FRANCHISE_APPROVE");
+                                        } else {
+                                          setRemarks(app.franchiseRemarks || "");
+                                          setInitialFeeReceived(String(app.registrationFeePaid || 500));
+                                          setInitialFeeMode("UPI / Online");
+                                          setInitialFeeReceipt(app.paymentUtr || "");
+                                          setActionModal({
+                                            app,
+                                            action: "FRANCHISE_APPROVE",
+                                            title: "Accept Application & Record Received Fee",
+                                            buttonLabel: "Confirm Accept & Save Fee",
+                                            buttonCls: "bg-emerald-600 hover:bg-emerald-700 text-white",
+                                          });
+                                        }
+                                      }}
                                       className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors disabled:opacity-50"
                                     >
                                       <CheckCircle2 className="w-3.5 h-3.5" />
@@ -1202,6 +1274,335 @@ export function FranchiseDashboardClient() {
             </div>
           </div>
         )}
+        {/* PARTNER FRANCHISE FEE MANAGEMENT TAB (Non-Main-Center: Students Fee Record + Admin Royalty Record) */}
+        {!isMainCenter && mainTab === "fees" && (() => {
+          const acceptedApps = applications.filter(
+            (a) =>
+              a.franchiseStatus === "FRANCHISE_APPROVED" ||
+              a.franchiseStatus === "FORWARDED_TO_MAIN" ||
+              a.franchiseStatus === "MAIN_APPROVED"
+          );
+          const royaltyApps = applications.filter(
+            (a) =>
+              a.franchiseStatus === "FORWARDED_TO_MAIN" ||
+              a.franchiseStatus === "MAIN_APPROVED"
+          );
+
+          const totalStudentFees = acceptedApps.reduce(
+            (sum, a) => sum + (a.totalFee || a.courseTotalFee || 0),
+            0
+          );
+          const totalStudentCollected = acceptedApps.reduce(
+            (sum, a) => sum + (a.feePaid || 0),
+            0
+          );
+          const totalStudentBalance = Math.max(0, totalStudentFees - totalStudentCollected);
+
+          const totalAdminShare = royaltyApps.reduce(
+            (sum, a) => sum + (a.franchiseTotalDue || 500),
+            0
+          );
+          const totalAdminPaid = royaltyApps.reduce(
+            (sum, a) => sum + (a.franchisePaidToMain || 0),
+            0
+          );
+          const totalAdminBalance = Math.max(0, totalAdminShare - totalAdminPaid);
+
+          return (
+            <div className="space-y-5">
+              {/* Sub-Tab Switcher */}
+              <div className="bg-white rounded-xl border border-slate-200 p-3 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex flex-wrap gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setPartnerFeeSubTab("students")}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                      partnerFeeSubTab === "students"
+                        ? "bg-[#0B3D62] text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    <Users className="w-3.5 h-3.5" />
+                    Students Fee Record ({acceptedApps.length})
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPartnerFeeSubTab("royalty")}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                      partnerFeeSubTab === "royalty"
+                        ? "bg-[#F07228] text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    <Receipt className="w-3.5 h-3.5" />
+                    Admin Royalty Record — ₹500 + 15% ({royaltyApps.length})
+                  </button>
+                </div>
+                <div className="relative w-full sm:w-64">
+                  <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    placeholder="Search student, enrollment, course..."
+                    className="w-full pl-9 pr-3 py-1.5 text-xs border border-slate-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              {/* SUB-TAB 1: STUDENTS FEE RECORD (STUDENT-WISE) */}
+              {partnerFeeSubTab === "students" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-xl border border-slate-200 border-t-4 border-t-[#0B3D62] p-4">
+                      <div className="text-xs font-semibold text-slate-500">Total Student Course Fees</div>
+                      <div className="text-2xl font-extrabold text-[#0B3D62] mt-1">
+                        {formatINR(totalStudentFees)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Total receivable from {acceptedApps.length} student(s)
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 border-t-4 border-t-emerald-600 p-4">
+                      <div className="text-xs font-semibold text-slate-500">Received from Students</div>
+                      <div className="text-2xl font-extrabold text-emerald-700 mt-1">
+                        {formatINR(totalStudentCollected)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Collected at your center</div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 border-t-4 border-t-red-600 p-4">
+                      <div className="text-xs font-semibold text-slate-500">Pending from Students</div>
+                      <div className="text-2xl font-extrabold text-red-700 mt-1">
+                        {formatINR(totalStudentBalance)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Balance to collect from students</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-[#0B3D62] text-white uppercase text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">Student &amp; Enrollment</th>
+                          <th className="py-3 px-3">Course &amp; Session</th>
+                          <th className="py-3 px-3 text-right">Total Course Fee</th>
+                          <th className="py-3 px-3 text-right">Received</th>
+                          <th className="py-3 px-3 text-right">Pending Balance</th>
+                          <th className="py-3 px-4 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {acceptedApps.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-10 text-center text-slate-500">
+                              No accepted students yet. Accept an application to start tracking student fees.
+                            </td>
+                          </tr>
+                        ) : (
+                          acceptedApps
+                            .filter((a) => {
+                              if (!search.trim()) return true;
+                              const q = search.trim().toLowerCase();
+                              return `${a.fullName} ${a.enrollmentNumber || ""} ${a.applicationRef} ${a.courseName} ${a.mobile}`
+                                .toLowerCase()
+                                .includes(q);
+                            })
+                            .map((s) => {
+                              const t = s.totalFee || s.courseTotalFee || 0;
+                              const p = s.feePaid || 0;
+                              const pend = Math.max(0, t - p);
+                              const cleared = t > 0 && pend === 0;
+                              let recCount = 0;
+                              try {
+                                const arr = s.feePaymentsJson ? JSON.parse(s.feePaymentsJson) : [];
+                                if (Array.isArray(arr)) recCount = arr.length;
+                              } catch {
+                                recCount = 0;
+                              }
+                              return (
+                                <tr key={s.id} className="hover:bg-slate-50">
+                                  <td className="py-3 px-4">
+                                    <div className="font-bold text-[#0B3D62]">{s.fullName}</div>
+                                    <div className="font-mono text-[11px] font-bold text-emerald-700">
+                                      {s.enrollmentNumber || s.applicationRef}
+                                    </div>
+                                    <div className="text-[10px] text-slate-500">{s.mobile}</div>
+                                  </td>
+                                  <td className="py-3 px-3">
+                                    <div className="font-semibold text-slate-800">{s.courseName}</div>
+                                    <div className="text-[10px] text-slate-500">{s.session}</div>
+                                  </td>
+                                  <td className="py-3 px-3 text-right font-bold text-[#0B3D62]">
+                                    {formatINR(t)}
+                                  </td>
+                                  <td className="py-3 px-3 text-right font-bold text-emerald-700">
+                                    {formatINR(p)}
+                                    <div className="text-[10px] font-normal text-slate-500">
+                                      {recCount} receipt(s)
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-3 text-right">
+                                    {cleared ? (
+                                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">
+                                        ✓ FEE CLEARED
+                                      </span>
+                                    ) : (
+                                      <span className="font-extrabold text-red-600">
+                                        {formatINR(pend)}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => {
+                                        setCollectApp(s);
+                                        setCollectAmount(String(pend > 0 ? Math.min(2000, pend) : 0));
+                                        setCollectHead("Monthly Fee Installment");
+                                        setCollectMode("Cash");
+                                        setCollectReceipt("");
+                                        setCollectRemarks("");
+                                      }}
+                                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold text-xs ${
+                                        cleared
+                                          ? "bg-slate-100 text-[#0B3D62] border border-slate-300"
+                                          : "bg-[#F07228] hover:bg-[#D65B14] text-white"
+                                      }`}
+                                    >
+                                      <IndianRupee className="w-3.5 h-3.5" />
+                                      {cleared ? "View / Add" : "Collect Fee"}
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 2: ADMIN ROYALTY RECORD (STUDENT-WISE LEDGER) */}
+              {partnerFeeSubTab === "royalty" && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div className="bg-white rounded-xl border border-slate-200 border-t-4 border-t-[#0B3D62] p-4">
+                      <div className="text-xs font-semibold text-slate-500">Total Admin Share (₹500 + 15%)</div>
+                      <div className="text-2xl font-extrabold text-[#0B3D62] mt-1">
+                        {formatINR(totalAdminShare)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">
+                        Across {royaltyApps.length} forwarded / enrolled student(s)
+                      </div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 border-t-4 border-t-emerald-600 p-4">
+                      <div className="text-xs font-semibold text-slate-500">Paid to Main Admin</div>
+                      <div className="text-2xl font-extrabold text-emerald-700 mt-1">
+                        {formatINR(totalAdminPaid)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Recorded forward &amp; royalty settlements</div>
+                    </div>
+                    <div className="bg-white rounded-xl border border-slate-200 border-t-4 border-t-[#F07228] p-4">
+                      <div className="text-xs font-semibold text-slate-500">Balance Payable to Admin</div>
+                      <div className="text-2xl font-extrabold text-red-700 mt-1">
+                        {formatINR(totalAdminBalance)}
+                      </div>
+                      <div className="text-[11px] text-slate-500 mt-0.5">Remaining 15% royalty due to Main Institute</div>
+                    </div>
+                  </div>
+
+                  <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-[#0B3D62] text-white uppercase text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">Student &amp; Enrollment</th>
+                          <th className="py-3 px-3">Course (Total Fee)</th>
+                          <th className="py-3 px-3 text-right">Forward + 15%</th>
+                          <th className="py-3 px-3 text-right">Total Admin Share</th>
+                          <th className="py-3 px-3 text-right">Paid to Admin</th>
+                          <th className="py-3 px-3 text-right">Balance / Status</th>
+                          <th className="py-3 px-4 text-right">Ledger</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {royaltyApps.length === 0 ? (
+                          <tr>
+                            <td colSpan={7} className="py-10 text-center text-slate-500">
+                              No forwarded or enrolled students yet. Forward an application to Main Admin to track royalty ledger.
+                            </td>
+                          </tr>
+                        ) : (
+                          royaltyApps
+                            .filter((a) => {
+                              if (!search.trim()) return true;
+                              const q = search.trim().toLowerCase();
+                              return `${a.fullName} ${a.enrollmentNumber || ""} ${a.applicationRef} ${a.courseName}`
+                                .toLowerCase()
+                                .includes(q);
+                            })
+                            .map((s) => {
+                              const courseTot = s.totalFee || s.courseTotalFee || 0;
+                              const dueTot = s.franchiseTotalDue || 500;
+                              const paidAdmin = s.franchisePaidToMain || 0;
+                              const balAdmin = Math.max(0, dueTot - paidAdmin);
+                              const complete = balAdmin === 0;
+                              return (
+                                <tr key={s.id} className="hover:bg-slate-50">
+                                  <td className="py-3 px-4">
+                                    <div className="font-bold text-[#0B3D62]">{s.fullName}</div>
+                                    <div className="font-mono text-[11px] font-bold text-emerald-700">
+                                      {s.enrollmentNumber || s.applicationRef}
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-3">
+                                    <div className="font-semibold text-slate-800">{s.courseName}</div>
+                                    <div className="text-[10px] text-slate-500">
+                                      Course Fee: {formatINR(courseTot)}
+                                    </div>
+                                  </td>
+                                  <td className="py-3 px-3 text-right text-slate-600">
+                                    ₹500 + {formatINR(s.franchiseRoyalty15 || 0)}
+                                  </td>
+                                  <td className="py-3 px-3 text-right font-bold text-[#0B3D62]">
+                                    {formatINR(dueTot)}
+                                  </td>
+                                  <td className="py-3 px-3 text-right font-bold text-emerald-700">
+                                    {formatINR(paidAdmin)}
+                                  </td>
+                                  <td className="py-3 px-3 text-right">
+                                    {complete ? (
+                                      <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">
+                                        ✓ COMPLETE PAYMENT
+                                      </span>
+                                    ) : (
+                                      <span className="font-extrabold text-red-600">
+                                        {formatINR(balAdmin)}
+                                      </span>
+                                    )}
+                                  </td>
+                                  <td className="py-3 px-4 text-right">
+                                    <button
+                                      type="button"
+                                      onClick={() => setLedgerApp(s)}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B3D62] border border-blue-200 font-bold text-xs"
+                                    >
+                                      <Receipt className="w-3.5 h-3.5" />
+                                      View Ledger
+                                    </button>
+                                  </td>
+                                </tr>
+                              );
+                            })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+            </div>
+          );
+        })()}
       </main>
 
       {/* Main Center View Online Fee Receipt Modal */}
@@ -1363,6 +1764,72 @@ export function FranchiseDashboardClient() {
                 </div>
               </div>
 
+              {actionModal.action === "FRANCHISE_APPROVE" && !isMainCenter && (() => {
+                const courseTot = actionModal.app.totalFee || actionModal.app.courseTotalFee || 0;
+                const recAmt = Math.max(0, Number(initialFeeReceived || 0));
+                const remBal = Math.max(0, courseTot - recAmt);
+                return (
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-3.5 space-y-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-emerald-900 uppercase tracking-wide">
+                        Record Fee Received from Student
+                      </span>
+                      <span className="px-2 py-0.5 rounded-full bg-white border border-emerald-300 text-emerald-800 font-bold text-[11px]">
+                        Course Fee: {formatINR(courseTot)}
+                      </span>
+                    </div>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Amount Received from Student (₹) *
+                        </label>
+                        <input
+                          type="number"
+                          min={0}
+                          value={initialFeeReceived}
+                          onChange={(e) => setInitialFeeReceived(e.target.value)}
+                          placeholder="e.g., 500"
+                          className="w-full px-3 py-1.5 text-xs font-bold border border-slate-300 rounded-lg bg-white text-emerald-800"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">Payment Mode</label>
+                        <select
+                          value={initialFeeMode}
+                          onChange={(e) => setInitialFeeMode(e.target.value)}
+                          className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                        >
+                          <option value="UPI / Online">UPI / Online</option>
+                          <option value="Cash">Cash</option>
+                          <option value="Bank Transfer">Bank Transfer</option>
+                        </select>
+                      </div>
+                      <div className="sm:col-span-2">
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Receipt / UTR No. (Optional)
+                        </label>
+                        <input
+                          type="text"
+                          value={initialFeeReceipt}
+                          onChange={(e) => setInitialFeeReceipt(e.target.value)}
+                          placeholder="Student UTR or receipt number"
+                          className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white font-mono"
+                        />
+                      </div>
+                    </div>
+                    <div className="bg-white border border-emerald-200 rounded-lg p-2 flex flex-wrap justify-between gap-2 text-[11px]">
+                      <span>
+                        Received: <strong className="text-emerald-700">{formatINR(recAmt)}</strong> /{" "}
+                        <strong>{formatINR(courseTot)}</strong>
+                      </span>
+                      <span>
+                        Student Balance: <strong className="text-red-600">{formatINR(remBal)}</strong>
+                      </span>
+                    </div>
+                  </div>
+                );
+              })()}
+
               {(actionModal.action === "FORWARD_TO_MAIN" ||
                 actionModal.action === "APPROVE_AND_FORWARD") && (
                   <div className="bg-[#EFF6FF] border border-[#0B3D62]/25 rounded-xl p-3.5 space-y-3 text-xs">
@@ -1523,7 +1990,14 @@ export function FranchiseDashboardClient() {
                       actionModal.action,
                       remarks,
                       forwardProofUrl || actionModal.app.franchiseForwardProofUrl || "",
-                      forwardUtr
+                      forwardUtr,
+                      actionModal.action === "FRANCHISE_APPROVE" && !isMainCenter
+                        ? {
+                            amount: Math.max(0, Number(initialFeeReceived || 0)),
+                            mode: initialFeeMode,
+                            receipt: initialFeeReceipt.trim(),
+                          }
+                        : undefined
                     )
                   }
                   className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${actionModal.buttonCls}`}

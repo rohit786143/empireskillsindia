@@ -95,7 +95,18 @@ interface ApplicationRow {
   franchiseId?: string | null;
   franchiseName?: string | null;
   franchiseCode?: string | null;
+  franchiseForwardFee?: number;
+  franchiseRemainingBase?: number;
+  franchiseRoyalty15?: number;
+  franchiseTotalDue?: number;
+  franchisePaidToMain?: number;
+  franchisePendingToMain?: number;
+  franchisePaymentsJson?: string | null;
   createdAt: string;
+}
+
+function isFranchiseRoyaltyApp(app: { franchiseId?: string | null; franchiseCode?: string | null }): boolean {
+  return Boolean(app.franchiseId) && (app.franchiseCode || "").toUpperCase() !== "ESI-CTR-001";
 }
 
 interface CourseOption {
@@ -167,17 +178,32 @@ export function AdminAdmissionsClient({
   });
 
   function openFeeModal(app: ApplicationRow, mode: "APPROVE" | "COLLECT") {
-    const baseTotal = app.totalFee || app.courseTotalFee || 0;
-    const paid = app.feePaid || 0;
+    const isFrRoyalty = isFranchiseRoyaltyApp(app);
+    const baseTotal = isFrRoyalty
+      ? app.franchiseTotalDue || 500
+      : app.totalFee || app.courseTotalFee || 0;
+    const paid = isFrRoyalty ? app.franchisePaidToMain || 0 : app.feePaid || 0;
     const pending = Math.max(0, baseTotal - paid);
     setFeeModalApp(app);
     setFeeModalMode(mode);
     setFeeTotalInput(String(baseTotal));
-    setFeeReceiveInput(mode === "COLLECT" ? String(pending) : String(baseTotal));
-    setFeeHeadInput(
-      mode === "APPROVE" ? "Registration + Admission Fee" : "Monthly Fee (Month 1)"
+    setFeeReceiveInput(
+      isFrRoyalty
+        ? mode === "APPROVE"
+          ? "0"
+          : String(pending)
+        : mode === "COLLECT"
+        ? String(pending)
+        : String(baseTotal)
     );
-    setFeePayMode("Cash");
+    setFeeHeadInput(
+      isFrRoyalty
+        ? "15% Royalty Settlement"
+        : mode === "APPROVE"
+        ? "Registration + Admission Fee"
+        : "Monthly Fee (Month 1)"
+    );
+    setFeePayMode(isFrRoyalty ? "UPI" : "Cash");
     setFeeReceiptNo("");
     setFeePayDate(new Date().toISOString().slice(0, 10));
     setFeeRemarks("");
@@ -198,15 +224,17 @@ export function AdminAdmissionsClient({
     if (!feeModalApp) return;
     setSavingFee(true);
     try {
-      const payload: Record<string, unknown> = {
-        totalFee: Number(feeTotalInput || 0),
-      };
+      const isFrRoyalty = isFranchiseRoyaltyApp(feeModalApp);
+      const payload: Record<string, unknown> = {};
+      if (!isFrRoyalty) {
+        payload.totalFee = Number(feeTotalInput || 0);
+      }
       if (feeModalMode === "APPROVE") {
         payload.action = "APPROVE";
       }
       const receivedAmt = Number(feeReceiveInput || 0);
       if (receivedAmt > 0) {
-        payload.payment = {
+        const payObj = {
           amount: receivedAmt,
           feeType: feeHeadInput,
           mode: feePayMode,
@@ -214,6 +242,11 @@ export function AdminAdmissionsClient({
           date: feePayDate,
           remarks: feeRemarks.trim() || feeHeadInput,
         };
+        if (isFrRoyalty) {
+          payload.franchisePayment = payObj;
+        } else {
+          payload.payment = payObj;
+        }
       }
 
       const res = await apiFetch(
@@ -427,8 +460,11 @@ export function AdminAdmissionsClient({
               </tr>
             ) : (
               filtered.map((app) => {
-                const totalFee = app.totalFee || app.courseTotalFee || 0;
-                const paidFee = app.feePaid || 0;
+                const isFrRoyalty = isFranchiseRoyaltyApp(app);
+                const totalFee = isFrRoyalty
+                  ? app.franchiseTotalDue || 500
+                  : app.totalFee || app.courseTotalFee || 0;
+                const paidFee = isFrRoyalty ? app.franchisePaidToMain || 0 : app.feePaid || 0;
                 const pendingFee = Math.max(0, totalFee - paidFee);
                 const isCleared = totalFee > 0 && pendingFee === 0;
                 return (
@@ -500,20 +536,28 @@ export function AdminAdmissionsClient({
                     ) : isCleared ? (
                       <div className="space-y-0.5">
                         <span className="inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-extrabold text-[10px]">
-                          ✓ ALL FEE CLEARED
+                          {isFrRoyalty ? "✓ COMPLETE PAYMENT" : "✓ ALL FEE CLEARED"}
                         </span>
                         <div className="text-[10px] text-slate-500">
-                          Paid: {formatINR(paidFee)} / {formatINR(totalFee)}
+                          {isFrRoyalty ? "Admin Share: " : "Paid: "}
+                          {formatINR(paidFee)} / {formatINR(totalFee)}
                         </div>
                       </div>
                     ) : (
                       <div className="space-y-0.5">
                         <span className="inline-block px-2 py-0.5 rounded bg-red-100 text-red-800 font-bold text-[10px]">
-                          Pending: {formatINR(pendingFee)}
+                          {isFrRoyalty ? "Share Due: " : "Pending: "}
+                          {formatINR(pendingFee)}
                         </span>
                         <div className="text-[10px] text-slate-600">
-                          Paid: {formatINR(paidFee)} / {formatINR(totalFee)}
+                          {isFrRoyalty ? "Admin Share: " : "Paid: "}
+                          {formatINR(paidFee)} / {formatINR(totalFee)}
                         </div>
+                        {isFrRoyalty && (
+                          <div className="text-[9px] text-[#0B3D62] font-semibold">
+                            (₹500 + 15% Royalty)
+                          </div>
+                        )}
                       </div>
                     )}
                   </td>
@@ -559,10 +603,20 @@ export function AdminAdmissionsClient({
                               ? "bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100"
                               : "bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100"
                           }`}
-                          title="Collect Fee / View Payment Receipts"
+                          title={
+                            isFrRoyalty
+                              ? "Record Franchise Royalty Share / View Settlement Ledger"
+                              : "Collect Fee / View Payment Receipts"
+                          }
                         >
                           <IndianRupee className="w-3.5 h-3.5" />
-                          {isCleared ? "Fee Ledger" : "Collect Fee"}
+                          {isFrRoyalty
+                            ? isCleared
+                              ? "Share Ledger"
+                              : "Record Share"
+                            : isCleared
+                            ? "Fee Ledger"
+                            : "Collect Fee"}
                         </button>
                       )}
 
@@ -618,9 +672,16 @@ export function AdminAdmissionsClient({
 
       {/* Approve & Fee Collection / Ledger Modal */}
       {feeModalApp && (() => {
-        const payments = parsePayments(feeModalApp.feePaymentsJson);
-        const alreadyPaid = feeModalApp.feePaid || 0;
-        const totalNum = Math.max(0, Number(feeTotalInput || 0));
+        const isFrRoyalty = isFranchiseRoyaltyApp(feeModalApp);
+        const payments = parsePayments(
+          isFrRoyalty ? feeModalApp.franchisePaymentsJson : feeModalApp.feePaymentsJson
+        );
+        const alreadyPaid = isFrRoyalty
+          ? feeModalApp.franchisePaidToMain || 0
+          : feeModalApp.feePaid || 0;
+        const totalNum = isFrRoyalty
+          ? feeModalApp.franchiseTotalDue || 500
+          : Math.max(0, Number(feeTotalInput || 0));
         const receiveNow = Math.max(0, Number(feeReceiveInput || 0));
         const newTotalPaid = alreadyPaid + receiveNow;
         const newPending = Math.max(0, totalNum - newTotalPaid);
@@ -637,13 +698,20 @@ export function AdminAdmissionsClient({
               <div className="flex items-start justify-between border-b border-slate-200 pb-3">
                 <div>
                   <h3 className="text-lg font-bold text-[#0B3D62]">
-                    {feeModalMode === "APPROVE"
+                    {isFrRoyalty
+                      ? feeModalMode === "APPROVE"
+                        ? "Approve Franchise Admission & Royalty Share"
+                        : "Franchise Admin Share (₹500 + 15% Royalty) Ledger"
+                      : feeModalMode === "APPROVE"
                       ? "Approve Admission & Record Fee Payment"
                       : "Fee Ledger & Collect Pending Installment"}
                   </h3>
                   <p className="text-xs text-slate-500">
                     {feeModalApp.fullName} — {feeModalApp.courseName} (
                     {feeModalApp.enrollmentNumber || feeModalApp.applicationRef})
+                    {isFrRoyalty && feeModalApp.franchiseName
+                      ? ` • Center: ${feeModalApp.franchiseName}`
+                      : ""}
                   </p>
                 </div>
                 <button
@@ -654,6 +722,30 @@ export function AdminAdmissionsClient({
                   <X className="w-5 h-5" />
                 </button>
               </div>
+
+              {isFrRoyalty && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 text-[11px] space-y-1">
+                  <p className="font-bold text-[#0B3D62] uppercase">
+                    Franchise-to-Admin Share Calculation (₹500 + 15%)
+                  </p>
+                  <div className="flex flex-wrap gap-x-4 gap-y-1 text-slate-700">
+                    <span>
+                      Student Course Fee:{" "}
+                      <strong>{formatINR(feeModalApp.totalFee || feeModalApp.courseTotalFee || 0)}</strong>
+                    </span>
+                    <span>
+                      Forward Share: <strong>₹500</strong>
+                    </span>
+                    <span>
+                      15% Royalty (on {formatINR(feeModalApp.franchiseRemainingBase || 0)}):{" "}
+                      <strong>{formatINR(feeModalApp.franchiseRoyalty15 || 0)}</strong>
+                    </span>
+                    <span>
+                      Total Admin Share: <strong className="text-[#D65B14]">{formatINR(totalNum)}</strong>
+                    </span>
+                  </div>
+                </div>
+              )}
 
               {/* Course Fee Bifurcation Reference Box for Admin */}
               {feeModalApp.courseFeeBreakdownJson && (() => {
@@ -717,13 +809,17 @@ export function AdminAdmissionsClient({
               {/* Live Fee Summary */}
               <div className="grid grid-cols-3 gap-3 text-center text-xs">
                 <div className="p-3 rounded bg-slate-50 border border-slate-200">
-                  <span className="text-slate-500 block">Total Course Fee</span>
+                  <span className="text-slate-500 block">
+                    {isFrRoyalty ? "Total Admin Share" : "Total Course Fee"}
+                  </span>
                   <strong className="text-base text-[#0B3D62]">
                     {formatINR(totalNum)}
                   </strong>
                 </div>
                 <div className="p-3 rounded bg-emerald-50 border border-emerald-200">
-                  <span className="text-emerald-700 block">Total Paid (After Save)</span>
+                  <span className="text-emerald-700 block">
+                    {isFrRoyalty ? "Paid to Admin (After Save)" : "Total Paid (After Save)"}
+                  </span>
                   <strong className="text-base text-emerald-800">
                     {formatINR(newTotalPaid)}
                   </strong>
@@ -735,10 +831,12 @@ export function AdminAdmissionsClient({
                       : "bg-red-50 border-red-200"
                   }`}
                 >
-                  <span className="block text-slate-600">Pending Balance</span>
+                  <span className="block text-slate-600">
+                    {isFrRoyalty ? "Pending Admin Share" : "Pending Balance"}
+                  </span>
                   {newPending === 0 && totalNum > 0 ? (
                     <strong className="text-xs font-extrabold text-emerald-800 uppercase">
-                      ✓ ALL FEE CLEARED
+                      {isFrRoyalty ? "✓ COMPLETE PAYMENT" : "✓ ALL FEE CLEARED"}
                     </strong>
                   ) : (
                     <strong className="text-base text-red-700">
@@ -795,45 +893,59 @@ export function AdminAdmissionsClient({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      Total Applicable Fee (₹) *
+                      {isFrRoyalty ? "Total Admin Share (₹500 + 15%)" : "Total Applicable Fee (₹) *"}
                     </label>
                     <input
                       type="number"
                       min={0}
                       required
-                      value={feeTotalInput}
+                      disabled={isFrRoyalty}
+                      value={isFrRoyalty ? String(totalNum) : feeTotalInput}
                       onChange={(e) => setFeeTotalInput(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded font-bold"
+                      className="w-full px-3 py-2 border border-slate-300 rounded font-bold disabled:bg-slate-100"
                     />
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
-                      Fee Received Now (₹)
+                      {isFrRoyalty ? "Royalty Received from Franchise Now (₹)" : "Fee Received Now (₹)"}
                     </label>
                     <input
                       type="number"
                       min={0}
                       value={feeReceiveInput}
                       onChange={(e) => setFeeReceiveInput(e.target.value)}
-                      placeholder="e.g., 5000"
+                      placeholder={isFrRoyalty ? "e.g., 2500" : "e.g., 5000"}
                       className="w-full px-3 py-2 border border-slate-300 rounded font-bold text-emerald-800"
                     />
                   </div>
                   <div className="sm:col-span-2">
                     <label className="block font-bold text-[#0B3D62] mb-1">
-                      Which Fee Received? (Fee Head) *
+                      {isFrRoyalty ? "Settlement Head *" : "Which Fee Received? (Fee Head) *"}
                     </label>
-                    <select
-                      value={feeHeadInput}
-                      onChange={(e) => setFeeHeadInput(e.target.value)}
-                      className="w-full px-3 py-2 border border-slate-300 rounded bg-white font-semibold"
-                    >
-                      {FEE_HEAD_OPTIONS.map((opt) => (
-                        <option key={opt} value={opt}>
-                          {opt}
-                        </option>
-                      ))}
-                    </select>
+                    {isFrRoyalty ? (
+                      <select
+                        value={feeHeadInput}
+                        onChange={(e) => setFeeHeadInput(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded bg-white font-semibold"
+                      >
+                        <option value="15% Royalty Settlement">15% Royalty Settlement</option>
+                        <option value="Partial Royalty Installment">Partial Royalty Installment</option>
+                        <option value="Final Royalty Settlement">Final Royalty Settlement</option>
+                        <option value="Initial Forward Fee (₹500)">Initial Forward Fee (₹500)</option>
+                      </select>
+                    ) : (
+                      <select
+                        value={feeHeadInput}
+                        onChange={(e) => setFeeHeadInput(e.target.value)}
+                        className="w-full px-3 py-2 border border-slate-300 rounded bg-white font-semibold"
+                      >
+                        {FEE_HEAD_OPTIONS.map((opt) => (
+                          <option key={opt} value={opt}>
+                            {opt}
+                          </option>
+                        ))}
+                      </select>
+                    )}
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
