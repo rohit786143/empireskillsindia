@@ -250,7 +250,7 @@ function FranchiseLedgerContent() {
 
   function openPayModal(r: FranchiseLedgerRow) {
     setPayRow(r);
-    setPayAmount(String(r.franchisePendingToMain || 0));
+    setPayAmount("");
     setPayType(
       (r.franchisePaidToMain || 0) < 500
         ? "Initial Forward Fee (₹500)"

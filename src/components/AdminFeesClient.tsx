@@ -213,7 +213,7 @@ export function AdminFeesClient({
     const existingCount = parsePayments(getAdminPaymentsJson(s)).length;
     setSelectedStudent(s);
     setTotalInput(String(t));
-    setReceiveInput(String(pend));
+    setReceiveInput("");
     setFeeHead(
       isFr
         ? "15% Royalty Settlement"

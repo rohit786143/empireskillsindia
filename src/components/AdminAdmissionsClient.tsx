@@ -187,15 +187,7 @@ export function AdminAdmissionsClient({
     setFeeModalApp(app);
     setFeeModalMode(mode);
     setFeeTotalInput(String(baseTotal));
-    setFeeReceiveInput(
-      isFrRoyalty
-        ? mode === "APPROVE"
-          ? "0"
-          : String(pending)
-        : mode === "COLLECT"
-        ? String(pending)
-        : String(baseTotal)
-    );
+    setFeeReceiveInput("");
     setFeeHeadInput(
       isFrRoyalty
         ? "15% Royalty Settlement"

@@ -1350,7 +1350,7 @@ export function FranchiseDashboardClient() {
                                 type="button"
                                 onClick={() => {
                                   setCollectApp(s);
-                                  setCollectAmount(String(pend > 0 ? Math.min(1500, pend) : 0));
+                                  setCollectAmount("");
                                   setCollectHead("Monthly Fee (Month 1)");
                                   setCollectMode("Cash");
                                   setCollectReceipt("");
@@ -1748,7 +1748,7 @@ export function FranchiseDashboardClient() {
                                         type="button"
                                         onClick={() => {
                                           setCollectApp(s);
-                                          setCollectAmount(String(pend > 0 ? Math.min(2000, pend) : 0));
+                                          setCollectAmount("");
                                           setCollectHead("Monthly Fee Installment");
                                           setCollectMode("Cash");
                                           setCollectReceipt("");
@@ -2667,7 +2667,7 @@ export function FranchiseDashboardClient() {
                       type="button"
                       onClick={() => {
                         setCollectApp(studentLedgerApp);
-                        setCollectAmount(String(pendAmt > 0 ? Math.min(2000, pendAmt) : 0));
+                        setCollectAmount("");
                         setCollectHead("Monthly Fee Installment");
                         setCollectMode("Cash");
                         setCollectReceipt("");
