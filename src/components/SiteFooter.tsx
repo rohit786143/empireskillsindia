@@ -9,7 +9,7 @@ import { INSTITUTE_INFO } from "@/lib/constants";
 
 export function SiteFooter() {
   const pathname = usePathname();
-  if (pathname?.startsWith("/admin")) {
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/franchise")) {
     return null;
   }
 
@@ -95,13 +95,21 @@ export function SiteFooter() {
                   Grievance &amp; Student Helpdesk
                 </Link>
               </li>
-              <li className="pt-2">
+              <li className="pt-2 flex flex-wrap gap-2">
                 <Link
                   href="/admin/login"
                   className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-[#072A44] hover:bg-slate-900 border border-[#F07228]/50 text-amber-200 text-xs font-semibold transition-colors"
                 >
                   <Lock className="w-3.5 h-3.5 text-[#FF9B5E]" />
                   Institute Owner Login
+                  <ExternalLink className="w-3 h-3 opacity-70" />
+                </Link>
+                <Link
+                  href="/franchise/login"
+                  className="inline-flex items-center gap-2 px-3.5 py-2 rounded bg-[#072A44] hover:bg-slate-900 border border-blue-400/50 text-blue-200 text-xs font-semibold transition-colors"
+                >
+                  <Lock className="w-3.5 h-3.5 text-blue-300" />
+                  Franchise Center Login
                   <ExternalLink className="w-3 h-3 opacity-70" />
                 </Link>
               </li>

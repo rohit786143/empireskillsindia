@@ -13,6 +13,7 @@ import {
   X,
   Bell,
   FileText,
+  Building2,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { INSTITUTE_INFO } from "@/lib/constants";
@@ -41,7 +42,7 @@ export function SiteHeader() {
   const [tickerNotices, setTickerNotices] = useState<TickerNotice[]>([]);
 
   useEffect(() => {
-    if (pathname?.startsWith("/admin")) return;
+    if (pathname?.startsWith("/admin") || pathname?.startsWith("/franchise")) return;
     apiFetch("/notices.php?ticker=true")
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
@@ -50,7 +51,7 @@ export function SiteHeader() {
       .catch(() => {});
   }, [pathname]);
 
-  if (pathname?.startsWith("/admin")) {
+  if (pathname?.startsWith("/admin") || pathname?.startsWith("/franchise")) {
     return null;
   }
 
@@ -103,6 +104,13 @@ export function SiteHeader() {
             >
               <GraduationCap className="w-3 h-3" />
               Student Zone
+            </Link>
+            <Link
+              href="/franchise/login"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-sky-400/50 hover:bg-sky-500/20 text-sky-200 font-medium transition-colors"
+            >
+              <Building2 className="w-3 h-3" />
+              Franchise Login
             </Link>
             <Link
               href="/admin/login"

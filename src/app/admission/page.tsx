@@ -1,7 +1,10 @@
 "use client";
 
 import React, { Suspense, useEffect, useState } from "react";
-import { AdmissionWizard } from "@/components/AdmissionWizard";
+import {
+  AdmissionWizard,
+  type FranchiseCenterOption,
+} from "@/components/AdmissionWizard";
 import { apiFetch } from "@/lib/api";
 
 interface CourseOption {
@@ -17,13 +20,19 @@ interface CourseOption {
 
 export default function AdmissionPage() {
   const [courses, setCourses] = useState<CourseOption[]>([]);
+  const [franchises, setFranchises] = useState<FranchiseCenterOption[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    apiFetch("/courses.php")
-      .then((r) => (r.ok ? r.json() : null))
-      .then((data) => {
-        if (data?.courses) setCourses(data.courses);
+    Promise.all([
+      apiFetch("/courses.php").then((r) => (r.ok ? r.json() : { courses: [] })),
+      apiFetch("/franchises.php?public=true").then((r) =>
+        r.ok ? r.json() : { franchises: [] }
+      ),
+    ])
+      .then(([cData, fData]) => {
+        setCourses(cData.courses || []);
+        setFranchises(fData.franchises || []);
       })
       .finally(() => setLoading(false));
   }, []);
@@ -39,8 +48,9 @@ export default function AdmissionPage() {
             Online Admission Portal
           </h1>
           <p className="text-slate-200 text-sm sm:text-base mt-2 max-w-2xl">
-            Complete the 5-step official admission form below to receive your unique
-            Application Reference ID and printable Admission Acknowledgement Slip.
+            Complete the 5-step official admission form below, choose your nearest Authorized
+            Study Center / Franchise (or Main Institute), and download your auto-filled 3-page
+            Admission Form.
           </p>
         </div>
       </section>
@@ -58,7 +68,7 @@ export default function AdmissionPage() {
               </div>
             }
           >
-            <AdmissionWizard courses={courses} />
+            <AdmissionWizard courses={courses} franchises={franchises} />
           </Suspense>
         )}
       </div>

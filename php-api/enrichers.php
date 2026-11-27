@@ -28,6 +28,12 @@ function enrich_course(array $rawRow, array $mapped): array {
 
 function enrich_application(array $rawRow, array $mapped): array {
     $mapped['extraDetailsJson'] = $rawRow['extra_details_json'] ?? ($mapped['extraDetailsJson'] ?? null);
+    $mapped['franchiseId'] = $rawRow['franchise_id'] ?? null;
+    $mapped['franchiseName'] = $rawRow['franchise_name'] ?? null;
+    $mapped['franchiseCode'] = $rawRow['franchise_code'] ?? null;
+    $mapped['franchiseStatus'] = $rawRow['franchise_status'] ?? 'DIRECT';
+    $mapped['franchiseRemarks'] = $rawRow['franchise_remarks'] ?? null;
+    $mapped['forwardedAt'] = $rawRow['forwarded_at'] ?? null;
     $mapped['totalFee'] = isset($rawRow['total_fee']) && $rawRow['total_fee'] !== null
         ? (int)$rawRow['total_fee']
         : (int)($mapped['totalFee'] ?? 0);

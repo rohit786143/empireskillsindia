@@ -1,8 +1,10 @@
 <?php
 require_once __DIR__ . '/config.php';
+require_once __DIR__ . '/franchise-schema.php';
 require_once __DIR__ . '/enrichers.php';
 
 $pdo = get_db();
+ensure_franchise_schema($pdo);
 $method = $_SERVER['REQUEST_METHOD'];
 
 // GET: list admissions [Admin]
@@ -24,6 +26,13 @@ if ($method === 'GET') {
     if (!empty($_GET['status']) && $_GET['status'] !== 'ALL') {
         $where[] = 'a.status = ?';
         $params[] = $_GET['status'];
+    }
+    if (($_GET['onlyFranchise'] ?? '') === 'true') {
+        $where[] = 'a.franchise_id IS NOT NULL';
+    }
+    if (!empty($_GET['franchiseStatus']) && $_GET['franchiseStatus'] !== 'ALL') {
+        $where[] = 'a.franchise_status = ?';
+        $params[] = $_GET['franchiseStatus'];
     }
     if (!empty($_GET['q'])) {
         $q = '%' . trim((string)$_GET['q']) . '%';
@@ -110,13 +119,32 @@ if ($method === 'POST') {
         // Column already exists
     }
 
+    // Handle optional Franchise Study Center selection
+    $franchiseId = !empty($body['franchiseId']) ? trim((string)$body['franchiseId']) : null;
+    $franchiseName = null;
+    $franchiseCode = null;
+    $franchiseStatus = 'DIRECT';
+    if ($franchiseId) {
+        $fStmt = $pdo->prepare('SELECT id, center_name, center_code FROM franchises WHERE id = ? AND status = "ACTIVE" LIMIT 1');
+        $fStmt->execute([$franchiseId]);
+        $fRow = $fStmt->fetch();
+        if ($fRow) {
+            $franchiseName = $fRow['center_name'];
+            $franchiseCode = $fRow['center_code'];
+            $franchiseStatus = 'PENDING_FRANCHISE';
+        } else {
+            $franchiseId = null;
+        }
+    }
+
     $id = generate_cuid();
     $stmt = $pdo->prepare(
         'INSERT INTO admission_applications
         (id, application_ref, status, enrollment_number, course_id, course_name, course_code, session, study_mode,
+         franchise_id, franchise_name, franchise_code, franchise_status,
          full_name, father_name, mother_name, dob, gender, category, aadhar_number, mobile, email,
          address, city, state, pincode, qualifications_json, extra_details_json, photo_url, signature_url, marksheet_url, id_proof_url, approved_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $id,
@@ -128,6 +156,10 @@ if ($method === 'POST') {
         $courseCode ?: 'ESI-GEN',
         trim((string)($body['session'] ?? 'July 2026')),
         trim((string)($body['studyMode'] ?? 'Regular')),
+        $franchiseId,
+        $franchiseName,
+        $franchiseCode,
+        $franchiseStatus,
         $fullName,
         $fatherName,
         $motherName ?: '—',
@@ -185,6 +217,10 @@ if ($method === 'PATCH' || $method === 'PUT') {
     if ($action === 'APPROVE' || $status === 'APPROVED') {
         $fields[] = '`status` = ?';
         $params[] = 'APPROVED';
+        if (!empty($existing['franchise_id'])) {
+            $fields[] = '`franchise_status` = ?';
+            $params[] = 'MAIN_APPROVED';
+        }
         if (empty($existing['enrollment_number'])) {
             $fields[] = '`enrollment_number` = ?';
             $params[] = generate_enrollment_number($pdo);
@@ -196,6 +232,10 @@ if ($method === 'PATCH' || $method === 'PUT') {
     } elseif ($action === 'REJECT' || $status === 'REJECTED') {
         $fields[] = '`status` = ?';
         $params[] = 'REJECTED';
+        if (!empty($existing['franchise_id'])) {
+            $fields[] = '`franchise_status` = ?';
+            $params[] = 'MAIN_REJECTED';
+        }
     } elseif ($status === 'PENDING') {
         $fields[] = '`status` = ?';
         $params[] = 'PENDING';

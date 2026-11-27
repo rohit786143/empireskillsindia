@@ -39,6 +39,15 @@ interface CourseOption {
   registrationFee: number;
 }
 
+export interface FranchiseCenterOption {
+  id: string;
+  centerCode: string;
+  centerName: string;
+  city: string;
+  state: string;
+  address?: string;
+}
+
 const STEPS = [
   { num: 1, label: "Course & Session", icon: FileText },
   { num: 2, label: "Personal Details", icon: User },
@@ -47,7 +56,13 @@ const STEPS = [
   { num: 5, label: "Review & Submit", icon: ClipboardCheck },
 ];
 
-export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
+export function AdmissionWizard({
+  courses,
+  franchises = [],
+}: {
+  courses: CourseOption[];
+  franchises?: FranchiseCenterOption[];
+}) {
   const searchParams = useSearchParams();
   const preselectedId = searchParams.get("course") || courses[0]?.id || "";
 
@@ -58,6 +73,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
 
   // Step 1
   const [courseId, setCourseId] = useState(preselectedId);
+  const [franchiseId, setFranchiseId] = useState<string>("");
   const [session, setSession] = useState<string>(ACADEMIC_SESSIONS[0]);
   const [studyMode, setStudyMode] = useState<string>(STUDY_MODES[0]);
 
@@ -221,6 +237,7 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
           courseId: selectedCourse?.id,
           courseName: selectedCourse?.title,
           courseCode: selectedCourse?.code,
+          franchiseId: franchiseId || null,
           session,
           studyMode,
           fullName: fullName.toUpperCase(),
@@ -361,6 +378,33 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                     </option>
                   ))}
                 </select>
+              </div>
+
+              <div className="md:col-span-2">
+                <label className="block text-xs font-bold text-slate-700 mb-1.5">
+                  Select Study Center / Authorized Franchise *
+                </label>
+                <select
+                  value={franchiseId}
+                  onChange={(e) => setFranchiseId(e.target.value)}
+                  className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                >
+                  <option value="">
+                    Main Institute — Empire Skills India Head Office (Direct Admission)
+                  </option>
+                  {franchises.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      [{f.centerCode}] {f.centerName}
+                      {f.city ? ` — ${f.city}` : ""}
+                      {f.state ? `, ${f.state}` : ""}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-[11px] text-slate-500 mt-1">
+                  {franchiseId
+                    ? "Your application will be routed to the selected Franchise Study Center for initial review and forwarding to Main Institute."
+                    : "Direct application to Empire Skills India Head Office."}
+                </p>
               </div>
 
               <div>
@@ -881,6 +925,19 @@ export function AdmissionWizard({ courses }: { courses: CourseOption[] }) {
                 <span className="text-xs text-slate-500 block">Selected Programme</span>
                 <strong className="text-[#0B3D62]">
                   {selectedCourse?.title} ({selectedCourse?.code})
+                </strong>
+              </div>
+              <div>
+                <span className="text-xs text-slate-500 block">Study Center / Franchise</span>
+                <strong className="text-[#D65B14]">
+                  {franchiseId
+                    ? (() => {
+                        const f = franchises.find((x) => x.id === franchiseId);
+                        return f
+                          ? `[${f.centerCode}] ${f.centerName} (${f.city})`
+                          : "Authorized Franchise Center";
+                      })()
+                    : "Main Institute — Head Office (Direct)"}
                 </strong>
               </div>
               <div>

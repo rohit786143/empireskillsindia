@@ -7,6 +7,8 @@ import {
   LayoutDashboard,
   Users,
   IndianRupee,
+  Building2,
+  Inbox,
   Award,
   FileCheck2,
   BookOpen,
@@ -30,6 +32,8 @@ interface AdminShellProps {
 const ADMIN_NAV = [
   { label: "Dashboard Overview", href: "/admin/dashboard", icon: LayoutDashboard },
   { label: "Admissions & Students", href: "/admin/admissions", icon: Users },
+  { label: "Franchise Admissions", href: "/admin/franchise-admissions", icon: Inbox },
+  { label: "Franchise Centers", href: "/admin/franchises", icon: Building2 },
   { label: "Fee Management", href: "/admin/fees", icon: IndianRupee },
   {
     label: "Certificate Generator",
