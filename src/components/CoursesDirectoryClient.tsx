@@ -312,9 +312,9 @@ export function CoursesDirectoryClient({ courses }: { courses: PublicCourse[] })
                   </div>
                   <div className="bg-slate-50 rounded p-2">
                     <IndianRupee className="w-3.5 h-3.5 text-emerald-700 mx-auto mb-1" />
-                    <div className="text-[10px] text-slate-500">Course Fee</div>
+                    <div className="text-[10px] text-slate-500">Total Fee</div>
                     <div className="text-xs font-bold text-[#0B3D62]">
-                      {formatINR(course.fee)}
+                      {formatINR(course.fee + (parseFee(course.feeBreakdownJson).examFee ?? 0))}
                     </div>
                   </div>
                 </div>
