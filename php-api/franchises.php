@@ -186,6 +186,12 @@ if ($method === 'DELETE') {
     require_admin();
     $id = trim((string)($_GET['id'] ?? ''));
     if ($id === '') json_response(['error' => 'Franchise id is required.'], 400);
+    $chk = $pdo->prepare('SELECT id, center_code, is_main_center FROM franchises WHERE id = ? LIMIT 1');
+    $chk->execute([$id]);
+    $found = $chk->fetch();
+    if ($found && is_main_center_row($found)) {
+        json_response(['error' => 'Main Center (ESI-CTR-001) is protected and cannot be deleted.'], 403);
+    }
     $pdo->prepare('DELETE FROM franchises WHERE id = ?')->execute([$id]);
     json_response(['success' => true]);
 }

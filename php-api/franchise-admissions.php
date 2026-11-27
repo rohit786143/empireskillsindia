@@ -7,9 +7,14 @@ $pdo = get_db();
 ensure_franchise_schema($pdo);
 $franchise = require_franchise();
 $franchiseId = $franchise['franchiseId'];
+$fRowStmt = $pdo->prepare('SELECT * FROM franchises WHERE id = ? LIMIT 1');
+$fRowStmt->execute([$franchiseId]);
+$fRowDb = $fRowStmt->fetch() ?: [];
+$isMainCenter = is_main_center_row($fRowDb);
+$franchise['isMainCenter'] = $isMainCenter;
 $method = $_SERVER['REQUEST_METHOD'];
 
-// GET: List ONLY this franchise's applications
+// GET: List ONLY this franchise's applications (+ online fee submissions ONLY for Main Center)
 if ($method === 'GET') {
     $stmt = $pdo->prepare(
         'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee, c.fee_breakdown_json AS joined_fee_breakdown
@@ -27,11 +32,91 @@ if ($method === 'GET') {
         $apps[] = $mapped;
     }
 
-    json_response(['applications' => $apps, 'franchise' => $franchise]);
+    $feeSubmissions = [];
+    if ($isMainCenter) {
+        $sfsStmt = $pdo->prepare('SELECT * FROM student_fee_submissions WHERE franchise_id = ? ORDER BY created_at DESC');
+        $sfsStmt->execute([$franchiseId]);
+        while ($sr = $sfsStmt->fetch()) {
+            $feeSubmissions[] = [
+                'id'               => $sr['id'],
+                'applicationId'    => $sr['application_id'],
+                'enrollmentNumber' => $sr['enrollment_number'],
+                'studentName'      => $sr['student_name'],
+                'courseName'       => $sr['course_name'],
+                'feeHead'          => $sr['fee_head'],
+                'amount'           => (int)$sr['amount'],
+                'utr'              => $sr['utr'] ?? '',
+                'paymentDate'      => $sr['payment_date'],
+                'receiptUrl'       => $sr['receipt_url'],
+                'status'           => $sr['status'],
+                'remarks'          => $sr['remarks'] ?? '',
+                'createdAt'        => $sr['created_at'],
+            ];
+        }
+    }
+
+    json_response(['applications' => $apps, 'franchise' => $franchise, 'feeSubmissions' => $feeSubmissions]);
 }
 
-// PATCH: Franchise Approve, Reject, or Forward to Main Institute
+// PATCH: Franchise Approve, Reject, Forward to Main Institute, OR Main Center Fee Actions
 if ($method === 'PATCH' || $method === 'PUT') {
+    $body = get_json_body();
+    $action = strtoupper(trim((string)($body['action'] ?? '')));
+
+    // Main Center Exclusive: Approve or Reject a Student's Online Monthly Fee Submission
+    if ($action === 'APPROVE_FEE_SUBMISSION' || $action === 'REJECT_FEE_SUBMISSION') {
+        if (!$isMainCenter) {
+            json_response(['error' => 'This feature is exclusive to the Main Center.'], 403);
+        }
+        $subId = trim((string)($body['submissionId'] ?? ''));
+        if ($subId === '') json_response(['error' => 'submissionId is required.'], 400);
+
+        $sStmt = $pdo->prepare('SELECT * FROM student_fee_submissions WHERE id = ? AND franchise_id = ? LIMIT 1');
+        $sStmt->execute([$subId, $franchiseId]);
+        $sub = $sStmt->fetch();
+        if (!$sub) json_response(['error' => 'Fee submission not found.'], 404);
+
+        $subRemarks = trim((string)($body['remarks'] ?? ''));
+        if ($action === 'REJECT_FEE_SUBMISSION') {
+            $pdo->prepare('UPDATE student_fee_submissions SET status = "REJECTED", remarks = ? WHERE id = ?')
+                ->execute([$subRemarks ?: 'Rejected by Main Center', $subId]);
+            json_response(['success' => true, 'status' => 'REJECTED']);
+        }
+
+        // Approve & add directly to student's fee_paid + fee_payments_json
+        if ($sub['status'] !== 'APPROVED') {
+            $appStmt = $pdo->prepare('SELECT * FROM admission_applications WHERE id = ? LIMIT 1');
+            $appStmt->execute([$sub['application_id']]);
+            $appRow = $appStmt->fetch();
+            if ($appRow) {
+                $existingPayments = [];
+                if (!empty($appRow['fee_payments_json'])) {
+                    $dec = json_decode($appRow['fee_payments_json'], true);
+                    if (is_array($dec)) $existingPayments = $dec;
+                }
+                $existingPayments[] = [
+                    'id'         => generate_cuid(),
+                    'amount'     => (int)$sub['amount'],
+                    'feeType'    => $sub['fee_head'],
+                    'mode'       => 'Online UPI/Bank',
+                    'receiptNo'  => $sub['utr'] ?: '',
+                    'date'       => $sub['payment_date'] ?: date('Y-m-d'),
+                    'recordedAt' => date('Y-m-d H:i:s'),
+                    'remarks'    => $subRemarks ?: 'Verified Online Monthly Fee Receipt',
+                ];
+                $totalPaid = 0;
+                foreach ($existingPayments as $p) {
+                    $totalPaid += (int)($p['amount'] ?? 0);
+                }
+                $pdo->prepare('UPDATE admission_applications SET fee_paid = ?, fee_payments_json = ? WHERE id = ?')
+                    ->execute([$totalPaid, json_encode($existingPayments, JSON_UNESCAPED_UNICODE), $appRow['id']]);
+            }
+            $pdo->prepare('UPDATE student_fee_submissions SET status = "APPROVED", remarks = ? WHERE id = ?')
+                ->execute([$subRemarks ?: 'Verified & Approved', $subId]);
+        }
+        json_response(['success' => true, 'status' => 'APPROVED']);
+    }
+
     $id = trim((string)($_GET['id'] ?? ''));
     if ($id === '') json_response(['error' => 'Application id is required.'], 400);
 
@@ -42,23 +127,83 @@ if ($method === 'PATCH' || $method === 'PUT') {
         json_response(['error' => 'Application not found for your center.'], 404);
     }
 
+    // Main Center Exclusive: Collect / Record Student Fee directly from Main Center Dashboard
+    if ($action === 'COLLECT_FEE') {
+        if (!$isMainCenter) {
+            json_response(['error' => 'Fee collection from center dashboard is exclusive to Main Center.'], 403);
+        }
+        $payment = $body['payment'] ?? null;
+        if (!is_array($payment) || (int)($payment['amount'] ?? 0) <= 0) {
+            json_response(['error' => 'Valid payment amount is required.'], 400);
+        }
+        $existingPayments = [];
+        if (!empty($existing['fee_payments_json'])) {
+            $dec = json_decode($existing['fee_payments_json'], true);
+            if (is_array($dec)) $existingPayments = $dec;
+        }
+        $existingPayments[] = [
+            'id'         => generate_cuid(),
+            'amount'     => (int)$payment['amount'],
+            'feeType'    => trim((string)($payment['feeType'] ?? 'Monthly Fee')),
+            'mode'       => trim((string)($payment['mode'] ?? 'Cash')),
+            'receiptNo'  => trim((string)($payment['receiptNo'] ?? '')),
+            'date'       => trim((string)($payment['date'] ?? '')) ?: date('Y-m-d'),
+            'recordedAt' => date('Y-m-d H:i:s'),
+            'remarks'    => trim((string)($payment['remarks'] ?? '')),
+        ];
+        $totalPaid = 0;
+        foreach ($existingPayments as $p) {
+            $totalPaid += (int)($p['amount'] ?? 0);
+        }
+        $pdo->prepare('UPDATE admission_applications SET fee_paid = ?, fee_payments_json = ? WHERE id = ?')
+            ->execute([$totalPaid, json_encode($existingPayments, JSON_UNESCAPED_UNICODE), $id]);
+
+        $upd = $pdo->prepare(
+            'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee, c.fee_breakdown_json AS joined_fee_breakdown
+             FROM admission_applications a LEFT JOIN courses c ON c.id = a.course_id WHERE a.id = ?'
+        );
+        $upd->execute([$id]);
+        $updRow = $upd->fetch();
+        $mapped = enrich_application($updRow, map_application($updRow));
+        $mapped['courseDuration'] = $updRow['joined_course_duration'] ?: '1 Year';
+        json_response(['application' => $mapped]);
+    }
+
     // Do not allow franchise to modify once Main Institute has already finalized
     if ($existing['franchise_status'] === 'MAIN_APPROVED') {
         json_response(['error' => 'This application has already been approved & enrolled by Main Institute.'], 400);
     }
 
-    $body = get_json_body();
-    $action = strtoupper(trim((string)($body['action'] ?? '')));
     $remarks = trim((string)($body['remarks'] ?? ''));
 
     $fields = [];
     $params = [];
 
     if ($action === 'FRANCHISE_APPROVE') {
-        $fields[] = '`franchise_status` = ?';
-        $params[] = 'FRANCHISE_APPROVED';
-        $fields[] = '`status` = ?';
-        $params[] = 'PENDING';
+        if ($isMainCenter) {
+            // Main Center Accept -> Automatically Enrolled & Visible in Main Admin (No forwarding step needed)
+            $fields[] = '`franchise_status` = ?';
+            $params[] = 'MAIN_APPROVED';
+            $fields[] = '`status` = ?';
+            $params[] = 'APPROVED';
+            if (empty($existing['enrollment_number'])) {
+                $fields[] = '`enrollment_number` = ?';
+                $params[] = generate_enrollment_number($pdo);
+            }
+            if (empty($existing['approved_at'])) {
+                $fields[] = '`approved_at` = ?';
+                $params[] = date('Y-m-d H:i:s');
+            }
+            if (empty($existing['forwarded_at'])) {
+                $fields[] = '`forwarded_at` = ?';
+                $params[] = date('Y-m-d H:i:s');
+            }
+        } else {
+            $fields[] = '`franchise_status` = ?';
+            $params[] = 'FRANCHISE_APPROVED';
+            $fields[] = '`status` = ?';
+            $params[] = 'PENDING';
+        }
     } elseif ($action === 'FRANCHISE_REJECT') {
         $fields[] = '`franchise_status` = ?';
         $params[] = 'FRANCHISE_REJECTED';

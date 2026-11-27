@@ -46,10 +46,46 @@ function ensure_franchise_schema(PDO $pdo): void {
         'ALTER TABLE franchises ADD COLUMN account_number VARCHAR(64) DEFAULT NULL',
         'ALTER TABLE franchises ADD COLUMN ifsc_code VARCHAR(32) DEFAULT NULL',
         'ALTER TABLE franchises ADD COLUMN registration_fee INT NOT NULL DEFAULT 500',
+        'ALTER TABLE franchises ADD COLUMN is_main_center TINYINT(1) NOT NULL DEFAULT 0',
     ];
     foreach ($alters as $sql) {
         try { $pdo->exec($sql); } catch (PDOException $e) {}
     }
+
+    // Ensure ESI-CTR-001 is always marked as the Main Center
+    try {
+        $pdo->exec('UPDATE franchises SET is_main_center = 1 WHERE UPPER(center_code) = "ESI-CTR-001"');
+    } catch (PDOException $e) {}
+
+    // Online Monthly Fee Submissions table (Exclusive to Main Center students)
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS `student_fee_submissions` (
+              `id` VARCHAR(64) NOT NULL,
+              `application_id` VARCHAR(64) NOT NULL,
+              `franchise_id` VARCHAR(64) NOT NULL,
+              `enrollment_number` VARCHAR(64) NOT NULL,
+              `student_name` VARCHAR(191) NOT NULL,
+              `course_name` VARCHAR(191) NOT NULL,
+              `fee_head` VARCHAR(120) NOT NULL,
+              `amount` INT NOT NULL DEFAULT 0,
+              `utr` VARCHAR(120) DEFAULT NULL,
+              `payment_date` VARCHAR(32) NOT NULL,
+              `receipt_url` LONGTEXT NOT NULL,
+              `status` VARCHAR(32) NOT NULL DEFAULT "PENDING",
+              `remarks` TEXT DEFAULT NULL,
+              `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_sfs_app` (`application_id`),
+              KEY `idx_sfs_fr` (`franchise_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    } catch (PDOException $e) {}
+}
+
+function is_main_center_row(array $r): bool {
+    if (!empty($r['is_main_center']) && (int)$r['is_main_center'] === 1) return true;
+    return strtoupper((string)($r['center_code'] ?? '')) === 'ESI-CTR-001';
 }
 
 function generate_center_code(PDO $pdo): string {
@@ -83,6 +119,7 @@ function map_franchise(array $r): array {
         'accountNumber'     => $r['account_number'] ?? '',
         'ifscCode'          => $r['ifsc_code'] ?? '',
         'registrationFee'   => isset($r['registration_fee']) && (int)$r['registration_fee'] > 0 ? (int)$r['registration_fee'] : 500,
+        'isMainCenter'      => is_main_center_row($r),
         'createdAt'         => $r['created_at'],
         'updatedAt'         => $r['updated_at'],
     ];

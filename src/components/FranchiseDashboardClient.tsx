@@ -21,6 +21,8 @@ import {
   QrCode,
   Receipt,
   Upload,
+  Users,
+  IndianRupee,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import {
@@ -38,6 +40,23 @@ interface FranchiseSession {
   email: string;
   city: string;
   state: string;
+  isMainCenter?: boolean;
+}
+
+interface FeeSubmissionRow {
+  id: string;
+  applicationId: string;
+  enrollmentNumber: string;
+  studentName: string;
+  courseName: string;
+  feeHead: string;
+  amount: number;
+  utr: string;
+  paymentDate: string;
+  receiptUrl: string;
+  status: string;
+  remarks: string;
+  createdAt: string;
 }
 
 interface FranchiseAppRow extends AdmissionFormRecord {
@@ -96,6 +115,19 @@ export function FranchiseDashboardClient() {
   const router = useRouter();
   const [franchise, setFranchise] = useState<FranchiseSession | null>(null);
   const [applications, setApplications] = useState<FranchiseAppRow[]>([]);
+  const [feeSubmissions, setFeeSubmissions] = useState<FeeSubmissionRow[]>([]);
+  const [mainTab, setMainTab] = useState<"applications" | "students" | "fees">("applications");
+  const [courseFilter, setCourseFilter] = useState("ALL");
+  const [sessionFilter, setSessionFilter] = useState("ALL");
+  const [viewReceiptSub, setViewReceiptSub] = useState<FeeSubmissionRow | null>(null);
+  const [collectApp, setCollectApp] = useState<FranchiseAppRow | null>(null);
+  const [collectAmount, setCollectAmount] = useState("");
+  const [collectHead, setCollectHead] = useState("Monthly Fee (Month 1)");
+  const [collectMode, setCollectMode] = useState("Cash");
+  const [collectReceipt, setCollectReceipt] = useState("");
+  const [collectDate, setCollectDate] = useState(new Date().toISOString().slice(0, 10));
+  const [collectRemarks, setCollectRemarks] = useState("");
+  const [savingCollect, setSavingCollect] = useState(false);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
@@ -224,6 +256,7 @@ export function FranchiseDashboardClient() {
       if (res.ok) {
         setFranchise(data.franchise || null);
         setApplications(data.applications || []);
+        setFeeSubmissions(data.feeSubmissions || []);
       }
     } catch {
       // ignore
@@ -243,6 +276,103 @@ export function FranchiseDashboardClient() {
       .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const isMainCenter = Boolean(
+    franchise?.isMainCenter || franchise?.centerCode?.toUpperCase() === "ESI-CTR-001"
+  );
+
+  const enrolledStudents = useMemo(
+    () => applications.filter((a) => a.status === "APPROVED" || a.franchiseStatus === "MAIN_APPROVED"),
+    [applications]
+  );
+
+  const uniqueCourses = useMemo(
+    () => Array.from(new Set(enrolledStudents.map((s) => s.courseName).filter(Boolean))),
+    [enrolledStudents]
+  );
+
+  const uniqueSessions = useMemo(
+    () => Array.from(new Set(enrolledStudents.map((s) => s.session).filter(Boolean))),
+    [enrolledStudents]
+  );
+
+  const filteredEnrolled = useMemo(() => {
+    return enrolledStudents.filter((s) => {
+      if (courseFilter !== "ALL" && s.courseName !== courseFilter) return false;
+      if (sessionFilter !== "ALL" && s.session !== sessionFilter) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        if (
+          !`${s.fullName} ${s.enrollmentNumber || ""} ${s.mobile} ${s.courseName} ${s.session}`
+            .toLowerCase()
+            .includes(q)
+        ) {
+          return false;
+        }
+      }
+      return true;
+    });
+  }, [enrolledStudents, courseFilter, sessionFilter, search]);
+
+  async function handleFeeSubmissionDecision(
+    sub: FeeSubmissionRow,
+    action: "APPROVE_FEE_SUBMISSION" | "REJECT_FEE_SUBMISSION"
+  ) {
+    if (
+      action === "REJECT_FEE_SUBMISSION" &&
+      !confirm(`Reject online fee receipt of ₹${sub.amount} from ${sub.studentName}?`)
+    ) {
+      return;
+    }
+    setBusyId(sub.id);
+    try {
+      const res = await apiFetch("/franchise-admissions.php", {
+        method: "PATCH",
+        body: JSON.stringify({ action, submissionId: sub.id }),
+      });
+      if (res.ok) {
+        await loadData(true);
+      } else {
+        const d = await res.json();
+        alert(d?.error || "Action failed.");
+      }
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  async function handleMainCenterCollectFee(e: React.FormEvent) {
+    e.preventDefault();
+    if (!collectApp) return;
+    setSavingCollect(true);
+    try {
+      const res = await apiFetch(`/franchise-admissions.php?id=${encodeURIComponent(collectApp.id)}`, {
+        method: "PATCH",
+        body: JSON.stringify({
+          action: "COLLECT_FEE",
+          payment: {
+            amount: Number(collectAmount || 0),
+            feeType: collectHead,
+            mode: collectMode,
+            receiptNo: collectReceipt.trim(),
+            date: collectDate,
+            remarks: collectRemarks.trim(),
+          },
+        }),
+      });
+      const data = await res.json();
+      if (res.ok && data.application) {
+        setApplications((prev) =>
+          prev.map((x) => (x.id === collectApp.id ? data.application : x))
+        );
+        setCollectApp(null);
+      } else {
+        alert(data?.error || "Failed to record fee.");
+      }
+    } finally {
+      setSavingCollect(false);
+    }
+  }
 
   const stats = useMemo(() => {
     const total = applications.length;
@@ -370,6 +500,11 @@ export function FranchiseDashboardClient() {
                     {franchise.centerCode}
                   </span>
                 )}
+                {isMainCenter && (
+                  <span className="px-2 py-0.5 rounded bg-emerald-500 text-white text-[10px] font-extrabold uppercase tracking-wider">
+                    Main Center
+                  </span>
+                )}
               </div>
               <p className="text-[11px] text-slate-200 flex items-center gap-1.5 mt-0.5">
                 <MapPin className="w-3 h-3 text-[#FF9B5E]" />
@@ -455,6 +590,49 @@ export function FranchiseDashboardClient() {
           </Link>
         </div>
 
+        {/* Main Center Exclusive Navigation Tabs (Hidden for all other franchises) */}
+        {isMainCenter && (
+          <div className="bg-white rounded-xl border border-slate-200 p-2 flex flex-wrap gap-2 shadow-sm">
+            <button
+              type="button"
+              onClick={() => setMainTab("applications")}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                mainTab === "applications"
+                  ? "bg-[#0B3D62] text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              <FileText className="w-3.5 h-3.5" />
+              Admission Applications ({applications.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainTab("students")}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                mainTab === "students"
+                  ? "bg-[#0B3D62] text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              Students — Course &amp; Session Wise ({enrolledStudents.length})
+            </button>
+            <button
+              type="button"
+              onClick={() => setMainTab("fees")}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                mainTab === "fees"
+                  ? "bg-[#F07228] text-white"
+                  : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+              }`}
+            >
+              <IndianRupee className="w-3.5 h-3.5" />
+              Fee Management &amp; Online Receipts (
+              {feeSubmissions.filter((s) => s.status === "PENDING").length} Pending)
+            </button>
+          </div>
+        )}
+
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
           <div className="bg-white rounded-xl border border-slate-200 p-4">
@@ -487,6 +665,9 @@ export function FranchiseDashboardClient() {
           </div>
         </div>
 
+        {/* Applications Tab (Default for all franchises; Tab 1 for Main Center) */}
+        {(!isMainCenter || mainTab === "applications") && (
+        <>
         {/* Filters + Search */}
         <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
           <div className="flex flex-wrap gap-1.5">
@@ -605,17 +786,19 @@ export function FranchiseDashboardClient() {
                               <div className="font-semibold text-slate-700">
                                 Course Fee: {formatINR(totalCourseFee)}
                               </div>
-                              <div className="text-[10px] text-[#0B3D62] bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 inline-block">
-                                Admin Share: <strong>{formatINR(app.franchiseTotalDue || 500)}</strong>{" "}
-                                (₹500 + 15% = {formatINR(app.franchiseRoyalty15 || 0)}) • Paid:{" "}
-                                <strong className="text-emerald-700">
-                                  {formatINR(app.franchisePaidToMain || 0)}
-                                </strong>{" "}
-                                • Due:{" "}
-                                <strong className="text-red-600">
-                                  {formatINR(app.franchisePendingToMain ?? (app.franchiseTotalDue || 500))}
-                                </strong>
-                              </div>
+                              {!isMainCenter && (
+                                <div className="text-[10px] text-[#0B3D62] bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 inline-block">
+                                  Admin Share: <strong>{formatINR(app.franchiseTotalDue || 500)}</strong>{" "}
+                                  (₹500 + 15% = {formatINR(app.franchiseRoyalty15 || 0)}) • Paid:{" "}
+                                  <strong className="text-emerald-700">
+                                    {formatINR(app.franchisePaidToMain || 0)}
+                                  </strong>{" "}
+                                  • Due:{" "}
+                                  <strong className="text-red-600">
+                                    {formatINR(app.franchisePendingToMain ?? (app.franchiseTotalDue || 500))}
+                                  </strong>
+                                </div>
+                              )}
                             </div>
                           )}
                         </td>
@@ -675,7 +858,7 @@ export function FranchiseDashboardClient() {
                                   className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors disabled:opacity-50"
                                 >
                                   <CheckCircle2 className="w-3.5 h-3.5" />
-                                  Accept
+                                  {isMainCenter ? "Accept & Enroll (Direct)" : "Accept"}
                                 </button>
                                 <button
                                   type="button"
@@ -770,7 +953,384 @@ export function FranchiseDashboardClient() {
             </div>
           )}
         </div>
+        </>
+        )}
+
+        {/* MAIN CENTER EXCLUSIVE TAB 2: Course & Session Wise Students */}
+        {isMainCenter && mainTab === "students" && (
+          <div className="space-y-4">
+            <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-wrap items-center gap-3">
+              <select
+                value={courseFilter}
+                onChange={(e) => setCourseFilter(e.target.value)}
+                className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg bg-white text-[#0B3D62]"
+              >
+                <option value="ALL">All Courses ({uniqueCourses.length})</option>
+                {uniqueCourses.map((c) => (
+                  <option key={c} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+              <select
+                value={sessionFilter}
+                onChange={(e) => setSessionFilter(e.target.value)}
+                className="px-3 py-2 text-xs font-semibold border border-slate-300 rounded-lg bg-white text-[#0B3D62]"
+              >
+                <option value="ALL">All Sessions ({uniqueSessions.length})</option>
+                {uniqueSessions.map((s) => (
+                  <option key={s} value={s}>
+                    {s}
+                  </option>
+                ))}
+              </select>
+              <div className="relative flex-1 min-w-[200px]">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search enrolled student..."
+                  className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg"
+                />
+              </div>
+            </div>
+
+            <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto shadow-sm">
+              <table className="w-full text-xs text-left">
+                <thead className="bg-[#0B3D62] text-white uppercase text-[11px]">
+                  <tr>
+                    <th className="py-3 px-4">Student &amp; Enrollment No.</th>
+                    <th className="py-3 px-3">Course</th>
+                    <th className="py-3 px-3">Session</th>
+                    <th className="py-3 px-3 text-right">Total Fee</th>
+                    <th className="py-3 px-3 text-right">Paid</th>
+                    <th className="py-3 px-3 text-right">Pending</th>
+                    <th className="py-3 px-4 text-right">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-200">
+                  {filteredEnrolled.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-10 text-center text-slate-500">
+                        No enrolled students match the selected course/session filter.
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredEnrolled.map((s) => {
+                      const t = s.totalFee || s.courseTotalFee || 0;
+                      const p = s.feePaid || 0;
+                      const pend = Math.max(0, t - p);
+                      return (
+                        <tr key={s.id} className="hover:bg-slate-50">
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-[#0B3D62]">{s.fullName}</div>
+                            <div className="font-mono text-[11px] font-bold text-emerald-700">
+                              {s.enrollmentNumber || s.applicationRef}
+                            </div>
+                            <div className="text-[10px] text-slate-500">{s.mobile}</div>
+                          </td>
+                          <td className="py-3 px-3 font-semibold text-slate-800">{s.courseName}</td>
+                          <td className="py-3 px-3 text-slate-600">{s.session}</td>
+                          <td className="py-3 px-3 text-right font-bold">{formatINR(t)}</td>
+                          <td className="py-3 px-3 text-right font-bold text-emerald-700">
+                            {formatINR(p)}
+                          </td>
+                          <td className="py-3 px-3 text-right">
+                            {pend === 0 && t > 0 ? (
+                              <span className="px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-bold text-[10px]">
+                                CLEARED
+                              </span>
+                            ) : (
+                              <span className="font-bold text-red-600">{formatINR(pend)}</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex justify-end gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setPrintApp(s)}
+                                className="px-2.5 py-1.5 rounded bg-[#0B3D62] text-white font-bold"
+                              >
+                                Form
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => {
+                                  setCollectApp(s);
+                                  setCollectAmount(String(pend > 0 ? Math.min(1500, pend) : 0));
+                                  setCollectHead("Monthly Fee (Month 1)");
+                                  setCollectMode("Cash");
+                                  setCollectReceipt("");
+                                  setCollectRemarks("");
+                                }}
+                                className="px-2.5 py-1.5 rounded bg-[#F07228] text-white font-bold"
+                              >
+                                Collect Fee
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        )}
+
+        {/* MAIN CENTER EXCLUSIVE TAB 3: Fee Management & Online Monthly Fee Receipts */}
+        {isMainCenter && mainTab === "fees" && (
+          <div className="space-y-6">
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              <div className="px-5 py-3.5 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+                <div>
+                  <h2 className="text-sm font-extrabold text-[#0B3D62]">
+                    Student Online Monthly Fee Receipts ({feeSubmissions.length})
+                  </h2>
+                  <p className="text-[11px] text-slate-600">
+                    Students of {franchise?.centerName} upload their monthly fee payment receipts
+                    from Student Zone. Verify &amp; Approve to auto-credit their fee balance.
+                  </p>
+                </div>
+              </div>
+              <div className="overflow-x-auto">
+                <table className="w-full text-xs text-left">
+                  <thead className="bg-[#0B3D62] text-white uppercase text-[11px]">
+                    <tr>
+                      <th className="py-3 px-4">Student &amp; Enrollment</th>
+                      <th className="py-3 px-3">Fee Head &amp; Date</th>
+                      <th className="py-3 px-3">UTR / Ref</th>
+                      <th className="py-3 px-3 text-right">Amount</th>
+                      <th className="py-3 px-3">Status</th>
+                      <th className="py-3 px-4 text-right">Action</th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-slate-200">
+                    {feeSubmissions.length === 0 ? (
+                      <tr>
+                        <td colSpan={6} className="py-8 text-center text-slate-500">
+                          No online monthly fee receipts submitted yet.
+                        </td>
+                      </tr>
+                    ) : (
+                      feeSubmissions.map((sub) => (
+                        <tr key={sub.id} className="hover:bg-slate-50">
+                          <td className="py-3 px-4">
+                            <div className="font-bold text-[#0B3D62]">{sub.studentName}</div>
+                            <div className="font-mono text-[11px] text-emerald-700 font-semibold">
+                              {sub.enrollmentNumber}
+                            </div>
+                            <div className="text-[10px] text-slate-500">{sub.courseName}</div>
+                          </td>
+                          <td className="py-3 px-3">
+                            <div className="font-semibold text-slate-800">{sub.feeHead}</div>
+                            <div className="text-[10px] text-slate-500">
+                              {formatDisplayDate(sub.paymentDate)}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 font-mono text-slate-600">
+                            {sub.utr || "—"}
+                          </td>
+                          <td className="py-3 px-3 text-right font-extrabold text-[#0B3D62]">
+                            {formatINR(sub.amount)}
+                          </td>
+                          <td className="py-3 px-3">
+                            <span
+                              className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                sub.status === "APPROVED"
+                                  ? "bg-emerald-100 text-emerald-800"
+                                  : sub.status === "REJECTED"
+                                  ? "bg-red-100 text-red-700"
+                                  : "bg-amber-100 text-amber-900"
+                              }`}
+                            >
+                              {sub.status}
+                            </span>
+                          </td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex justify-end gap-1.5 flex-wrap">
+                              <button
+                                type="button"
+                                onClick={() => setViewReceiptSub(sub)}
+                                className="px-2.5 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold"
+                              >
+                                View Receipt
+                              </button>
+                              {sub.status === "PENDING" && (
+                                <>
+                                  <button
+                                    type="button"
+                                    disabled={busyId === sub.id}
+                                    onClick={() =>
+                                      handleFeeSubmissionDecision(sub, "APPROVE_FEE_SUBMISSION")
+                                    }
+                                    className="px-2.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-50"
+                                  >
+                                    Verify &amp; Approve
+                                  </button>
+                                  <button
+                                    type="button"
+                                    disabled={busyId === sub.id}
+                                    onClick={() =>
+                                      handleFeeSubmissionDecision(sub, "REJECT_FEE_SUBMISSION")
+                                    }
+                                    className="px-2.5 py-1.5 rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold disabled:opacity-50"
+                                  >
+                                    Reject
+                                  </button>
+                                </>
+                              )}
+                            </div>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        )}
       </main>
+
+      {/* Main Center View Online Fee Receipt Modal */}
+      {viewReceiptSub && (
+        <div
+          className="no-print fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setViewReceiptSub(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0B3D62] text-white px-5 py-3.5 flex items-center justify-between">
+              <span className="text-sm font-bold">
+                Monthly Fee Receipt — {viewReceiptSub.studentName} ({formatINR(viewReceiptSub.amount)})
+              </span>
+              <button type="button" onClick={() => setViewReceiptSub(null)}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 text-xs flex flex-wrap justify-between gap-2">
+                <span>
+                  <strong>Head:</strong> {viewReceiptSub.feeHead}
+                </span>
+                <span>
+                  <strong>UTR:</strong>{" "}
+                  <span className="font-mono">{viewReceiptSub.utr || "—"}</span>
+                </span>
+              </div>
+              <div className="border border-slate-200 rounded-lg bg-slate-50 p-2 flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={viewReceiptSub.receiptUrl}
+                  alt="Online Fee Receipt"
+                  className="max-h-[65vh] w-auto object-contain rounded"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Main Center Direct Collect Fee Modal */}
+      {collectApp && (
+        <div className="no-print fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+            <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-sm">Record Fee Payment — {collectApp.fullName}</h3>
+              <button type="button" onClick={() => setCollectApp(null)}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleMainCenterCollectFee} className="p-5 space-y-3 text-xs">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Amount (₹) *</label>
+                  <input
+                    type="number"
+                    required
+                    min={1}
+                    value={collectAmount}
+                    onChange={(e) => setCollectAmount(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Date *</label>
+                  <input
+                    type="date"
+                    required
+                    value={collectDate}
+                    onChange={(e) => setCollectDate(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Fee Head</label>
+                  <input
+                    type="text"
+                    value={collectHead}
+                    onChange={(e) => setCollectHead(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Mode</label>
+                  <select
+                    value={collectMode}
+                    onChange={(e) => setCollectMode(e.target.value)}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                  >
+                    <option value="Cash">Cash</option>
+                    <option value="UPI">UPI</option>
+                    <option value="Bank Transfer">Bank Transfer</option>
+                  </select>
+                </div>
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Receipt / UTR No.</label>
+                <input
+                  type="text"
+                  value={collectReceipt}
+                  onChange={(e) => setCollectReceipt(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">Remarks</label>
+                <input
+                  type="text"
+                  value={collectRemarks}
+                  onChange={(e) => setCollectRemarks(e.target.value)}
+                  className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div className="flex justify-end gap-2 pt-2 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setCollectApp(null)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 font-semibold"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={savingCollect}
+                  className="px-5 py-2 rounded-lg bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-60"
+                >
+                  {savingCollect ? "Saving..." : "Save Payment"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Action / Remarks / ₹500 Forward Payment Modal */}
       {actionModal && (

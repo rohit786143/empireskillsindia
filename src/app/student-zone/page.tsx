@@ -13,6 +13,9 @@ import {
   ShieldCheck,
   User,
   FileText,
+  Upload,
+  CheckCircle2,
+  IndianRupee,
 } from "lucide-react";
 import { InstituteEmblem } from "@/components/InstituteEmblem";
 import { BrandLogo } from "@/components/BrandLogo";
@@ -59,6 +62,28 @@ interface StudentRecord {
   completionDate: string | null;
   course?: { duration: string } | null;
   certificates?: { certificateNumber: string; issueDate: string }[];
+  isMainCenterStudent?: boolean;
+  mainCenterPayment?: {
+    centerName: string;
+    centerCode: string;
+    paymentQrUrl: string;
+    upiId: string;
+    bankName: string;
+    accountHolderName: string;
+    accountNumber: string;
+    ifscCode: string;
+  } | null;
+  feeSubmissions?: {
+    id: string;
+    feeHead: string;
+    amount: number;
+    utr: string;
+    paymentDate: string;
+    receiptUrl: string;
+    status: string;
+    remarks: string;
+    createdAt: string;
+  }[];
 }
 
 export default function StudentZonePage() {
@@ -68,6 +93,60 @@ export default function StudentZonePage() {
   const [error, setError] = useState("");
   const [student, setStudent] = useState<StudentRecord | null>(null);
   const [activeTab, setActiveTab] = useState<"result" | "idcard" | "form">("result");
+
+  // Online Monthly Fee Submission State (Exclusive to Main Center ESI-CTR-001 students)
+  const [feeHead, setFeeHead] = useState("Monthly Fee (Month 1)");
+  const [feeAmount, setFeeAmount] = useState("");
+  const [feeUtr, setFeeUtr] = useState("");
+  const [feeDate, setFeeDate] = useState(new Date().toISOString().slice(0, 10));
+  const [feeReceiptUrl, setFeeReceiptUrl] = useState("");
+  const [submittingFee, setSubmittingFee] = useState(false);
+  const [feeMsg, setFeeMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  async function handleOnlineFeeSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!student || !feeReceiptUrl) {
+      setFeeMsg({ type: "err", text: "Please upload your payment receipt screenshot." });
+      return;
+    }
+    setSubmittingFee(true);
+    setFeeMsg(null);
+    try {
+      const res = await apiFetch("/student-zone.php", {
+        method: "POST",
+        body: JSON.stringify({
+          enrollmentNumber: student.enrollmentNumber,
+          dob: student.dob,
+          feeHead,
+          amount: Number(feeAmount || 0),
+          utr: feeUtr.trim(),
+          paymentDate: feeDate,
+          receiptUrl: feeReceiptUrl,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setFeeMsg({ type: "err", text: data.error || "Failed to submit fee receipt." });
+      } else if (data.submission) {
+        setStudent((prev) =>
+          prev
+            ? { ...prev, feeSubmissions: [data.submission, ...(prev.feeSubmissions || [])] }
+            : prev
+        );
+        setFeeAmount("");
+        setFeeUtr("");
+        setFeeReceiptUrl("");
+        setFeeMsg({
+          type: "ok",
+          text: "Monthly fee receipt uploaded successfully! Main Center will verify & update your fee balance shortly.",
+        });
+      }
+    } catch {
+      setFeeMsg({ type: "err", text: "Network error while uploading receipt." });
+    } finally {
+      setSubmittingFee(false);
+    }
+  }
 
   async function handleLookup(e: React.FormEvent) {
     e.preventDefault();
@@ -335,6 +414,263 @@ export default function StudentZonePage() {
                 </div>
               );
             })()}
+
+            {/* Main Center (ESI-CTR-001) Exclusive: Online Monthly Fee Payment & Receipt Upload */}
+            {student.isMainCenterStudent && (
+              <div className="no-print bg-white border-2 border-[#0B3D62]/25 rounded-xl shadow-sm overflow-hidden">
+                <div className="bg-gradient-to-r from-[#0B3D62] to-[#135589] text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-2">
+                  <div className="flex items-center gap-2">
+                    <IndianRupee className="w-4 h-4 text-[#FF9B5E]" />
+                    <h3 className="text-sm font-extrabold">
+                      Pay Monthly Fee Online &amp; Upload Payment Receipt
+                    </h3>
+                  </div>
+                  <span className="px-2.5 py-0.5 rounded-full bg-[#F07228] text-white text-[10px] font-bold uppercase">
+                    Main Center Online Fee Desk
+                  </span>
+                </div>
+
+                <div className="p-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+                  {/* Left: Main Center QR & Bank Info */}
+                  <div className="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3 text-xs">
+                    <p className="font-extrabold text-[#0B3D62] uppercase tracking-wide">
+                      Scan QR or Pay via Bank Transfer
+                    </p>
+                    {student.mainCenterPayment?.paymentQrUrl ? (
+                      <div className="flex flex-col items-center bg-white border border-slate-200 rounded-lg p-3">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={student.mainCenterPayment.paymentQrUrl}
+                          alt="Main Center Payment QR"
+                          className="w-44 h-44 object-contain"
+                        />
+                        <span className="text-[11px] font-bold text-[#0B3D62] mt-1.5">
+                          {student.mainCenterPayment.centerName} ({student.mainCenterPayment.centerCode})
+                        </span>
+                      </div>
+                    ) : null}
+                    <div className="space-y-1 text-slate-700">
+                      {student.mainCenterPayment?.upiId && (
+                        <p>
+                          <strong>UPI ID:</strong>{" "}
+                          <span className="font-mono text-[#0B3D62]">
+                            {student.mainCenterPayment.upiId}
+                          </span>
+                        </p>
+                      )}
+                      {student.mainCenterPayment?.bankName && (
+                        <p>
+                          <strong>Bank:</strong> {student.mainCenterPayment.bankName}
+                        </p>
+                      )}
+                      {student.mainCenterPayment?.accountHolderName && (
+                        <p>
+                          <strong>Account Holder:</strong>{" "}
+                          {student.mainCenterPayment.accountHolderName}
+                        </p>
+                      )}
+                      {student.mainCenterPayment?.accountNumber && (
+                        <p>
+                          <strong>Account No.:</strong>{" "}
+                          <span className="font-mono">
+                            {student.mainCenterPayment.accountNumber}
+                          </span>
+                        </p>
+                      )}
+                      {student.mainCenterPayment?.ifscCode && (
+                        <p>
+                          <strong>IFSC:</strong>{" "}
+                          <span className="font-mono">{student.mainCenterPayment.ifscCode}</span>
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Right: Upload Monthly Fee Receipt Form */}
+                  <form
+                    onSubmit={handleOnlineFeeSubmit}
+                    className="lg:col-span-7 space-y-3.5 text-xs"
+                  >
+                    {feeMsg && (
+                      <div
+                        className={`p-3 rounded-lg font-semibold flex items-center gap-2 ${
+                          feeMsg.type === "ok"
+                            ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                            : "bg-red-50 text-red-700 border border-red-200"
+                        }`}
+                      >
+                        {feeMsg.type === "ok" ? (
+                          <CheckCircle2 className="w-4 h-4 shrink-0" />
+                        ) : (
+                          <AlertCircle className="w-4 h-4 shrink-0" />
+                        )}
+                        <span>{feeMsg.text}</span>
+                      </div>
+                    )}
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Select Fee Head / Month *
+                        </label>
+                        <select
+                          value={feeHead}
+                          onChange={(e) => setFeeHead(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg bg-white"
+                        >
+                          <option value="Monthly Fee (Month 1)">Monthly Fee (Month 1)</option>
+                          <option value="Monthly Fee (Month 2)">Monthly Fee (Month 2)</option>
+                          <option value="Monthly Fee (Month 3)">Monthly Fee (Month 3)</option>
+                          <option value="Monthly Fee (Month 4)">Monthly Fee (Month 4)</option>
+                          <option value="Monthly Fee (Month 5)">Monthly Fee (Month 5)</option>
+                          <option value="Monthly Fee (Month 6)">Monthly Fee (Month 6)</option>
+                          <option value="Monthly Fee (Month 7)">Monthly Fee (Month 7)</option>
+                          <option value="Monthly Fee (Month 8)">Monthly Fee (Month 8)</option>
+                          <option value="Monthly Fee (Month 9)">Monthly Fee (Month 9)</option>
+                          <option value="Monthly Fee (Month 10)">Monthly Fee (Month 10)</option>
+                          <option value="Monthly Fee (Month 11)">Monthly Fee (Month 11)</option>
+                          <option value="Monthly Fee (Month 12)">Monthly Fee (Month 12)</option>
+                          <option value="Admission Fee">Admission Fee</option>
+                          <option value="1st Semester Fee">1st Semester Fee</option>
+                          <option value="2nd Semester Fee">2nd Semester Fee</option>
+                          <option value="Examination Fee">Examination Fee</option>
+                          <option value="Course Fee Installment">Course Fee Installment</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Amount Paid (₹) *
+                        </label>
+                        <input
+                          type="number"
+                          required
+                          min={1}
+                          value={feeAmount}
+                          onChange={(e) => setFeeAmount(e.target.value)}
+                          placeholder="e.g., 1500"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          Payment Date *
+                        </label>
+                        <input
+                          type="date"
+                          required
+                          value={feeDate}
+                          onChange={(e) => setFeeDate(e.target.value)}
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        />
+                      </div>
+                      <div>
+                        <label className="block font-bold text-slate-700 mb-1">
+                          UTR / Transaction Ref No.
+                        </label>
+                        <input
+                          type="text"
+                          value={feeUtr}
+                          onChange={(e) => setFeeUtr(e.target.value)}
+                          placeholder="Optional UTR number"
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                        />
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block font-bold text-[#D65B14] mb-1">
+                        Upload Payment Receipt Screenshot (Mandatory) *
+                      </label>
+                      <label className="flex items-center justify-center gap-2 border-2 border-dashed border-[#0B3D62]/40 hover:border-[#F07228] rounded-lg p-3 cursor-pointer bg-slate-50 font-bold text-[#0B3D62]">
+                        <Upload className="w-4 h-4" />
+                        {feeReceiptUrl ? "Change Receipt Screenshot" : "Click to Upload Receipt Screenshot *"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const f = e.target.files?.[0];
+                            if (!f) return;
+                            if (f.size > 2 * 1024 * 1024) {
+                              setFeeMsg({ type: "err", text: "Receipt image must be under 2 MB." });
+                              return;
+                            }
+                            const r = new FileReader();
+                            r.onload = () => {
+                              if (typeof r.result === "string") setFeeReceiptUrl(r.result);
+                            };
+                            r.readAsDataURL(f);
+                          }}
+                          className="hidden"
+                        />
+                      </label>
+                      {feeReceiptUrl && (
+                        <div className="mt-2 p-2 border border-emerald-300 bg-emerald-50/40 rounded-lg flex justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={feeReceiptUrl}
+                            alt="Fee Receipt Preview"
+                            className="max-h-36 object-contain rounded"
+                          />
+                        </div>
+                      )}
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submittingFee || !feeReceiptUrl}
+                      className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-bold text-xs disabled:opacity-50"
+                    >
+                      {submittingFee ? "Uploading Receipt..." : "Submit Monthly Fee Receipt"}
+                    </button>
+                  </form>
+                </div>
+
+                {/* Submitted Online Fee Receipts History */}
+                {student.feeSubmissions && student.feeSubmissions.length > 0 && (
+                  <div className="px-5 pb-5 border-t border-slate-200 pt-4 overflow-x-auto text-xs">
+                    <p className="font-bold text-[#0B3D62] uppercase text-[11px] mb-2">
+                      Your Online Fee Submissions ({student.feeSubmissions.length})
+                    </p>
+                    <table className="w-full text-left border border-slate-200">
+                      <thead className="bg-slate-100 text-slate-700">
+                        <tr>
+                          <th className="py-2 px-3">Date</th>
+                          <th className="py-2 px-3">Fee Head</th>
+                          <th className="py-2 px-3">UTR</th>
+                          <th className="py-2 px-3 text-right">Amount</th>
+                          <th className="py-2 px-3 text-right">Status</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {student.feeSubmissions.map((sub) => (
+                          <tr key={sub.id}>
+                            <td className="py-2 px-3">{formatDisplayDate(sub.paymentDate)}</td>
+                            <td className="py-2 px-3 font-semibold">{sub.feeHead}</td>
+                            <td className="py-2 px-3 font-mono">{sub.utr || "—"}</td>
+                            <td className="py-2 px-3 text-right font-bold text-[#0B3D62]">
+                              ₹{Number(sub.amount).toLocaleString("en-IN")}
+                            </td>
+                            <td className="py-2 px-3 text-right">
+                              <span
+                                className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                  sub.status === "APPROVED"
+                                    ? "bg-emerald-100 text-emerald-800"
+                                    : sub.status === "REJECTED"
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-amber-100 text-amber-900"
+                                }`}
+                              >
+                                {sub.status}
+                              </span>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
 
             {/* Switch Tabs */}
             <div className="no-print flex flex-wrap items-center justify-between gap-3">

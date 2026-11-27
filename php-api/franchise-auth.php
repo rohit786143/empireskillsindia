@@ -37,13 +37,14 @@ if ($action === 'login' && $method === 'POST') {
     }
 
     $sessionFranchise = [
-        'franchiseId' => $row['id'],
-        'centerCode'  => $row['center_code'],
-        'centerName'  => $row['center_name'],
-        'ownerName'   => $row['owner_name'],
-        'email'       => $row['email'],
-        'city'        => $row['city'],
-        'state'       => $row['state'],
+        'franchiseId'  => $row['id'],
+        'centerCode'   => $row['center_code'],
+        'centerName'   => $row['center_name'],
+        'ownerName'    => $row['owner_name'],
+        'email'        => $row['email'],
+        'city'         => $row['city'],
+        'state'        => $row['state'],
+        'isMainCenter' => is_main_center_row($row),
     ];
     $_SESSION['franchise_user'] = $sessionFranchise;
 

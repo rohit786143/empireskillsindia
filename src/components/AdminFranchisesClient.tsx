@@ -34,6 +34,7 @@ interface FranchiseRow {
   accountNumber?: string;
   ifscCode?: string;
   registrationFee?: number;
+  isMainCenter?: boolean;
   stats?: {
     totalApps: number;
     forwardedApps: number;
@@ -277,8 +278,13 @@ export function AdminFranchisesClient({
               franchises.map((f) => (
                 <tr key={f.id} className="hover:bg-slate-50">
                   <td className="py-3 px-4">
-                    <div className="font-mono font-bold text-[#D65B14]">
-                      {f.centerCode}
+                    <div className="flex items-center gap-1.5">
+                      <span className="font-mono font-bold text-[#D65B14]">{f.centerCode}</span>
+                      {(f.isMainCenter || f.centerCode?.toUpperCase() === "ESI-CTR-001") && (
+                        <span className="px-1.5 py-0.5 rounded bg-[#0B3D62] text-white text-[9px] font-extrabold uppercase tracking-wider">
+                          MAIN CENTER
+                        </span>
+                      )}
                     </div>
                     <div className="font-bold text-[#0B3D62] text-sm">{f.centerName}</div>
                   </td>
@@ -336,30 +342,34 @@ export function AdminFranchisesClient({
                       >
                         <Edit3 className="w-3.5 h-3.5" />
                       </button>
-                      <button
-                        type="button"
-                        onClick={() => toggleStatus(f)}
-                        className={`p-1.5 rounded border ${
-                          f.status === "ACTIVE"
-                            ? "border-amber-300 text-amber-700 hover:bg-amber-50"
-                            : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                        }`}
-                        title={f.status === "ACTIVE" ? "Suspend Center" : "Activate Center"}
-                      >
-                        {f.status === "ACTIVE" ? (
-                          <Ban className="w-3.5 h-3.5" />
-                        ) : (
-                          <CheckCircle2 className="w-3.5 h-3.5" />
-                        )}
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleDelete(f.id)}
-                        className="p-1.5 rounded text-red-600 hover:bg-red-50"
-                        title="Delete Franchise"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
+                      {!(f.isMainCenter || f.centerCode?.toUpperCase() === "ESI-CTR-001") && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => toggleStatus(f)}
+                            className={`p-1.5 rounded border ${
+                              f.status === "ACTIVE"
+                                ? "border-amber-300 text-amber-700 hover:bg-amber-50"
+                                : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
+                            }`}
+                            title={f.status === "ACTIVE" ? "Suspend Center" : "Activate Center"}
+                          >
+                            {f.status === "ACTIVE" ? (
+                              <Ban className="w-3.5 h-3.5" />
+                            ) : (
+                              <CheckCircle2 className="w-3.5 h-3.5" />
+                            )}
+                          </button>
+                          <button
+                            type="button"
+                            onClick={() => handleDelete(f.id)}
+                            className="p-1.5 rounded text-red-600 hover:bg-red-50"
+                            title="Delete Franchise"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                          </button>
+                        </>
+                      )}
                     </div>
                   </td>
                 </tr>
