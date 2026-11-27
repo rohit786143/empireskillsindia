@@ -25,12 +25,12 @@ $defaults = [
     'officeHours'        => 'Monday – Saturday: 09:30 AM to 06:00 PM IST',
     'facebook'           => 'https://www.facebook.com/share/1A9d2LWUKC/',
     'instagram'          => 'https://www.instagram.com/empire_skillsindia?utm_source=qr&jplx=MWp1dXZrYmU0OWcycg==',
-    'adminPaymentQrUrl'  => '',
-    'adminUpiId'         => '',
-    'adminBankName'      => '',
-    'adminAccountHolder' => '',
-    'adminAccountNumber' => '',
-    'adminIfscCode'      => '',
+    'adminPaymentQrUrl'  => '/payment-qr/empire-main-qr.png',
+    'adminUpiId'         => '46769601@ubin',
+    'adminBankName'      => 'Union Bank of India',
+    'adminAccountHolder' => 'EMPIRE EDUCATION FOUNDATION',
+    'adminAccountNumber' => '628101010055997',
+    'adminIfscCode'      => 'UBIN0536211',
 ];
 
 function load_site_settings(PDO $pdo, array $defaults): array {
@@ -40,7 +40,12 @@ function load_site_settings(PDO $pdo, array $defaults): array {
     if ($row && !empty($row['settings_json'])) {
         $decoded = json_decode($row['settings_json'], true);
         if (is_array($decoded)) {
-            return array_merge($defaults, $decoded);
+            $merged = array_merge($defaults, $decoded);
+            // Fall back to official Main Admin QR/UPI if stored values are empty
+            foreach (['adminPaymentQrUrl', 'adminUpiId', 'adminBankName', 'adminAccountHolder', 'adminAccountNumber', 'adminIfscCode'] as $pk) {
+                if (empty($merged[$pk])) $merged[$pk] = $defaults[$pk];
+            }
+            return $merged;
         }
     }
     return $defaults;

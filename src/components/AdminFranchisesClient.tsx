@@ -137,28 +137,28 @@ export function AdminFranchisesClient({
       };
       const payload = isEdit
         ? {
-            centerName: form.centerName,
-            ownerName: form.ownerName,
-            email: form.email,
-            phone: form.phone,
-            city: form.city,
-            state: form.state,
-            address: form.address,
-            ...paymentFields,
-            ...(form.password.trim() ? { newPassword: form.password.trim() } : {}),
-          }
+          centerName: form.centerName,
+          ownerName: form.ownerName,
+          email: form.email,
+          phone: form.phone,
+          city: form.city,
+          state: form.state,
+          address: form.address,
+          ...paymentFields,
+          ...(form.password.trim() ? { newPassword: form.password.trim() } : {}),
+        }
         : {
-            centerCode: form.centerCode,
-            centerName: form.centerName,
-            ownerName: form.ownerName,
-            email: form.email,
-            password: form.password,
-            phone: form.phone,
-            city: form.city,
-            state: form.state,
-            address: form.address,
-            ...paymentFields,
-          };
+          centerCode: form.centerCode,
+          centerName: form.centerName,
+          ownerName: form.ownerName,
+          email: form.email,
+          password: form.password,
+          phone: form.phone,
+          city: form.city,
+          state: form.state,
+          address: form.address,
+          ...paymentFields,
+        };
 
       const res = await apiFetch(
         isEdit ? `/franchises.php?id=${encodeURIComponent(form.id)}` : "/franchises.php",
@@ -314,11 +314,10 @@ export function AdminFranchisesClient({
                   </td>
                   <td className="py-3 px-3">
                     <span
-                      className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-                        f.status === "ACTIVE"
+                      className={`px-2 py-0.5 rounded font-bold text-[10px] ${f.status === "ACTIVE"
                           ? "bg-emerald-100 text-emerald-800"
                           : "bg-red-100 text-red-800"
-                      }`}
+                        }`}
                     >
                       {f.status}
                     </span>
@@ -347,11 +346,10 @@ export function AdminFranchisesClient({
                           <button
                             type="button"
                             onClick={() => toggleStatus(f)}
-                            className={`p-1.5 rounded border ${
-                              f.status === "ACTIVE"
+                            className={`p-1.5 rounded border ${f.status === "ACTIVE"
                                 ? "border-amber-300 text-amber-700 hover:bg-amber-50"
                                 : "border-emerald-300 text-emerald-700 hover:bg-emerald-50"
-                            }`}
+                              }`}
                             title={f.status === "ACTIVE" ? "Suspend Center" : "Activate Center"}
                           >
                             {f.status === "ACTIVE" ? (
@@ -642,8 +640,8 @@ export function AdminFranchisesClient({
                   {saving
                     ? "Saving..."
                     : form.id
-                    ? "Update Franchise"
-                    : "Create Franchise Center"}
+                      ? "Update Franchise"
+                      : "Create Franchise Center"}
                 </button>
               </div>
             </form>

@@ -78,7 +78,9 @@ interface FranchiseAppRow extends AdmissionFormRecord {
   franchiseTotalDue?: number;
   franchisePaidToMain?: number;
   franchisePendingToMain?: number;
+  franchisePaymentsJson?: string | null;
   franchiseForwardProofUrl?: string | null;
+  franchiseForwardUtr?: string | null;
   totalFee?: number;
   courseTotalFee?: number;
   feePaid?: number;
@@ -165,6 +167,7 @@ export function FranchiseDashboardClient() {
 
   // Payment proof viewer modal
   const [proofApp, setProofApp] = useState<FranchiseAppRow | null>(null);
+  const [ledgerApp, setLedgerApp] = useState<FranchiseAppRow | null>(null);
 
   // Center Payment QR & Bank settings modal
   const [payModalOpen, setPayModalOpen] = useState(false);
@@ -273,7 +276,7 @@ export function FranchiseDashboardClient() {
       .then((d) => {
         if (d?.settings) setAdminPayInfo(d.settings);
       })
-      .catch(() => {});
+      .catch(() => { });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -445,7 +448,7 @@ export function FranchiseDashboardClient() {
   }
 
   async function handleLogout() {
-    await apiFetch("/franchise-auth.php?action=logout", { method: "POST" }).catch(() => {});
+    await apiFetch("/franchise-auth.php?action=logout", { method: "POST" }).catch(() => { });
     router.replace("/franchise/login");
   }
 
@@ -596,11 +599,10 @@ export function FranchiseDashboardClient() {
             <button
               type="button"
               onClick={() => setMainTab("applications")}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
-                mainTab === "applications"
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "applications"
                   ? "bg-[#0B3D62] text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+                }`}
             >
               <FileText className="w-3.5 h-3.5" />
               Admission Applications ({applications.length})
@@ -608,11 +610,10 @@ export function FranchiseDashboardClient() {
             <button
               type="button"
               onClick={() => setMainTab("students")}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
-                mainTab === "students"
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "students"
                   ? "bg-[#0B3D62] text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+                }`}
             >
               <Users className="w-3.5 h-3.5" />
               Students — Course &amp; Session Wise ({enrolledStudents.length})
@@ -620,11 +621,10 @@ export function FranchiseDashboardClient() {
             <button
               type="button"
               onClick={() => setMainTab("fees")}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
-                mainTab === "fees"
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${mainTab === "fees"
                   ? "bg-[#F07228] text-white"
                   : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-              }`}
+                }`}
             >
               <IndianRupee className="w-3.5 h-3.5" />
               Fee Management &amp; Online Receipts (
@@ -667,293 +667,303 @@ export function FranchiseDashboardClient() {
 
         {/* Applications Tab (Default for all franchises; Tab 1 for Main Center) */}
         {(!isMainCenter || mainTab === "applications") && (
-        <>
-        {/* Filters + Search */}
-        <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
-          <div className="flex flex-wrap gap-1.5">
-            {[
-              { id: "ALL", label: `All (${applications.length})` },
-              {
-                id: "PENDING_FRANCHISE",
-                label: `New Pending (${applications.filter((a) => a.franchiseStatus === "PENDING_FRANCHISE").length})`,
-              },
-              {
-                id: "FRANCHISE_APPROVED",
-                label: `Center Approved (${applications.filter((a) => a.franchiseStatus === "FRANCHISE_APPROVED").length})`,
-              },
-              {
-                id: "FORWARDED_TO_MAIN",
-                label: `Forwarded to Main (${stats.forwarded})`,
-              },
-              {
-                id: "MAIN_APPROVED",
-                label: `Enrolled (${stats.enrolled})`,
-              },
-              {
-                id: "REJECTED",
-                label: `Rejected (${applications.filter((a) => a.franchiseStatus === "FRANCHISE_REJECTED" || a.franchiseStatus === "MAIN_REJECTED").length})`,
-              },
-            ].map((tab) => (
-              <button
-                key={tab.id}
-                type="button"
-                onClick={() => setFilterTab(tab.id)}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                  filterTab === tab.id
-                    ? "bg-[#0B3D62] text-white"
-                    : "bg-slate-100 text-slate-700 hover:bg-slate-200"
-                }`}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
+          <>
+            {/* Filters + Search */}
+            <div className="bg-white rounded-xl border border-slate-200 p-4 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { id: "ALL", label: `All (${applications.length})` },
+                  {
+                    id: "PENDING_FRANCHISE",
+                    label: `New Pending (${applications.filter((a) => a.franchiseStatus === "PENDING_FRANCHISE").length})`,
+                  },
+                  {
+                    id: "FRANCHISE_APPROVED",
+                    label: `Center Approved (${applications.filter((a) => a.franchiseStatus === "FRANCHISE_APPROVED").length})`,
+                  },
+                  {
+                    id: "FORWARDED_TO_MAIN",
+                    label: `Forwarded to Main (${stats.forwarded})`,
+                  },
+                  {
+                    id: "MAIN_APPROVED",
+                    label: `Enrolled (${stats.enrolled})`,
+                  },
+                  {
+                    id: "REJECTED",
+                    label: `Rejected (${applications.filter((a) => a.franchiseStatus === "FRANCHISE_REJECTED" || a.franchiseStatus === "MAIN_REJECTED").length})`,
+                  },
+                ].map((tab) => (
+                  <button
+                    key={tab.id}
+                    type="button"
+                    onClick={() => setFilterTab(tab.id)}
+                    className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${filterTab === tab.id
+                        ? "bg-[#0B3D62] text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                      }`}
+                  >
+                    {tab.label}
+                  </button>
+                ))}
+              </div>
 
-          <div className="relative w-full lg:w-72">
-            <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search student, phone, ref..."
-              className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D62]/20 focus:border-[#0B3D62]"
-            />
-          </div>
-        </div>
-
-        {/* Applications Table */}
-        <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-          {filtered.length === 0 ? (
-            <div className="p-12 text-center text-slate-500 text-sm">
-              No student applications found in this view.
+              <div className="relative w-full lg:w-72">
+                <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
+                <input
+                  type="text"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  placeholder="Search student, phone, ref..."
+                  className="w-full pl-9 pr-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D62]/20 focus:border-[#0B3D62]"
+                />
+              </div>
             </div>
-          ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full text-left border-collapse">
-                <thead>
-                  <tr className="bg-[#0B3D62] text-white text-[11px] uppercase tracking-wider">
-                    <th className="py-3 px-4">Student &amp; Contact</th>
-                    <th className="py-3 px-4">Ref / Enrollment No.</th>
-                    <th className="py-3 px-4">Course &amp; Fee</th>
-                    <th className="py-3 px-4">Workflow Status</th>
-                    <th className="py-3 px-4 text-right">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-200 text-xs">
-                  {filtered.map((app) => {
-                    const badge = STATUS_BADGES[app.franchiseStatus] || {
-                      label: app.franchiseStatus,
-                      cls: "bg-slate-100 text-slate-700",
-                    };
-                    const totalCourseFee = app.totalFee || app.courseTotalFee || 0;
-                    const isBusy = busyId === app.id;
 
-                    return (
-                      <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
-                        <td className="py-3.5 px-4 align-top">
-                          <div className="font-bold text-slate-900 text-sm">{app.fullName}</div>
-                          <div className="text-slate-600 mt-0.5">S/o {app.fatherName}</div>
-                          <div className="text-slate-500 mt-0.5">{app.mobile}</div>
-                          {app.createdAt && (
-                            <div className="text-[11px] text-slate-400 mt-0.5">
-                              Applied: {formatDisplayDate(app.createdAt)}
-                            </div>
-                          )}
-                        </td>
+            {/* Applications Table */}
+            <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+              {filtered.length === 0 ? (
+                <div className="p-12 text-center text-slate-500 text-sm">
+                  No student applications found in this view.
+                </div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left border-collapse">
+                    <thead>
+                      <tr className="bg-[#0B3D62] text-white text-[11px] uppercase tracking-wider">
+                        <th className="py-3 px-4">Student &amp; Contact</th>
+                        <th className="py-3 px-4">Ref / Enrollment No.</th>
+                        <th className="py-3 px-4">Course &amp; Fee</th>
+                        <th className="py-3 px-4">Workflow Status</th>
+                        <th className="py-3 px-4 text-right">Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-slate-200 text-xs">
+                      {filtered.map((app) => {
+                        const badge = STATUS_BADGES[app.franchiseStatus] || {
+                          label: app.franchiseStatus,
+                          cls: "bg-slate-100 text-slate-700",
+                        };
+                        const totalCourseFee = app.totalFee || app.courseTotalFee || 0;
+                        const isBusy = busyId === app.id;
 
-                        <td className="py-3.5 px-4 align-top">
-                          <div className="font-mono font-semibold text-slate-700">
-                            {app.applicationRef}
-                          </div>
-                          {app.enrollmentNumber ? (
-                            <div className="mt-1 inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono font-bold text-[11px]">
-                              {app.enrollmentNumber}
-                            </div>
-                          ) : (
-                            <div className="text-[11px] text-slate-400 mt-1">
-                              Enrollment pending Main approval
-                            </div>
-                          )}
-                        </td>
-
-                        <td className="py-3.5 px-4 align-top">
-                          <div className="font-semibold text-[#0B3D62]">{app.courseName}</div>
-                          <div className="text-slate-500 mt-0.5">
-                            {app.session} • {app.studyMode || "Regular"}
-                          </div>
-                          {totalCourseFee > 0 && (
-                            <div className="mt-1 space-y-0.5 text-[11px]">
-                              <div className="font-semibold text-slate-700">
-                                Course Fee: {formatINR(totalCourseFee)}
-                              </div>
-                              {!isMainCenter && (
-                                <div className="text-[10px] text-[#0B3D62] bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 inline-block">
-                                  Admin Share: <strong>{formatINR(app.franchiseTotalDue || 500)}</strong>{" "}
-                                  (₹500 + 15% = {formatINR(app.franchiseRoyalty15 || 0)}) • Paid:{" "}
-                                  <strong className="text-emerald-700">
-                                    {formatINR(app.franchisePaidToMain || 0)}
-                                  </strong>{" "}
-                                  • Due:{" "}
-                                  <strong className="text-red-600">
-                                    {formatINR(app.franchisePendingToMain ?? (app.franchiseTotalDue || 500))}
-                                  </strong>
+                        return (
+                          <tr key={app.id} className="hover:bg-slate-50/80 transition-colors">
+                            <td className="py-3.5 px-4 align-top">
+                              <div className="font-bold text-slate-900 text-sm">{app.fullName}</div>
+                              <div className="text-slate-600 mt-0.5">S/o {app.fatherName}</div>
+                              <div className="text-slate-500 mt-0.5">{app.mobile}</div>
+                              {app.createdAt && (
+                                <div className="text-[11px] text-slate-400 mt-0.5">
+                                  Applied: {formatDisplayDate(app.createdAt)}
                                 </div>
                               )}
-                            </div>
-                          )}
-                        </td>
+                            </td>
 
-                        <td className="py-3.5 px-4 align-top">
-                          <span
-                            className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${badge.cls}`}
-                          >
-                            {badge.label}
-                          </span>
-                          {app.forwardedAt && (
-                            <div className="text-[11px] text-slate-500 mt-1">
-                              Forwarded: {formatDisplayDate(app.forwardedAt)}
-                            </div>
-                          )}
-                          {app.franchiseRemarks && (
-                            <div className="text-[11px] text-slate-600 mt-1 bg-slate-100 px-2 py-1 rounded max-w-xs">
-                              <span className="font-semibold">Your Remark:</span>{" "}
-                              {app.franchiseRemarks}
-                            </div>
-                          )}
-                          {app.remarks && (
-                            <div className="text-[11px] text-[#0B3D62] mt-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded max-w-xs">
-                              <span className="font-bold">Main Admin Remark:</span> {app.remarks}
-                            </div>
-                          )}
-                        </td>
+                            <td className="py-3.5 px-4 align-top">
+                              <div className="font-mono font-semibold text-slate-700">
+                                {app.applicationRef}
+                              </div>
+                              {app.enrollmentNumber ? (
+                                <div className="mt-1 inline-block px-2 py-0.5 rounded bg-emerald-100 text-emerald-800 font-mono font-bold text-[11px]">
+                                  {app.enrollmentNumber}
+                                </div>
+                              ) : (
+                                <div className="text-[11px] text-slate-400 mt-1">
+                                  Enrollment pending Main approval
+                                </div>
+                              )}
+                            </td>
 
-                        <td className="py-3.5 px-4 align-top text-right">
-                          <div className="flex flex-wrap justify-end gap-1.5">
-                            <button
-                              type="button"
-                              onClick={() => setPrintApp(app)}
-                              className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0B3D62] hover:bg-[#072A44] text-white font-medium transition-colors"
-                            >
-                              <Printer className="w-3.5 h-3.5" />
-                              Form
-                            </button>
+                            <td className="py-3.5 px-4 align-top">
+                              <div className="font-semibold text-[#0B3D62]">{app.courseName}</div>
+                              <div className="text-slate-500 mt-0.5">
+                                {app.session} • {app.studyMode || "Regular"}
+                              </div>
+                              {totalCourseFee > 0 && (
+                                <div className="mt-1 space-y-0.5 text-[11px]">
+                                  <div className="font-semibold text-slate-700">
+                                    Course Fee: {formatINR(totalCourseFee)}
+                                  </div>
+                                  {!isMainCenter && (
+                                    <div className="text-[10px] text-[#0B3D62] bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 inline-block">
+                                      Admin Share: <strong>{formatINR(app.franchiseTotalDue || 500)}</strong>{" "}
+                                      (₹500 + 15% = {formatINR(app.franchiseRoyalty15 || 0)}) • Paid:{" "}
+                                      <strong className="text-emerald-700">
+                                        {formatINR(app.franchisePaidToMain || 0)}
+                                      </strong>{" "}
+                                      • Due:{" "}
+                                      <strong className="text-red-600">
+                                        {formatINR(app.franchisePendingToMain ?? (app.franchiseTotalDue || 500))}
+                                      </strong>
+                                    </div>
+                                  )}
+                                </div>
+                              )}
+                            </td>
 
-                            {app.paymentScreenshotUrl && (
-                              <button
-                                type="button"
-                                onClick={() => setProofApp(app)}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold transition-colors"
+                            <td className="py-3.5 px-4 align-top">
+                              <span
+                                className={`inline-block px-2.5 py-1 rounded-full text-[11px] font-semibold ${badge.cls}`}
                               >
-                                <Receipt className="w-3.5 h-3.5" />
-                                Payment Proof
-                              </button>
-                            )}
+                                {badge.label}
+                              </span>
+                              {app.forwardedAt && (
+                                <div className="text-[11px] text-slate-500 mt-1">
+                                  Forwarded: {formatDisplayDate(app.forwardedAt)}
+                                </div>
+                              )}
+                              {app.franchiseRemarks && (
+                                <div className="text-[11px] text-slate-600 mt-1 bg-slate-100 px-2 py-1 rounded max-w-xs">
+                                  <span className="font-semibold">Your Remark:</span>{" "}
+                                  {app.franchiseRemarks}
+                                </div>
+                              )}
+                              {app.remarks && (
+                                <div className="text-[11px] text-[#0B3D62] mt-1 bg-blue-50 border border-blue-200 px-2 py-1 rounded max-w-xs">
+                                  <span className="font-bold">Main Admin Remark:</span> {app.remarks}
+                                </div>
+                              )}
+                            </td>
 
-                            {app.franchiseStatus === "PENDING_FRANCHISE" && (
-                              <>
+                            <td className="py-3.5 px-4 align-top text-right">
+                              <div className="flex flex-wrap justify-end gap-1.5">
                                 <button
                                   type="button"
-                                  disabled={isBusy}
-                                  onClick={() => executeAction(app.id, "FRANCHISE_APPROVE")}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors disabled:opacity-50"
+                                  onClick={() => setPrintApp(app)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#0B3D62] hover:bg-[#072A44] text-white font-medium transition-colors"
                                 >
-                                  <CheckCircle2 className="w-3.5 h-3.5" />
-                                  {isMainCenter ? "Accept & Enroll (Direct)" : "Accept"}
+                                  <Printer className="w-3.5 h-3.5" />
+                                  Form
                                 </button>
-                                <button
-                                  type="button"
-                                  disabled={isBusy}
-                                  onClick={() => {
-                                    setRemarks(app.franchiseRemarks || "");
-                                    setActionModal({
-                                      app,
-                                      action: "FRANCHISE_REJECT",
-                                      title: "Reject Student Application",
-                                      buttonLabel: "Confirm Reject",
-                                      buttonCls: "bg-red-600 hover:bg-red-700 text-white",
-                                    });
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-medium transition-colors disabled:opacity-50"
-                                >
-                                  <XCircle className="w-3.5 h-3.5" />
-                                  Reject
-                                </button>
-                              </>
-                            )}
 
-                            {app.franchiseStatus === "FRANCHISE_APPROVED" && (
-                              <>
-                                <button
-                                  type="button"
-                                  disabled={isBusy}
-                                  onClick={() => {
-                                    setRemarks(app.franchiseRemarks || "");
-                                    setActionModal({
-                                      app,
-                                      action: "FORWARD_TO_MAIN",
-                                      title: "Forward Application to Main Institute",
-                                      buttonLabel: "Forward to Main Institute",
-                                      buttonCls: "bg-[#F07228] hover:bg-[#D65B14] text-white",
-                                    });
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-semibold transition-colors disabled:opacity-50"
-                                >
-                                  <Send className="w-3.5 h-3.5" />
-                                  Forward to Main
-                                </button>
-                                <button
-                                  type="button"
-                                  disabled={isBusy}
-                                  onClick={() => {
-                                    setRemarks(app.franchiseRemarks || "");
-                                    setActionModal({
-                                      app,
-                                      action: "FRANCHISE_REJECT",
-                                      title: "Reject Student Application",
-                                      buttonLabel: "Confirm Reject",
-                                      buttonCls: "bg-red-600 hover:bg-red-700 text-white",
-                                    });
-                                  }}
-                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-medium transition-colors disabled:opacity-50"
-                                >
-                                  <XCircle className="w-3.5 h-3.5" />
-                                  Reject
-                                </button>
-                              </>
-                            )}
+                                {app.paymentScreenshotUrl && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setProofApp(app)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold transition-colors"
+                                  >
+                                    <Receipt className="w-3.5 h-3.5" />
+                                    Payment Proof
+                                  </button>
+                                )}
 
-                            {(app.franchiseStatus === "FRANCHISE_REJECTED" ||
-                              app.franchiseStatus === "MAIN_REJECTED") && (
-                              <button
-                                type="button"
-                                disabled={isBusy}
-                                onClick={() => {
-                                  setRemarks(app.franchiseRemarks || "");
-                                  setActionModal({
-                                    app,
-                                    action: "FORWARD_TO_MAIN",
-                                    title: "Re-Forward Application to Main Institute",
-                                    buttonLabel: "Forward to Main Institute",
-                                    buttonCls: "bg-[#F07228] hover:bg-[#D65B14] text-white",
-                                  });
-                                }}
-                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors disabled:opacity-50"
-                              >
-                                <Send className="w-3.5 h-3.5" />
-                                Re-Forward
-                              </button>
-                            )}
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                                {!isMainCenter && (
+                                  <button
+                                    type="button"
+                                    onClick={() => setLedgerApp(app)}
+                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B3D62] border border-blue-200 font-semibold transition-colors"
+                                  >
+                                    <IndianRupee className="w-3.5 h-3.5" />
+                                    Ledger
+                                  </button>
+                                )}
+
+                                {app.franchiseStatus === "PENDING_FRANCHISE" && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() => executeAction(app.id, "FRANCHISE_APPROVE")}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white font-semibold transition-colors disabled:opacity-50"
+                                    >
+                                      <CheckCircle2 className="w-3.5 h-3.5" />
+                                      {isMainCenter ? "Accept & Enroll (Direct)" : "Accept"}
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() => {
+                                        setRemarks(app.franchiseRemarks || "");
+                                        setActionModal({
+                                          app,
+                                          action: "FRANCHISE_REJECT",
+                                          title: "Reject Student Application",
+                                          buttonLabel: "Confirm Reject",
+                                          buttonCls: "bg-red-600 hover:bg-red-700 text-white",
+                                        });
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-medium transition-colors disabled:opacity-50"
+                                    >
+                                      <XCircle className="w-3.5 h-3.5" />
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+
+                                {app.franchiseStatus === "FRANCHISE_APPROVED" && (
+                                  <>
+                                    <button
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() => {
+                                        setRemarks(app.franchiseRemarks || "");
+                                        setActionModal({
+                                          app,
+                                          action: "FORWARD_TO_MAIN",
+                                          title: "Forward Application to Main Institute",
+                                          buttonLabel: "Forward to Main Institute",
+                                          buttonCls: "bg-[#F07228] hover:bg-[#D65B14] text-white",
+                                        });
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-semibold transition-colors disabled:opacity-50"
+                                    >
+                                      <Send className="w-3.5 h-3.5" />
+                                      Forward to Main
+                                    </button>
+                                    <button
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() => {
+                                        setRemarks(app.franchiseRemarks || "");
+                                        setActionModal({
+                                          app,
+                                          action: "FRANCHISE_REJECT",
+                                          title: "Reject Student Application",
+                                          buttonLabel: "Confirm Reject",
+                                          buttonCls: "bg-red-600 hover:bg-red-700 text-white",
+                                        });
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-medium transition-colors disabled:opacity-50"
+                                    >
+                                      <XCircle className="w-3.5 h-3.5" />
+                                      Reject
+                                    </button>
+                                  </>
+                                )}
+
+                                {(app.franchiseStatus === "FRANCHISE_REJECTED" ||
+                                  app.franchiseStatus === "MAIN_REJECTED") && (
+                                    <button
+                                      type="button"
+                                      disabled={isBusy}
+                                      onClick={() => {
+                                        setRemarks(app.franchiseRemarks || "");
+                                        setActionModal({
+                                          app,
+                                          action: "FORWARD_TO_MAIN",
+                                          title: "Re-Forward Application to Main Institute",
+                                          buttonLabel: "Forward to Main Institute",
+                                          buttonCls: "bg-[#F07228] hover:bg-[#D65B14] text-white",
+                                        });
+                                      }}
+                                      className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-700 font-medium transition-colors disabled:opacity-50"
+                                    >
+                                      <Send className="w-3.5 h-3.5" />
+                                      Re-Forward
+                                    </button>
+                                  )}
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
-          )}
-        </div>
-        </>
+          </>
         )}
 
         {/* MAIN CENTER EXCLUSIVE TAB 2: Course & Session Wise Students */}
@@ -1138,13 +1148,12 @@ export function FranchiseDashboardClient() {
                           </td>
                           <td className="py-3 px-3">
                             <span
-                              className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-                                sub.status === "APPROVED"
+                              className={`px-2 py-0.5 rounded font-bold text-[10px] ${sub.status === "APPROVED"
                                   ? "bg-emerald-100 text-emerald-800"
                                   : sub.status === "REJECTED"
-                                  ? "bg-red-100 text-red-700"
-                                  : "bg-amber-100 text-amber-900"
-                              }`}
+                                    ? "bg-red-100 text-red-700"
+                                    : "bg-amber-100 text-amber-900"
+                                }`}
                             >
                               {sub.status}
                             </span>
@@ -1356,128 +1365,128 @@ export function FranchiseDashboardClient() {
 
               {(actionModal.action === "FORWARD_TO_MAIN" ||
                 actionModal.action === "APPROVE_AND_FORWARD") && (
-                <div className="bg-[#EFF6FF] border border-[#0B3D62]/25 rounded-xl p-3.5 space-y-3 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-extrabold text-[#0B3D62] uppercase tracking-wide">
-                      Pay ₹500 Forward Share to Main Admin *
-                    </span>
-                    <span className="px-2 py-0.5 rounded-full bg-[#F07228] text-white font-extrabold text-[11px]">
-                      Pay Now: ₹500
-                    </span>
-                  </div>
-                  <div className="bg-white border border-slate-200 rounded-lg p-2.5 text-[11px] space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">1. Initial Share (Pay Now on Forward):</span>
-                      <strong className="text-[#D65B14]">₹500</strong>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-slate-500">
-                        2. 15% Royalty on Remaining ({formatINR(actionModal.app.franchiseRemainingBase || 0)}):
+                  <div className="bg-[#EFF6FF] border border-[#0B3D62]/25 rounded-xl p-3.5 space-y-3 text-xs">
+                    <div className="flex items-center justify-between">
+                      <span className="font-extrabold text-[#0B3D62] uppercase tracking-wide">
+                        Pay ₹500 Forward Share to Main Admin *
                       </span>
-                      <strong>{formatINR(actionModal.app.franchiseRoyalty15 || 0)}</strong>
+                      <span className="px-2 py-0.5 rounded-full bg-[#F07228] text-white font-extrabold text-[11px]">
+                        Pay Now: ₹500
+                      </span>
                     </div>
-                    <div className="flex justify-between pt-1 border-t border-slate-200 font-bold text-[#0B3D62]">
-                      <span>Total Franchise Share (Ledger):</span>
-                      <span>{formatINR(actionModal.app.franchiseTotalDue || 500)}</span>
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 text-[11px] space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">1. Initial Share (Pay Now on Forward):</span>
+                        <strong className="text-[#D65B14]">₹500</strong>
+                      </div>
+                      <div className="flex justify-between">
+                        <span className="text-slate-500">
+                          2. 15% Royalty on Remaining ({formatINR(actionModal.app.franchiseRemainingBase || 0)}):
+                        </span>
+                        <strong>{formatINR(actionModal.app.franchiseRoyalty15 || 0)}</strong>
+                      </div>
+                      <div className="flex justify-between pt-1 border-t border-slate-200 font-bold text-[#0B3D62]">
+                        <span>Total Franchise Share (Ledger):</span>
+                        <span>{formatINR(actionModal.app.franchiseTotalDue || 500)}</span>
+                      </div>
                     </div>
-                  </div>
 
-                  {/* Main Admin QR / Bank Details */}
-                  {(adminPayInfo.adminPaymentQrUrl ||
-                    adminPayInfo.adminUpiId ||
-                    adminPayInfo.adminAccountNumber) && (
-                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 flex flex-col sm:flex-row items-center gap-3">
-                      {adminPayInfo.adminPaymentQrUrl && (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={adminPayInfo.adminPaymentQrUrl}
-                          alt="Main Admin Payment QR"
-                          className="w-28 h-28 object-contain border border-slate-200 rounded p-1 bg-white shrink-0"
-                        />
+                    {/* Main Admin QR / Bank Details */}
+                    {(adminPayInfo.adminPaymentQrUrl ||
+                      adminPayInfo.adminUpiId ||
+                      adminPayInfo.adminAccountNumber) && (
+                        <div className="bg-white border border-slate-200 rounded-lg p-2.5 flex flex-col sm:flex-row items-center gap-3">
+                          {adminPayInfo.adminPaymentQrUrl && (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={adminPayInfo.adminPaymentQrUrl}
+                              alt="Main Admin Payment QR"
+                              className="w-28 h-28 object-contain border border-slate-200 rounded p-1 bg-white shrink-0"
+                            />
+                          )}
+                          <div className="text-[11px] space-y-0.5 flex-1">
+                            <p className="font-bold text-[#0B3D62]">Main Admin Account Details:</p>
+                            {adminPayInfo.adminUpiId && (
+                              <p>
+                                UPI: <strong className="font-mono">{adminPayInfo.adminUpiId}</strong>
+                              </p>
+                            )}
+                            {adminPayInfo.adminBankName && <p>Bank: {adminPayInfo.adminBankName}</p>}
+                            {adminPayInfo.adminAccountHolder && (
+                              <p>A/c Holder: {adminPayInfo.adminAccountHolder}</p>
+                            )}
+                            {adminPayInfo.adminAccountNumber && (
+                              <p>
+                                A/c No.:{" "}
+                                <strong className="font-mono">{adminPayInfo.adminAccountNumber}</strong>
+                              </p>
+                            )}
+                            {adminPayInfo.adminIfscCode && (
+                              <p>
+                                IFSC: <strong className="font-mono">{adminPayInfo.adminIfscCode}</strong>
+                              </p>
+                            )}
+                          </div>
+                        </div>
                       )}
-                      <div className="text-[11px] space-y-0.5 flex-1">
-                        <p className="font-bold text-[#0B3D62]">Main Admin Account Details:</p>
-                        {adminPayInfo.adminUpiId && (
-                          <p>
-                            UPI: <strong className="font-mono">{adminPayInfo.adminUpiId}</strong>
-                          </p>
-                        )}
-                        {adminPayInfo.adminBankName && <p>Bank: {adminPayInfo.adminBankName}</p>}
-                        {adminPayInfo.adminAccountHolder && (
-                          <p>A/c Holder: {adminPayInfo.adminAccountHolder}</p>
-                        )}
-                        {adminPayInfo.adminAccountNumber && (
-                          <p>
-                            A/c No.:{" "}
-                            <strong className="font-mono">{adminPayInfo.adminAccountNumber}</strong>
-                          </p>
-                        )}
-                        {adminPayInfo.adminIfscCode && (
-                          <p>
-                            IFSC: <strong className="font-mono">{adminPayInfo.adminIfscCode}</strong>
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  )}
 
-                  {/* Mandatory ₹500 Forward Payment Screenshot */}
-                  <div>
-                    <label className="block font-bold text-[#D65B14] mb-1">
-                      Upload ₹500 Payment Screenshot to Main Admin (Mandatory) *
-                    </label>
-                    <label className="flex items-center justify-center gap-2 border-2 border-dashed border-[#0B3D62]/40 hover:border-[#F07228] rounded-lg p-2.5 cursor-pointer bg-white font-semibold text-[#0B3D62]">
-                      <Upload className="w-4 h-4" />
-                      {forwardProofUrl || actionModal.app.franchiseForwardProofUrl
-                        ? "Change ₹500 Payment Screenshot"
-                        : "Upload ₹500 Payment Screenshot *"}
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={(e) => {
-                          const file = e.target.files?.[0];
-                          if (!file) return;
-                          if (file.size > 2 * 1024 * 1024) {
-                            alert("Image must be under 2 MB.");
-                            return;
-                          }
-                          const reader = new FileReader();
-                          reader.onload = () => {
-                            if (typeof reader.result === "string") {
-                              setForwardProofUrl(reader.result);
+                    {/* Mandatory ₹500 Forward Payment Screenshot */}
+                    <div>
+                      <label className="block font-bold text-[#D65B14] mb-1">
+                        Upload ₹500 Payment Screenshot to Main Admin (Mandatory) *
+                      </label>
+                      <label className="flex items-center justify-center gap-2 border-2 border-dashed border-[#0B3D62]/40 hover:border-[#F07228] rounded-lg p-2.5 cursor-pointer bg-white font-semibold text-[#0B3D62]">
+                        <Upload className="w-4 h-4" />
+                        {forwardProofUrl || actionModal.app.franchiseForwardProofUrl
+                          ? "Change ₹500 Payment Screenshot"
+                          : "Upload ₹500 Payment Screenshot *"}
+                        <input
+                          type="file"
+                          accept="image/*"
+                          onChange={(e) => {
+                            const file = e.target.files?.[0];
+                            if (!file) return;
+                            if (file.size > 2 * 1024 * 1024) {
+                              alert("Image must be under 2 MB.");
+                              return;
                             }
-                          };
-                          reader.readAsDataURL(file);
-                        }}
-                        className="hidden"
-                      />
-                    </label>
-                    {(forwardProofUrl || actionModal.app.franchiseForwardProofUrl) && (
-                      <div className="mt-2 bg-white border border-emerald-300 rounded p-1.5 flex justify-center">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={forwardProofUrl || actionModal.app.franchiseForwardProofUrl || ""}
-                          alt="Forward Payment Proof"
-                          className="max-h-32 object-contain"
+                            const reader = new FileReader();
+                            reader.onload = () => {
+                              if (typeof reader.result === "string") {
+                                setForwardProofUrl(reader.result);
+                              }
+                            };
+                            reader.readAsDataURL(file);
+                          }}
+                          className="hidden"
                         />
-                      </div>
-                    )}
-                  </div>
+                      </label>
+                      {(forwardProofUrl || actionModal.app.franchiseForwardProofUrl) && (
+                        <div className="mt-2 bg-white border border-emerald-300 rounded p-1.5 flex justify-center">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={forwardProofUrl || actionModal.app.franchiseForwardProofUrl || ""}
+                            alt="Forward Payment Proof"
+                            className="max-h-32 object-contain"
+                          />
+                        </div>
+                      )}
+                    </div>
 
-                  <div>
-                    <label className="block font-bold text-slate-700 mb-1">
-                      UTR / Transaction Ref No. (Optional)
-                    </label>
-                    <input
-                      type="text"
-                      value={forwardUtr}
-                      onChange={(e) => setForwardUtr(e.target.value)}
-                      placeholder="e.g., 432198765432"
-                      className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
-                    />
+                    <div>
+                      <label className="block font-bold text-slate-700 mb-1">
+                        UTR / Transaction Ref No. (Optional)
+                      </label>
+                      <input
+                        type="text"
+                        value={forwardUtr}
+                        onChange={(e) => setForwardUtr(e.target.value)}
+                        placeholder="e.g., 432198765432"
+                        className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                )}
 
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
@@ -1544,11 +1553,10 @@ export function FranchiseDashboardClient() {
             <form onSubmit={handleChangePassword} className="p-5 space-y-4">
               {pwMsg && (
                 <div
-                  className={`p-3 rounded-lg text-xs font-medium ${
-                    pwMsg.type === "ok"
+                  className={`p-3 rounded-lg text-xs font-medium ${pwMsg.type === "ok"
                       ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                       : "bg-red-50 text-red-700 border border-red-200"
-                  }`}
+                    }`}
                 >
                   {pwMsg.text}
                 </div>
@@ -1595,6 +1603,137 @@ export function FranchiseDashboardClient() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Student-Wise Franchise Settlement Ledger Modal (for Partner Centers) */}
+      {ledgerApp && (
+        <div
+          className="no-print fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto"
+          onClick={() => setLedgerApp(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between">
+              <div className="text-sm font-bold">
+                Student Settlement Ledger — {ledgerApp.fullName}
+              </div>
+              <button type="button" onClick={() => setLedgerApp(null)}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-4 text-xs">
+              <div className="bg-slate-50 border border-slate-200 rounded-lg p-3 space-y-1">
+                <div className="flex justify-between">
+                  <span className="text-slate-500">Course Total Fee:</span>
+                  <strong>{formatINR(ledgerApp.totalFee || ledgerApp.courseTotalFee || 0)}</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">1. Initial Forward Share:</span>
+                  <strong>₹500</strong>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-slate-500">
+                    2. 15% Royalty on Remaining ({formatINR(ledgerApp.franchiseRemainingBase || 0)}):
+                  </span>
+                  <strong>{formatINR(ledgerApp.franchiseRoyalty15 || 0)}</strong>
+                </div>
+                <div className="flex justify-between pt-1 border-t border-slate-200 font-extrabold text-[#0B3D62]">
+                  <span>Total Payable to Main Admin:</span>
+                  <span>{formatINR(ledgerApp.franchiseTotalDue || 500)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-emerald-700">
+                  <span>Paid to Main Admin:</span>
+                  <span>{formatINR(ledgerApp.franchisePaidToMain || 0)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-red-600">
+                  <span>Pending Balance:</span>
+                  <span>
+                    {formatINR(
+                      ledgerApp.franchisePendingToMain ?? (ledgerApp.franchiseTotalDue || 500)
+                    )}
+                  </span>
+                </div>
+              </div>
+
+              {(() => {
+                let txns: {
+                  id: string;
+                  amount: number;
+                  feeType?: string;
+                  mode: string;
+                  receiptNo?: string;
+                  date: string;
+                  remarks?: string;
+                }[] = [];
+                if (ledgerApp.franchisePaymentsJson) {
+                  try {
+                    const dec = JSON.parse(ledgerApp.franchisePaymentsJson);
+                    if (Array.isArray(dec)) txns = dec;
+                  } catch {}
+                }
+                return (
+                  <div>
+                    <p className="font-bold text-[#0B3D62] uppercase text-[11px] mb-2">
+                      Recorded Transactions ({txns.length})
+                    </p>
+                    {txns.length === 0 ? (
+                      <p className="text-slate-500 italic">
+                        No payments recorded yet. Pay ₹500 while forwarding to Main Admin.
+                      </p>
+                    ) : (
+                      <div className="border border-slate-200 rounded-lg overflow-hidden">
+                        <table className="w-full text-left text-[11px]">
+                          <thead className="bg-slate-100 text-slate-700">
+                            <tr>
+                              <th className="py-2 px-2.5">Date</th>
+                              <th className="py-2 px-2.5">Type</th>
+                              <th className="py-2 px-2.5">Mode / UTR</th>
+                              <th className="py-2 px-2.5 text-right">Amount</th>
+                            </tr>
+                          </thead>
+                          <tbody className="divide-y divide-slate-200">
+                            {txns.map((t) => (
+                              <tr key={t.id}>
+                                <td className="py-2 px-2.5">{formatDisplayDate(t.date)}</td>
+                                <td className="py-2 px-2.5 font-semibold">
+                                  {t.feeType || "Settlement"}
+                                </td>
+                                <td className="py-2 px-2.5">
+                                  {t.mode} {t.receiptNo ? `(${t.receiptNo})` : ""}
+                                </td>
+                                <td className="py-2 px-2.5 text-right font-bold text-emerald-700">
+                                  {formatINR(t.amount)}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
+
+              {ledgerApp.franchiseForwardProofUrl && (
+                <div>
+                  <p className="font-bold text-[#0B3D62] uppercase text-[11px] mb-1.5">
+                    Uploaded ₹500 Forward Payment Proof
+                  </p>
+                  <div className="border border-slate-200 rounded-lg p-2 bg-slate-50 flex justify-center">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={ledgerApp.franchiseForwardProofUrl}
+                      alt="Forward Payment Proof"
+                      className="max-h-48 object-contain rounded"
+                    />
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       )}
@@ -1658,11 +1797,10 @@ export function FranchiseDashboardClient() {
             <form onSubmit={handleSavePaymentSettings} className="p-5 space-y-3.5 text-xs">
               {payMsg && (
                 <div
-                  className={`p-3 rounded-lg font-semibold ${
-                    payMsg.type === "ok"
+                  className={`p-3 rounded-lg font-semibold ${payMsg.type === "ok"
                       ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
                       : "bg-red-50 text-red-700 border border-red-200"
-                  }`}
+                    }`}
                 >
                   {payMsg.text}
                 </div>

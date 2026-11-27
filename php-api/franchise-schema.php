@@ -52,9 +52,19 @@ function ensure_franchise_schema(PDO $pdo): void {
         try { $pdo->exec($sql); } catch (PDOException $e) {}
     }
 
-    // Ensure ESI-CTR-001 is always marked as the Main Center
+    // Ensure ESI-CTR-001 is always marked as the Main Center and has its official Union Bank UPI QR & details
     try {
         $pdo->exec('UPDATE franchises SET is_main_center = 1 WHERE UPPER(center_code) = "ESI-CTR-001"');
+        $pdo->exec(
+            'UPDATE franchises
+             SET payment_qr_url = CASE WHEN payment_qr_url IS NULL OR payment_qr_url = "" THEN "/payment-qr/empire-main-qr.png" ELSE payment_qr_url END,
+                 upi_id = CASE WHEN upi_id IS NULL OR upi_id = "" THEN "46769601@ubin" ELSE upi_id END,
+                 bank_name = CASE WHEN bank_name IS NULL OR bank_name = "" THEN "Union Bank of India" ELSE bank_name END,
+                 account_holder_name = CASE WHEN account_holder_name IS NULL OR account_holder_name = "" THEN "EMPIRE EDUCATION FOUNDATION" ELSE account_holder_name END,
+                 account_number = CASE WHEN account_number IS NULL OR account_number = "" THEN "628101010055997" ELSE account_number END,
+                 ifsc_code = CASE WHEN ifsc_code IS NULL OR ifsc_code = "" THEN "UBIN0536211" ELSE ifsc_code END
+             WHERE is_main_center = 1 OR UPPER(center_code) = "ESI-CTR-001"'
+        );
     } catch (PDOException $e) {}
 
     // Online Monthly Fee Submissions table (Exclusive to Main Center students)
