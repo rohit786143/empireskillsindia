@@ -185,9 +185,14 @@ export function SiteHeader() {
             {/* Brand Identity */}
             <Link href="/" className="flex items-center gap-3.5 group">
               <BrandLogo height={48} className="shrink-0" />
-              <div className="hidden sm:block border-l border-slate-200 pl-3.5">
-                <p className="text-xs font-bold text-[#D65B14] leading-snug whitespace-nowrap">
+              <div className="hidden sm:block border-l border-slate-200 pl-3.5 leading-tight">
+                <p className="text-xs font-extrabold text-[#D65B14] tracking-wide">
                   An ISO 9001:2015
+                </p>
+                <p className="text-[10px] font-semibold text-[#0B3D62] mt-0.5 leading-snug">
+                  Registered with Govt. of India
+                  <br />
+                  Ministry of Corporate Affairs
                 </p>
               </div>
             </Link>
