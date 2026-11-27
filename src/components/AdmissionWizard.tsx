@@ -47,6 +47,13 @@ export interface FranchiseCenterOption {
   city: string;
   state: string;
   address?: string;
+  paymentQrUrl?: string;
+  upiId?: string;
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  registrationFee?: number;
 }
 
 const STEPS = [
@@ -122,8 +129,12 @@ export function AdmissionWizard({
   ]);
 
   const [declarationAccepted, setDeclarationAccepted] = useState(false);
+  const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState<string>("");
+  const [paymentUtr, setPaymentUtr] = useState<string>("");
 
   const selectedCourse = courses.find((c) => c.id === courseId) || courses[0];
+  const selectedFranchise = franchises.find((f) => f.id === franchiseId) || null;
+  const regFeeAmount = selectedFranchise?.registrationFee || 500;
 
   function handleFileUpload(
     e: React.ChangeEvent<HTMLInputElement>,
@@ -216,6 +227,12 @@ export function AdmissionWizard({
   }
 
   async function handleSubmit() {
+    if (!paymentScreenshotUrl) {
+      setError(
+        `Please pay the ₹${regFeeAmount} Registration Fee and upload the Payment Screenshot before submitting.`
+      );
+      return;
+    }
     if (!declarationAccepted) {
       setError("Please accept the Undertaking & Declaration before submitting.");
       return;
@@ -243,6 +260,9 @@ export function AdmissionWizard({
           courseName: selectedCourse?.title,
           courseCode: selectedCourse?.code,
           franchiseId: franchiseId || null,
+          paymentScreenshotUrl,
+          paymentUtr: paymentUtr.trim(),
+          registrationFeePaid: regFeeAmount,
           session,
           studyMode,
           fullName: fullName.toUpperCase(),
@@ -1013,6 +1033,166 @@ export function AdmissionWizard({
               </div>
             </div>
 
+            {/* Step 5: Center Registration Fee Payment (₹500) & Mandatory Screenshot Upload */}
+            <div className="bg-[#EFF6FF] border-2 border-[#0B3D62]/30 rounded-xl p-5 space-y-4">
+              <div className="flex flex-wrap items-center justify-between gap-2 border-b border-[#0B3D62]/15 pb-3">
+                <div>
+                  <h3 className="text-base font-extrabold text-[#0B3D62]">
+                    Registration Fee Payment — ₹{regFeeAmount} (Mandatory)
+                  </h3>
+                  <p className="text-xs text-slate-600 mt-0.5">
+                    Pay ₹{regFeeAmount} Registration Fee directly to{" "}
+                    <strong className="text-[#D65B14]">
+                      {selectedFranchise
+                        ? `${selectedFranchise.centerName} (${selectedFranchise.centerCode})`
+                        : "your selected Study Center"}
+                    </strong>{" "}
+                    and upload the payment screenshot below to submit your application.
+                  </p>
+                </div>
+                <span className="px-3 py-1 rounded-full bg-[#F07228] text-white text-xs font-extrabold">
+                  Payable Now: ₹{regFeeAmount}
+                </span>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 items-start">
+                {/* Left: Selected Center's Payment QR Code & Bank Details */}
+                <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+                  <p className="text-xs font-extrabold uppercase tracking-wide text-[#0B3D62]">
+                    Center Payment QR &amp; Bank Account Details
+                  </p>
+
+                  {selectedFranchise?.paymentQrUrl ? (
+                    <div className="flex flex-col items-center bg-slate-50 border border-slate-200 rounded-lg p-3">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={selectedFranchise.paymentQrUrl}
+                        alt="Center Payment QR Code"
+                        className="w-48 h-48 object-contain rounded bg-white p-1 border border-slate-200"
+                      />
+                      <span className="text-[11px] font-bold text-[#0B3D62] mt-2">
+                        Scan QR to Pay ₹{regFeeAmount} (UPI / PhonePe / GPay / Paytm)
+                      </span>
+                    </div>
+                  ) : null}
+
+                  <div className="text-xs space-y-1.5 text-slate-700">
+                    {selectedFranchise?.upiId && (
+                      <div className="flex justify-between gap-2 bg-slate-50 px-2.5 py-1.5 rounded border border-slate-200">
+                        <span className="text-slate-500 font-semibold">UPI ID:</span>
+                        <span className="font-mono font-bold text-[#0B3D62]">
+                          {selectedFranchise.upiId}
+                        </span>
+                      </div>
+                    )}
+                    {selectedFranchise?.bankName && (
+                      <div className="flex justify-between gap-2 px-2.5 py-1">
+                        <span className="text-slate-500 font-semibold">Bank Name:</span>
+                        <span className="font-bold">{selectedFranchise.bankName}</span>
+                      </div>
+                    )}
+                    {selectedFranchise?.accountHolderName && (
+                      <div className="flex justify-between gap-2 px-2.5 py-1">
+                        <span className="text-slate-500 font-semibold">Account Holder:</span>
+                        <span className="font-bold">{selectedFranchise.accountHolderName}</span>
+                      </div>
+                    )}
+                    {selectedFranchise?.accountNumber && (
+                      <div className="flex justify-between gap-2 px-2.5 py-1">
+                        <span className="text-slate-500 font-semibold">Account No.:</span>
+                        <span className="font-mono font-bold">
+                          {selectedFranchise.accountNumber}
+                        </span>
+                      </div>
+                    )}
+                    {selectedFranchise?.ifscCode && (
+                      <div className="flex justify-between gap-2 px-2.5 py-1">
+                        <span className="text-slate-500 font-semibold">IFSC Code:</span>
+                        <span className="font-mono font-bold">{selectedFranchise.ifscCode}</span>
+                      </div>
+                    )}
+                    {!selectedFranchise?.paymentQrUrl &&
+                      !selectedFranchise?.upiId &&
+                      !selectedFranchise?.accountNumber && (
+                        <div className="p-3 rounded bg-amber-50 border border-amber-200 text-amber-900 text-xs">
+                          Please contact{" "}
+                          <strong>{selectedFranchise?.centerName || "your Study Center"}</strong>{" "}
+                          for payment QR / bank details, pay ₹{regFeeAmount} Registration Fee, and
+                          upload the payment screenshot here.
+                        </div>
+                      )}
+                  </div>
+                </div>
+
+                {/* Right: Mandatory Payment Screenshot Upload + UTR */}
+                <div className="bg-white border border-slate-200 rounded-lg p-4 space-y-3">
+                  <p className="text-xs font-extrabold uppercase tracking-wide text-[#D65B14]">
+                    Upload Payment Screenshot (Mandatory) *
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    Your admission form can only be submitted after uploading the ₹{regFeeAmount}{" "}
+                    Registration Fee payment screenshot.
+                  </p>
+
+                  <label className="flex flex-col items-center justify-center border-2 border-dashed border-[#0B3D62]/40 hover:border-[#F07228] rounded-lg p-4 cursor-pointer bg-slate-50 transition-colors">
+                    <Upload className="w-6 h-6 text-[#0B3D62] mb-1" />
+                    <span className="text-xs font-bold text-[#0B3D62]">
+                      {paymentScreenshotUrl
+                        ? "Change Payment Screenshot"
+                        : "Click to Upload Payment Screenshot *"}
+                    </span>
+                    <span className="text-[10px] text-slate-500 mt-0.5">
+                      JPG / PNG (Max 2 MB)
+                    </span>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={(e) => handleFileUpload(e, setPaymentScreenshotUrl)}
+                      className="hidden"
+                    />
+                  </label>
+
+                  {paymentScreenshotUrl ? (
+                    <div className="border border-emerald-300 bg-emerald-50/50 rounded-lg p-2 space-y-1.5">
+                      <div className="flex items-center justify-between text-[11px] font-bold text-emerald-800 px-1">
+                        <span>✓ Payment Screenshot Uploaded</span>
+                        <button
+                          type="button"
+                          onClick={() => setPaymentScreenshotUrl("")}
+                          className="text-red-600 hover:underline"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={paymentScreenshotUrl}
+                        alt="Payment Screenshot Preview"
+                        className="max-h-44 mx-auto rounded border border-slate-200 object-contain bg-white"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-[11px] font-semibold text-red-600">
+                      * Payment screenshot is required to enable form submission.
+                    </p>
+                  )}
+
+                  <div>
+                    <label className="block text-xs font-bold text-slate-700 mb-1">
+                      UTR / Transaction Reference No. (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={paymentUtr}
+                      onChange={(e) => setPaymentUtr(e.target.value)}
+                      placeholder="e.g., 432198765432"
+                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <label className="flex items-start gap-3 p-4 rounded bg-amber-50 border border-amber-200 cursor-pointer text-xs text-amber-950">
               <input
                 type="checkbox"
@@ -1053,8 +1233,13 @@ export function AdmissionWizard({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm disabled:opacity-50 transition-colors"
+              disabled={submitting || !paymentScreenshotUrl}
+              title={
+                !paymentScreenshotUrl
+                  ? "Upload Registration Fee payment screenshot first"
+                  : "Submit Admission Form"
+              }
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <CheckCircle2 className="w-4 h-4" />
               {submitting ? "Submitting & Generating Form..." : "Submit & Generate 3-Page Form"}

@@ -9,6 +9,7 @@ import {
   Search,
   X,
   Send,
+  Receipt,
 } from "lucide-react";
 import { formatDisplayDate, formatINR } from "@/lib/generators";
 import { apiFetch } from "@/lib/api";
@@ -28,6 +29,9 @@ interface FranchiseAppRow extends AdmissionFormRecord {
   franchiseRemarks: string | null;
   remarks?: string | null;
   forwardedAt: string | null;
+  paymentScreenshotUrl?: string | null;
+  paymentUtr?: string | null;
+  registrationFeePaid?: number;
   totalFee?: number;
   courseTotalFee?: number;
   feePaid?: number;
@@ -74,6 +78,7 @@ export function AdminFranchiseAdmissionsClient({
   const [search, setSearch] = useState("");
   const [busyId, setBusyId] = useState<string | null>(null);
   const [printApp, setPrintApp] = useState<FranchiseAppRow | null>(null);
+  const [proofApp, setProofApp] = useState<FranchiseAppRow | null>(null);
   const [decisionModal, setDecisionModal] = useState<{
     app: FranchiseAppRow;
     action: "APPROVE" | "REJECT";
@@ -320,6 +325,16 @@ export function AdminFranchiseAdmissionsClient({
                           <Printer className="w-3.5 h-3.5" /> Form
                         </button>
 
+                        {app.paymentScreenshotUrl && (
+                          <button
+                            type="button"
+                            onClick={() => setProofApp(app)}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold"
+                          >
+                            <Receipt className="w-3.5 h-3.5" /> Payment Proof
+                          </button>
+                        )}
+
                         {app.franchiseStatus !== "MAIN_APPROVED" && (
                           <button
                             type="button"
@@ -357,6 +372,49 @@ export function AdminFranchiseAdmissionsClient({
           </tbody>
         </table>
       </div>
+
+      {/* Payment Proof Modal */}
+      {proofApp && proofApp.paymentScreenshotUrl && (
+        <div
+          className="no-print fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setProofApp(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0B3D62] text-white px-5 py-3.5 flex items-center justify-between">
+              <span className="text-sm font-bold">
+                Registration Fee Proof — {proofApp.fullName}
+              </span>
+              <button type="button" onClick={() => setProofApp(null)}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs flex flex-wrap justify-between gap-2">
+                <span>
+                  <strong>Reg. Fee Paid:</strong> ₹{proofApp.registrationFeePaid || 500}
+                </span>
+                {proofApp.paymentUtr && (
+                  <span>
+                    <strong>UTR / Ref:</strong>{" "}
+                    <span className="font-mono">{proofApp.paymentUtr}</span>
+                  </span>
+                )}
+              </div>
+              <div className="border border-slate-200 rounded-lg bg-slate-50 p-2 flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={proofApp.paymentScreenshotUrl}
+                  alt="Payment Screenshot"
+                  className="max-h-[65vh] w-auto object-contain rounded"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Main Admin Accept / Reject Remark Modal */}
       {decisionModal && (

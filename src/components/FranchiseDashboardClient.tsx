@@ -18,6 +18,9 @@ import {
   ExternalLink,
   RefreshCw,
   MapPin,
+  QrCode,
+  Receipt,
+  Upload,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import {
@@ -47,6 +50,9 @@ interface FranchiseAppRow extends AdmissionFormRecord {
   franchiseRemarks: string | null;
   remarks?: string | null;
   forwardedAt: string | null;
+  paymentScreenshotUrl?: string | null;
+  paymentUtr?: string | null;
+  registrationFeePaid?: number;
   totalFee?: number;
   courseTotalFee?: number;
   feePaid?: number;
@@ -107,6 +113,86 @@ export function FranchiseDashboardClient() {
   const [newPw, setNewPw] = useState("");
   const [pwMsg, setPwMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
+
+  // Payment proof viewer modal
+  const [proofApp, setProofApp] = useState<FranchiseAppRow | null>(null);
+
+  // Center Payment QR & Bank settings modal
+  const [payModalOpen, setPayModalOpen] = useState(false);
+  const [payForm, setPayForm] = useState({
+    paymentQrUrl: "",
+    upiId: "",
+    bankName: "",
+    accountHolderName: "",
+    accountNumber: "",
+    ifscCode: "",
+    registrationFee: "500",
+  });
+  const [paySaving, setPaySaving] = useState(false);
+  const [payMsg, setPayMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  async function openPaymentSettings() {
+    setPayMsg(null);
+    setPayModalOpen(true);
+    try {
+      const res = await apiFetch("/franchise-auth.php?action=payment-settings");
+      const data = await res.json();
+      if (res.ok && data.franchise) {
+        setPayForm({
+          paymentQrUrl: data.franchise.paymentQrUrl || "",
+          upiId: data.franchise.upiId || "",
+          bankName: data.franchise.bankName || "",
+          accountHolderName: data.franchise.accountHolderName || "",
+          accountNumber: data.franchise.accountNumber || "",
+          ifscCode: data.franchise.ifscCode || "",
+          registrationFee: String(data.franchise.registrationFee || 500),
+        });
+      }
+    } catch {
+      // ignore
+    }
+  }
+
+  function handlePartnerQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setPayMsg({ type: "err", text: "QR image must be under 2 MB." });
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setPayForm((prev) => ({ ...prev, paymentQrUrl: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
+  }
+
+  async function handleSavePaymentSettings(e: React.FormEvent) {
+    e.preventDefault();
+    setPaySaving(true);
+    setPayMsg(null);
+    try {
+      const res = await apiFetch("/franchise-auth.php?action=payment-settings", {
+        method: "POST",
+        body: JSON.stringify({
+          ...payForm,
+          registrationFee: Number(payForm.registrationFee) || 500,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setPayMsg({ type: "err", text: data.error || "Failed to save payment details." });
+      } else {
+        setPayMsg({ type: "ok", text: "Payment QR & Bank details saved! Students will now see this on the admission form." });
+      }
+    } catch {
+      setPayMsg({ type: "err", text: "Network error." });
+    } finally {
+      setPaySaving(false);
+    }
+  }
 
   async function loadData(isRefresh = false) {
     if (isRefresh) setRefreshing(true);
@@ -263,6 +349,14 @@ export function FranchiseDashboardClient() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={openPaymentSettings}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white text-xs font-semibold transition-colors"
+            >
+              <QrCode className="w-3.5 h-3.5" />
+              Payment QR &amp; Bank
+            </button>
             <button
               type="button"
               onClick={() => loadData(true)}
@@ -516,6 +610,17 @@ export function FranchiseDashboardClient() {
                               Form
                             </button>
 
+                            {app.paymentScreenshotUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setProofApp(app)}
+                                className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold transition-colors"
+                              >
+                                <Receipt className="w-3.5 h-3.5" />
+                                Payment Proof
+                              </button>
+                            )}
+
                             {app.franchiseStatus === "PENDING_FRANCHISE" && (
                               <>
                                 <button
@@ -742,6 +847,205 @@ export function FranchiseDashboardClient() {
                   className="px-4 py-2 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white text-xs font-semibold disabled:opacity-60"
                 >
                   {pwBusy ? "Updating..." : "Update Password"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Payment Proof Viewer Modal */}
+      {proofApp && proofApp.paymentScreenshotUrl && (
+        <div
+          className="no-print fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4"
+          onClick={() => setProofApp(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0B3D62] text-white px-5 py-3.5 flex items-center justify-between">
+              <div className="text-sm font-bold">
+                Registration Fee Payment Proof — {proofApp.fullName}
+              </div>
+              <button type="button" onClick={() => setProofApp(null)}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3 text-xs flex flex-wrap justify-between gap-2">
+                <span>
+                  <strong>Reg. Fee Paid:</strong> ₹{proofApp.registrationFeePaid || 500}
+                </span>
+                {proofApp.paymentUtr && (
+                  <span>
+                    <strong>UTR / Ref:</strong>{" "}
+                    <span className="font-mono">{proofApp.paymentUtr}</span>
+                  </span>
+                )}
+              </div>
+              <div className="border border-slate-200 rounded-lg bg-slate-50 p-2 flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={proofApp.paymentScreenshotUrl}
+                  alt="Payment Screenshot"
+                  className="max-h-[65vh] w-auto object-contain rounded"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Partner Payment QR & Bank Settings Modal */}
+      {payModalOpen && (
+        <div className="no-print fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
+            <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between">
+              <h3 className="font-bold text-sm flex items-center gap-2">
+                <QrCode className="w-4 h-4 text-[#FF9B5E]" />
+                Center Payment QR Code &amp; Bank Details
+              </h3>
+              <button type="button" onClick={() => setPayModalOpen(false)}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <form onSubmit={handleSavePaymentSettings} className="p-5 space-y-3.5 text-xs">
+              {payMsg && (
+                <div
+                  className={`p-3 rounded-lg font-semibold ${
+                    payMsg.type === "ok"
+                      ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                      : "bg-red-50 text-red-700 border border-red-200"
+                  }`}
+                >
+                  {payMsg.text}
+                </div>
+              )}
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Registration Fee (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={payForm.registrationFee}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, registrationFee: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">UPI ID</label>
+                  <input
+                    type="text"
+                    value={payForm.upiId}
+                    onChange={(e) => setPayForm({ ...payForm, upiId: e.target.value })}
+                    placeholder="e.g., center@upi"
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-bold text-slate-700 mb-1">
+                  Upload Payment QR Code Image
+                </label>
+                <div className="flex items-center gap-3">
+                  <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 cursor-pointer font-semibold text-slate-700">
+                    <Upload className="w-3.5 h-3.5 text-[#0B3D62]" />
+                    Choose QR Image
+                    <input
+                      type="file"
+                      accept="image/*"
+                      onChange={handlePartnerQrUpload}
+                      className="hidden"
+                    />
+                  </label>
+                  {payForm.paymentQrUrl && (
+                    <div className="flex items-center gap-2">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={payForm.paymentQrUrl}
+                        alt="QR Preview"
+                        className="w-16 h-16 object-contain border border-slate-300 rounded bg-white p-0.5"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setPayForm({ ...payForm, paymentQrUrl: "" })}
+                        className="text-red-600 font-bold hover:underline"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Bank Name</label>
+                  <input
+                    type="text"
+                    value={payForm.bankName}
+                    onChange={(e) => setPayForm({ ...payForm, bankName: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Account Holder Name
+                  </label>
+                  <input
+                    type="text"
+                    value={payForm.accountHolderName}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, accountHolderName: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Account Number</label>
+                  <input
+                    type="text"
+                    value={payForm.accountNumber}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, accountNumber: e.target.value })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                  />
+                </div>
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">IFSC Code</label>
+                  <input
+                    type="text"
+                    value={payForm.ifscCode}
+                    onChange={(e) =>
+                      setPayForm({ ...payForm, ifscCode: e.target.value.toUpperCase() })
+                    }
+                    className="w-full px-3 py-2 border border-slate-300 rounded-lg uppercase"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3 border-t border-slate-200">
+                <button
+                  type="button"
+                  onClick={() => setPayModalOpen(false)}
+                  className="px-4 py-2 rounded-lg border border-slate-300 font-semibold"
+                >
+                  Close
+                </button>
+                <button
+                  type="submit"
+                  disabled={paySaving}
+                  className="px-4 py-2 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-bold disabled:opacity-60"
+                >
+                  {paySaving ? "Saving..." : "Save Payment Details"}
                 </button>
               </div>
             </form>

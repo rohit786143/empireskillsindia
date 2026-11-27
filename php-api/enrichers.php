@@ -34,6 +34,9 @@ function enrich_application(array $rawRow, array $mapped): array {
     $mapped['franchiseStatus'] = $rawRow['franchise_status'] ?? 'DIRECT';
     $mapped['franchiseRemarks'] = $rawRow['franchise_remarks'] ?? null;
     $mapped['forwardedAt'] = $rawRow['forwarded_at'] ?? null;
+    $mapped['paymentScreenshotUrl'] = $rawRow['payment_screenshot_url'] ?? null;
+    $mapped['paymentUtr'] = $rawRow['payment_utr'] ?? null;
+    $mapped['registrationFeePaid'] = isset($rawRow['registration_fee_paid']) ? (int)$rawRow['registration_fee_paid'] : 0;
     $mapped['totalFee'] = isset($rawRow['total_fee']) && $rawRow['total_fee'] !== null
         ? (int)$rawRow['total_fee']
         : (int)($mapped['totalFee'] ?? 0);

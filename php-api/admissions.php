@@ -142,9 +142,16 @@ if ($method === 'POST') {
         }
     }
 
-    // Public students MUST select a valid active Study Center / Franchise
+    // Public students MUST select a valid active Study Center / Franchise AND upload Registration Fee payment screenshot
+    $paymentScreenshotUrl = !empty($body['paymentScreenshotUrl']) ? (string)$body['paymentScreenshotUrl'] : null;
+    $paymentUtr = trim((string)($body['paymentUtr'] ?? ''));
+    $regFeePaid = isset($body['registrationFeePaid']) ? max(0, (int)$body['registrationFeePaid']) : ($paymentScreenshotUrl ? 500 : 0);
+
     if ($admin === null && !$franchiseId) {
         json_response(['error' => 'Please select a valid Authorized Study Center / Franchise before submitting.'], 400);
+    }
+    if ($admin === null && empty($paymentScreenshotUrl)) {
+        json_response(['error' => 'Registration fee (₹500) payment screenshot is mandatory to submit the admission form.'], 400);
     }
 
     $id = generate_cuid();
@@ -152,9 +159,10 @@ if ($method === 'POST') {
         'INSERT INTO admission_applications
         (id, application_ref, status, enrollment_number, course_id, course_name, course_code, session, study_mode,
          franchise_id, franchise_name, franchise_code, franchise_status,
+         payment_screenshot_url, payment_utr, registration_fee_paid,
          full_name, father_name, mother_name, dob, gender, category, aadhar_number, mobile, email,
          address, city, state, pincode, qualifications_json, extra_details_json, photo_url, signature_url, marksheet_url, id_proof_url, approved_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $id,
@@ -170,6 +178,9 @@ if ($method === 'POST') {
         $franchiseName,
         $franchiseCode,
         $franchiseStatus,
+        $paymentScreenshotUrl,
+        $paymentUtr !== '' ? $paymentUtr : null,
+        $regFeePaid,
         $fullName,
         $fatherName,
         $motherName ?: '—',

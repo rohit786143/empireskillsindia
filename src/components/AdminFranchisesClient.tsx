@@ -11,6 +11,8 @@ import {
   X,
   ExternalLink,
   Copy,
+  QrCode,
+  Upload,
 } from "lucide-react";
 import { apiFetch } from "@/lib/api";
 
@@ -25,6 +27,13 @@ interface FranchiseRow {
   city: string;
   state: string;
   status: string;
+  paymentQrUrl?: string;
+  upiId?: string;
+  bankName?: string;
+  accountHolderName?: string;
+  accountNumber?: string;
+  ifscCode?: string;
+  registrationFee?: number;
   stats?: {
     totalApps: number;
     forwardedApps: number;
@@ -43,6 +52,13 @@ const EMPTY_FORM = {
   city: "",
   state: "",
   address: "",
+  paymentQrUrl: "",
+  upiId: "",
+  bankName: "",
+  accountHolderName: "",
+  accountNumber: "",
+  ifscCode: "",
+  registrationFee: "500",
 };
 
 export function AdminFranchisesClient({
@@ -75,9 +91,32 @@ export function AdminFranchisesClient({
       city: f.city,
       state: f.state,
       address: f.address,
+      paymentQrUrl: f.paymentQrUrl || "",
+      upiId: f.upiId || "",
+      bankName: f.bankName || "",
+      accountHolderName: f.accountHolderName || "",
+      accountNumber: f.accountNumber || "",
+      ifscCode: f.ifscCode || "",
+      registrationFee: String(f.registrationFee || 500),
     });
     setError("");
     setModalOpen(true);
+  }
+
+  function handleQrUpload(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) {
+      setError("QR Code image must be under 2 MB.");
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => {
+      if (typeof reader.result === "string") {
+        setForm((prev) => ({ ...prev, paymentQrUrl: reader.result as string }));
+      }
+    };
+    reader.readAsDataURL(file);
   }
 
   async function handleSave(e: React.FormEvent) {
@@ -86,6 +125,15 @@ export function AdminFranchisesClient({
     setError("");
     try {
       const isEdit = Boolean(form.id);
+      const paymentFields = {
+        paymentQrUrl: form.paymentQrUrl,
+        upiId: form.upiId,
+        bankName: form.bankName,
+        accountHolderName: form.accountHolderName,
+        accountNumber: form.accountNumber,
+        ifscCode: form.ifscCode,
+        registrationFee: Number(form.registrationFee) || 500,
+      };
       const payload = isEdit
         ? {
             centerName: form.centerName,
@@ -95,6 +143,7 @@ export function AdminFranchisesClient({
             city: form.city,
             state: form.state,
             address: form.address,
+            ...paymentFields,
             ...(form.password.trim() ? { newPassword: form.password.trim() } : {}),
           }
         : {
@@ -107,6 +156,7 @@ export function AdminFranchisesClient({
             city: form.city,
             state: form.state,
             address: form.address,
+            ...paymentFields,
           };
 
       const res = await apiFetch(
@@ -445,6 +495,123 @@ export function AdminFranchisesClient({
                     value={form.address}
                     onChange={(e) => setForm({ ...form, address: e.target.value })}
                     className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+
+                {/* Registration Fee Payment QR & Bank Details */}
+                <div className="sm:col-span-2 pt-3 mt-1 border-t border-slate-200">
+                  <p className="text-xs font-extrabold text-[#0B3D62] uppercase tracking-wide flex items-center gap-1.5 mb-2">
+                    <QrCode className="w-4 h-4 text-[#F07228]" />
+                    Center Payment QR Code &amp; Bank Details (For ₹500 Registration Fee)
+                  </p>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Registration Fee Amount (₹)
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={form.registrationFee}
+                    onChange={(e) => setForm({ ...form, registrationFee: e.target.value })}
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    UPI ID (Optional)
+                  </label>
+                  <input
+                    type="text"
+                    value={form.upiId}
+                    onChange={(e) => setForm({ ...form, upiId: e.target.value })}
+                    placeholder="e.g., centername@sbi / 9882269009@upi"
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+
+                <div className="sm:col-span-2">
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Upload Payment QR Code Image (PhonePe / GPay / Paytm / Bank QR)
+                  </label>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <label className="inline-flex items-center gap-1.5 px-3 py-2 rounded border border-slate-300 bg-slate-50 hover:bg-slate-100 cursor-pointer font-semibold text-slate-700">
+                      <Upload className="w-3.5 h-3.5 text-[#0B3D62]" />
+                      Choose QR Image
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={handleQrUpload}
+                        className="hidden"
+                      />
+                    </label>
+                    {form.paymentQrUrl && (
+                      <div className="flex items-center gap-2">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={form.paymentQrUrl}
+                          alt="Payment QR Preview"
+                          className="w-16 h-16 object-contain border border-slate-300 rounded bg-white p-0.5"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setForm({ ...form, paymentQrUrl: "" })}
+                          className="text-[11px] font-bold text-red-600 hover:underline"
+                        >
+                          Remove QR
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">Bank Name</label>
+                  <input
+                    type="text"
+                    value={form.bankName}
+                    onChange={(e) => setForm({ ...form, bankName: e.target.value })}
+                    placeholder="e.g., State Bank of India"
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Account Holder Name
+                  </label>
+                  <input
+                    type="text"
+                    value={form.accountHolderName}
+                    onChange={(e) => setForm({ ...form, accountHolderName: e.target.value })}
+                    placeholder="Account holder / Center name"
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">
+                    Bank Account Number
+                  </label>
+                  <input
+                    type="text"
+                    value={form.accountNumber}
+                    onChange={(e) => setForm({ ...form, accountNumber: e.target.value })}
+                    placeholder="Enter account number"
+                    className="w-full px-3 py-2 border border-slate-300 rounded"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-bold text-slate-700 mb-1">IFSC Code</label>
+                  <input
+                    type="text"
+                    value={form.ifscCode}
+                    onChange={(e) => setForm({ ...form, ifscCode: e.target.value.toUpperCase() })}
+                    placeholder="e.g., SBIN0001234"
+                    className="w-full px-3 py-2 border border-slate-300 rounded uppercase"
                   />
                 </div>
               </div>

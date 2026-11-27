@@ -77,4 +77,46 @@ if ($action === 'change-password' && $method === 'POST') {
     json_response(['success' => true, 'message' => 'Franchise password updated successfully.']);
 }
 
+if ($action === 'payment-settings' && $method === 'GET') {
+    $fr = require_franchise();
+    $stmt = $pdo->prepare('SELECT * FROM franchises WHERE id = ? LIMIT 1');
+    $stmt->execute([$fr['franchiseId']]);
+    $row = $stmt->fetch();
+    if (!$row) json_response(['error' => 'Center not found.'], 404);
+    json_response(['franchise' => map_franchise($row)]);
+}
+
+if ($action === 'payment-settings' && ($method === 'POST' || $method === 'PATCH')) {
+    $fr = require_franchise();
+    $body = get_json_body();
+    $fields = [];
+    $params = [];
+    foreach ([
+        'paymentQrUrl'      => 'payment_qr_url',
+        'upiId'             => 'upi_id',
+        'bankName'          => 'bank_name',
+        'accountHolderName' => 'account_holder_name',
+        'accountNumber'     => 'account_number',
+        'ifscCode'          => 'ifsc_code',
+    ] as $k => $col) {
+        if (array_key_exists($k, $body)) {
+            $val = $k === 'paymentQrUrl' ? (string)$body[$k] : trim((string)$body[$k]);
+            if ($k === 'ifscCode') $val = strtoupper($val);
+            $fields[] = "`{$col}` = ?";
+            $params[] = $val;
+        }
+    }
+    if (array_key_exists('registrationFee', $body)) {
+        $fields[] = '`registration_fee` = ?';
+        $params[] = max(0, (int)$body['registrationFee']);
+    }
+    if (!empty($fields)) {
+        $params[] = $fr['franchiseId'];
+        $pdo->prepare('UPDATE franchises SET ' . implode(', ', $fields) . ' WHERE id = ?')->execute($params);
+    }
+    $stmt = $pdo->prepare('SELECT * FROM franchises WHERE id = ? LIMIT 1');
+    $stmt->execute([$fr['franchiseId']]);
+    json_response(['franchise' => map_franchise($stmt->fetch()), 'message' => 'Payment QR & Bank details updated successfully.']);
+}
+
 json_response(['error' => 'Invalid action.'], 400);

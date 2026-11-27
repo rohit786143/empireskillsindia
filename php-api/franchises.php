@@ -12,19 +12,27 @@ $method = $_SERVER['REQUEST_METHOD'];
 if ($method === 'GET') {
     if (($_GET['public'] ?? '') === 'true') {
         $rows = $pdo->query(
-            'SELECT id, center_code, center_name, city, state, address
+            'SELECT id, center_code, center_name, city, state, address,
+                    payment_qr_url, upi_id, bank_name, account_holder_name, account_number, ifsc_code, registration_fee
              FROM franchises
              WHERE status = "ACTIVE"
              ORDER BY center_name ASC'
         )->fetchAll();
         $list = array_map(function ($r) {
             return [
-                'id'         => $r['id'],
-                'centerCode' => $r['center_code'],
-                'centerName' => $r['center_name'],
-                'city'       => $r['city'],
-                'state'      => $r['state'],
-                'address'    => $r['address'],
+                'id'                => $r['id'],
+                'centerCode'        => $r['center_code'],
+                'centerName'        => $r['center_name'],
+                'city'              => $r['city'],
+                'state'             => $r['state'],
+                'address'           => $r['address'],
+                'paymentQrUrl'      => $r['payment_qr_url'] ?? '',
+                'upiId'             => $r['upi_id'] ?? '',
+                'bankName'          => $r['bank_name'] ?? '',
+                'accountHolderName' => $r['account_holder_name'] ?? '',
+                'accountNumber'     => $r['account_number'] ?? '',
+                'ifscCode'          => $r['ifsc_code'] ?? '',
+                'registrationFee'   => isset($r['registration_fee']) && (int)$r['registration_fee'] > 0 ? (int)$r['registration_fee'] : 500,
             ];
         }, $rows);
         json_response(['franchises' => $list]);
@@ -82,9 +90,11 @@ if ($method === 'POST') {
     $passwordHash = password_hash($password, PASSWORD_BCRYPT);
 
     try {
+        $regFee = isset($body['registrationFee']) && (int)$body['registrationFee'] > 0 ? (int)$body['registrationFee'] : 500;
         $stmt = $pdo->prepare(
-            'INSERT INTO franchises (id, center_code, center_name, owner_name, email, password_hash, phone, address, city, state, status)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "ACTIVE")'
+            'INSERT INTO franchises (id, center_code, center_name, owner_name, email, password_hash, phone, address, city, state,
+                                     payment_qr_url, upi_id, bank_name, account_holder_name, account_number, ifsc_code, registration_fee, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "ACTIVE")'
         );
         $stmt->execute([
             $id,
@@ -97,6 +107,13 @@ if ($method === 'POST') {
             trim((string)($body['address'] ?? '')),
             trim((string)($body['city'] ?? '')),
             trim((string)($body['state'] ?? '')),
+            !empty($body['paymentQrUrl']) ? (string)$body['paymentQrUrl'] : null,
+            trim((string)($body['upiId'] ?? '')),
+            trim((string)($body['bankName'] ?? '')),
+            trim((string)($body['accountHolderName'] ?? '')),
+            trim((string)($body['accountNumber'] ?? '')),
+            strtoupper(trim((string)($body['ifscCode'] ?? ''))),
+            $regFee,
         ]);
     } catch (PDOException $e) {
         json_response(['error' => 'A franchise with this email or center code already exists.'], 400);
@@ -119,13 +136,33 @@ if ($method === 'PATCH' || $method === 'PUT') {
     $fields = [];
     $params = [];
 
-    foreach (['centerName' => 'center_name', 'ownerName' => 'owner_name', 'email' => 'email', 'phone' => 'phone', 'address' => 'address', 'city' => 'city', 'state' => 'state', 'status' => 'status'] as $k => $col) {
+    foreach ([
+        'centerName'        => 'center_name',
+        'ownerName'         => 'owner_name',
+        'email'             => 'email',
+        'phone'             => 'phone',
+        'address'           => 'address',
+        'city'              => 'city',
+        'state'             => 'state',
+        'status'            => 'status',
+        'paymentQrUrl'      => 'payment_qr_url',
+        'upiId'             => 'upi_id',
+        'bankName'          => 'bank_name',
+        'accountHolderName' => 'account_holder_name',
+        'accountNumber'     => 'account_number',
+        'ifscCode'          => 'ifsc_code',
+    ] as $k => $col) {
         if (array_key_exists($k, $body)) {
-            $val = trim((string)$body[$k]);
+            $val = $k === 'paymentQrUrl' ? (string)$body[$k] : trim((string)$body[$k]);
             if ($k === 'email') $val = strtolower($val);
+            if ($k === 'ifscCode') $val = strtoupper($val);
             $fields[] = "`{$col}` = ?";
             $params[] = $val;
         }
+    }
+    if (array_key_exists('registrationFee', $body)) {
+        $fields[] = '`registration_fee` = ?';
+        $params[] = max(0, (int)$body['registrationFee']);
     }
     if (!empty($body['newPassword']) && strlen((string)$body['newPassword']) >= 6) {
         $fields[] = '`password_hash` = ?';
