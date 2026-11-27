@@ -10,7 +10,7 @@ $pdo = get_db();
 ensure_franchise_schema($pdo);
 $method = $_SERVER['REQUEST_METHOD'];
 
-// POST: Submit Online Monthly Fee Receipt (ONLY for Main Center ESI-CTR-001 enrolled students)
+// POST: Submit Online Fee Receipt (for any enrolled student's own Study Center)
 if ($method === 'POST') {
     $body = get_json_body();
     $enrollmentNumber = strtoupper(trim((string)($body['enrollmentNumber'] ?? '')));
@@ -21,8 +21,8 @@ if ($method === 'POST') {
     $paymentDate = trim((string)($body['paymentDate'] ?? '')) ?: date('Y-m-d');
     $receiptUrl = trim((string)($body['receiptUrl'] ?? ''));
 
-    if ($enrollmentNumber === '' || $dob === '' || $amount <= 0 || $receiptUrl === '') {
-        json_response(['error' => 'Enrollment Number, DOB, valid fee amount, and payment receipt screenshot are required.'], 400);
+    if ($enrollmentNumber === '' || $dob === '' || $amount <= 0 || $receiptUrl === '' || $utr === '') {
+        json_response(['error' => 'Enrollment Number, DOB, valid fee amount, UTR / Transaction Number, and payment receipt screenshot are all mandatory.'], 400);
     }
 
     $stmt = $pdo->prepare(
@@ -38,10 +38,8 @@ if ($method === 'POST') {
         json_response(['error' => 'Invalid Enrollment Number or Date of Birth.'], 404);
     }
 
-    $isMain = (!empty($row['f_is_main_center']) && (int)$row['f_is_main_center'] === 1)
-        || strtoupper((string)($row['f_center_code'] ?? $row['franchise_code'] ?? '')) === 'ESI-CTR-001';
-    if (!$isMain) {
-        json_response(['error' => 'Online monthly fee upload is available only for Main Center (ESI-CTR-001) students.'], 403);
+    if (empty($row['franchise_id'])) {
+        json_response(['error' => 'No Study Center linked to this student record.'], 400);
     }
 
     $id = generate_cuid();
@@ -58,7 +56,7 @@ if ($method === 'POST') {
         $row['course_name'],
         $feeHead,
         $amount,
-        $utr !== '' ? $utr : null,
+        $utr,
         $paymentDate,
         $receiptUrl,
     ]);
@@ -114,18 +112,18 @@ $cStmt = $pdo->prepare(
 $cStmt->execute([$row['id'], $enrollmentNumber]);
 $certs = $cStmt->fetchAll();
 
-// Check if student belongs to Main Center (ESI-CTR-001)
+// Fetch student's own Study Center Payment QR & Bank Details + Online Fee Submissions
 $isMainCenterStudent = false;
-$mainCenterPayment = null;
+$centerPayment = null;
 $feeSubmissions = [];
 
 if (!empty($row['franchise_id'])) {
     $fStmt = $pdo->prepare('SELECT * FROM franchises WHERE id = ? LIMIT 1');
     $fStmt->execute([$row['franchise_id']]);
     $fRow = $fStmt->fetch();
-    if ($fRow && is_main_center_row($fRow)) {
-        $isMainCenterStudent = true;
-        $mainCenterPayment = [
+    if ($fRow) {
+        $isMainCenterStudent = is_main_center_row($fRow);
+        $centerPayment = [
             'centerName'        => $fRow['center_name'],
             'centerCode'        => $fRow['center_code'],
             'paymentQrUrl'      => $fRow['payment_qr_url'] ?? '',
@@ -150,7 +148,8 @@ $student = enrich_application($row, map_application($row));
 $student['course'] = ['duration' => $row['joined_course_duration'] ?: '1 Year'];
 $student['certificates'] = $certs;
 $student['isMainCenterStudent'] = $isMainCenterStudent;
-$student['mainCenterPayment'] = $mainCenterPayment;
+$student['centerPayment'] = $centerPayment;
+$student['mainCenterPayment'] = $centerPayment;
 $student['feeSubmissions'] = $feeSubmissions;
 
 json_response(['student' => $student]);

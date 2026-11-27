@@ -153,6 +153,9 @@ if ($method === 'POST') {
     if ($admin === null && empty($paymentScreenshotUrl)) {
         json_response(['error' => 'Registration fee (₹500) payment screenshot is mandatory to submit the admission form.'], 400);
     }
+    if ($admin === null && $paymentUtr === '') {
+        json_response(['error' => 'UTR / Transaction Reference Number is mandatory to submit the admission form.'], 400);
+    }
 
     $id = generate_cuid();
     $stmt = $pdo->prepare(

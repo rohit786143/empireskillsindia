@@ -33,26 +33,24 @@ if ($method === 'GET') {
     }
 
     $feeSubmissions = [];
-    if ($isMainCenter) {
-        $sfsStmt = $pdo->prepare('SELECT * FROM student_fee_submissions WHERE franchise_id = ? ORDER BY created_at DESC');
-        $sfsStmt->execute([$franchiseId]);
-        while ($sr = $sfsStmt->fetch()) {
-            $feeSubmissions[] = [
-                'id'               => $sr['id'],
-                'applicationId'    => $sr['application_id'],
-                'enrollmentNumber' => $sr['enrollment_number'],
-                'studentName'      => $sr['student_name'],
-                'courseName'       => $sr['course_name'],
-                'feeHead'          => $sr['fee_head'],
-                'amount'           => (int)$sr['amount'],
-                'utr'              => $sr['utr'] ?? '',
-                'paymentDate'      => $sr['payment_date'],
-                'receiptUrl'       => $sr['receipt_url'],
-                'status'           => $sr['status'],
-                'remarks'          => $sr['remarks'] ?? '',
-                'createdAt'        => $sr['created_at'],
-            ];
-        }
+    $sfsStmt = $pdo->prepare('SELECT * FROM student_fee_submissions WHERE franchise_id = ? ORDER BY created_at DESC');
+    $sfsStmt->execute([$franchiseId]);
+    while ($sr = $sfsStmt->fetch()) {
+        $feeSubmissions[] = [
+            'id'               => $sr['id'],
+            'applicationId'    => $sr['application_id'],
+            'enrollmentNumber' => $sr['enrollment_number'],
+            'studentName'      => $sr['student_name'],
+            'courseName'       => $sr['course_name'],
+            'feeHead'          => $sr['fee_head'],
+            'amount'           => (int)$sr['amount'],
+            'utr'              => $sr['utr'] ?? '',
+            'paymentDate'      => $sr['payment_date'],
+            'receiptUrl'       => $sr['receipt_url'],
+            'status'           => $sr['status'],
+            'remarks'          => $sr['remarks'] ?? '',
+            'createdAt'        => $sr['created_at'],
+        ];
     }
 
     json_response(['applications' => $apps, 'franchise' => $franchise, 'feeSubmissions' => $feeSubmissions]);
@@ -63,11 +61,8 @@ if ($method === 'PATCH' || $method === 'PUT') {
     $body = get_json_body();
     $action = strtoupper(trim((string)($body['action'] ?? '')));
 
-    // Main Center Exclusive: Approve or Reject a Student's Online Monthly Fee Submission
+    // Approve or Reject a Student's Online Fee Submission belonging to this Study Center
     if ($action === 'APPROVE_FEE_SUBMISSION' || $action === 'REJECT_FEE_SUBMISSION') {
-        if (!$isMainCenter) {
-            json_response(['error' => 'This feature is exclusive to the Main Center.'], 403);
-        }
         $subId = trim((string)($body['submissionId'] ?? ''));
         if ($subId === '') json_response(['error' => 'submissionId is required.'], 400);
 
@@ -243,6 +238,11 @@ if ($method === 'PATCH' || $method === 'PUT') {
         if ($forwardProof === '') {
             json_response([
                 'error' => 'Please pay ₹500 Registration Share to Main Admin and upload the payment screenshot before forwarding.',
+            ], 400);
+        }
+        if ($forwardUtr === '' && empty($existing['franchise_forward_utr'])) {
+            json_response([
+                'error' => 'UTR / Transaction Reference Number is mandatory before forwarding.',
             ], 400);
         }
 

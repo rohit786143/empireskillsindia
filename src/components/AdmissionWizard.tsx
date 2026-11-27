@@ -248,6 +248,10 @@ export function AdmissionWizard({
       );
       return;
     }
+    if (!paymentUtr.trim()) {
+      setError("Please enter the UTR / Transaction Reference Number (Mandatory) before submitting.");
+      return;
+    }
     if (!declarationAccepted) {
       setError("Please accept the Undertaking & Declaration before submitting.");
       return;
@@ -1193,15 +1197,16 @@ export function AdmissionWizard({
                   )}
 
                   <div>
-                    <label className="block text-xs font-bold text-slate-700 mb-1">
-                      UTR / Transaction Reference No. (Optional)
+                    <label className="block text-xs font-bold text-[#D65B14] mb-1">
+                      UTR / Transaction Reference No. (Mandatory) *
                     </label>
                     <input
                       type="text"
+                      required
                       value={paymentUtr}
                       onChange={(e) => setPaymentUtr(e.target.value)}
-                      placeholder="e.g., 432198765432"
-                      className="w-full px-3 py-2 text-xs border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                      placeholder="Enter 12-digit UTR / Transaction No."
+                      className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
                     />
                   </div>
                 </div>
@@ -1248,10 +1253,12 @@ export function AdmissionWizard({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || !paymentScreenshotUrl}
+              disabled={submitting || !paymentScreenshotUrl || !paymentUtr.trim()}
               title={
                 !paymentScreenshotUrl
                   ? "Upload Registration Fee payment screenshot first"
+                  : !paymentUtr.trim()
+                  ? "Enter UTR / Transaction Reference Number first"
                   : "Submit Admission Form"
               }
               className="inline-flex items-center gap-2 px-6 py-2.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

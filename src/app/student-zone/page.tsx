@@ -63,6 +63,16 @@ interface StudentRecord {
   course?: { duration: string } | null;
   certificates?: { certificateNumber: string; issueDate: string }[];
   isMainCenterStudent?: boolean;
+  centerPayment?: {
+    centerName: string;
+    centerCode: string;
+    paymentQrUrl: string;
+    upiId: string;
+    bankName: string;
+    accountHolderName: string;
+    accountNumber: string;
+    ifscCode: string;
+  } | null;
   mainCenterPayment?: {
     centerName: string;
     centerCode: string;
@@ -94,7 +104,8 @@ export default function StudentZonePage() {
   const [student, setStudent] = useState<StudentRecord | null>(null);
   const [activeTab, setActiveTab] = useState<"result" | "idcard" | "form">("result");
 
-  // Online Monthly Fee Submission State (Exclusive to Main Center ESI-CTR-001 students)
+  // Online Fee Submission State (for student's own Study Center)
+  const [showPayFeePanel, setShowPayFeePanel] = useState(false);
   const [feeHead, setFeeHead] = useState("Monthly Fee (Month 1)");
   const [feeAmount, setFeeAmount] = useState("");
   const [feeUtr, setFeeUtr] = useState("");
@@ -105,7 +116,11 @@ export default function StudentZonePage() {
 
   async function handleOnlineFeeSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!student || !feeReceiptUrl) {
+    if (!student || !feeUtr.trim()) {
+      setFeeMsg({ type: "err", text: "UTR / Transaction Reference Number is mandatory." });
+      return;
+    }
+    if (!feeReceiptUrl) {
       setFeeMsg({ type: "err", text: "Please upload your payment receipt screenshot." });
       return;
     }
@@ -138,7 +153,7 @@ export default function StudentZonePage() {
         setFeeReceiptUrl("");
         setFeeMsg({
           type: "ok",
-          text: "Monthly fee receipt uploaded successfully! Main Center will verify & update your fee balance shortly.",
+          text: "Fee receipt uploaded successfully! Your Study Center will verify & update your fee balance shortly.",
         });
       }
     } catch {
@@ -362,9 +377,21 @@ export default function StudentZonePage() {
                         ✓ ALL FEE CLEARED
                       </span>
                     ) : (
-                      <span className="px-3 py-1 rounded bg-amber-100 text-amber-900 font-bold">
-                        Pending Fee: ₹{pending.toLocaleString("en-IN")}
-                      </span>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <span className="px-3 py-1 rounded bg-amber-100 text-amber-900 font-bold">
+                          Pending Fee: ₹{pending.toLocaleString("en-IN")}
+                        </span>
+                        {(student.centerPayment || student.mainCenterPayment) && (
+                          <button
+                            type="button"
+                            onClick={() => setShowPayFeePanel((v) => !v)}
+                            className="inline-flex items-center gap-1.5 px-3.5 py-1.5 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-extrabold text-xs shadow-sm transition-colors"
+                          >
+                            <IndianRupee className="w-3.5 h-3.5" />
+                            {showPayFeePanel ? "Hide Pay Fee" : "Pay Fee"}
+                          </button>
+                        )}
+                      </div>
                     )}
                   </div>
                   {payments.length > 0 && (
@@ -415,72 +442,79 @@ export default function StudentZonePage() {
               );
             })()}
 
-            {/* Main Center (ESI-CTR-001) Exclusive: Online Monthly Fee Payment & Receipt Upload */}
-            {student.isMainCenterStudent && (
+            {/* Online Fee Payment & Receipt Upload (Shows student's own Study Center QR & Bank Details) */}
+            {(student.centerPayment || student.mainCenterPayment) && showPayFeePanel && (() => {
+              const payInfo = student.centerPayment || student.mainCenterPayment;
+              return (
               <div className="no-print bg-white border-2 border-[#0B3D62]/25 rounded-xl shadow-sm overflow-hidden">
                 <div className="bg-gradient-to-r from-[#0B3D62] to-[#135589] text-white px-5 py-3.5 flex flex-wrap items-center justify-between gap-2">
                   <div className="flex items-center gap-2">
                     <IndianRupee className="w-4 h-4 text-[#FF9B5E]" />
                     <h3 className="text-sm font-extrabold">
-                      Pay Monthly Fee Online &amp; Upload Payment Receipt
+                      Pay Course / Monthly Fee Online &amp; Upload Payment Receipt
                     </h3>
                   </div>
                   <span className="px-2.5 py-0.5 rounded-full bg-[#F07228] text-white text-[10px] font-bold uppercase">
-                    Main Center Online Fee Desk
+                    {payInfo?.centerName} ({payInfo?.centerCode})
                   </span>
                 </div>
 
                 <div className="p-5 grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
-                  {/* Left: Main Center QR & Bank Info */}
+                  {/* Left: Student's Study Center QR & Bank Info */}
                   <div className="lg:col-span-5 bg-slate-50 border border-slate-200 rounded-lg p-4 space-y-3 text-xs">
                     <p className="font-extrabold text-[#0B3D62] uppercase tracking-wide">
-                      Scan QR or Pay via Bank Transfer
+                      Scan Center QR or Pay via Bank Transfer
                     </p>
-                    {student.mainCenterPayment?.paymentQrUrl ? (
+                    {payInfo?.paymentQrUrl ? (
                       <div className="flex flex-col items-center bg-white border border-slate-200 rounded-lg p-3">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img
-                          src={student.mainCenterPayment.paymentQrUrl}
-                          alt="Main Center Payment QR"
+                          src={payInfo.paymentQrUrl}
+                          alt="Study Center Payment QR"
                           className="w-44 h-44 object-contain"
                         />
-                        <span className="text-[11px] font-bold text-[#0B3D62] mt-1.5">
-                          {student.mainCenterPayment.centerName} ({student.mainCenterPayment.centerCode})
+                        <span className="text-[11px] font-bold text-[#0B3D62] mt-1.5 text-center">
+                          {payInfo.centerName} ({payInfo.centerCode})
                         </span>
                       </div>
                     ) : null}
                     <div className="space-y-1 text-slate-700">
-                      {student.mainCenterPayment?.upiId && (
+                      {payInfo?.upiId && (
                         <p>
                           <strong>UPI ID:</strong>{" "}
                           <span className="font-mono text-[#0B3D62]">
-                            {student.mainCenterPayment.upiId}
+                            {payInfo.upiId}
                           </span>
                         </p>
                       )}
-                      {student.mainCenterPayment?.bankName && (
+                      {payInfo?.bankName && (
                         <p>
-                          <strong>Bank:</strong> {student.mainCenterPayment.bankName}
+                          <strong>Bank:</strong> {payInfo.bankName}
                         </p>
                       )}
-                      {student.mainCenterPayment?.accountHolderName && (
+                      {payInfo?.accountHolderName && (
                         <p>
                           <strong>Account Holder:</strong>{" "}
-                          {student.mainCenterPayment.accountHolderName}
+                          {payInfo.accountHolderName}
                         </p>
                       )}
-                      {student.mainCenterPayment?.accountNumber && (
+                      {payInfo?.accountNumber && (
                         <p>
                           <strong>Account No.:</strong>{" "}
                           <span className="font-mono">
-                            {student.mainCenterPayment.accountNumber}
+                            {payInfo.accountNumber}
                           </span>
                         </p>
                       )}
-                      {student.mainCenterPayment?.ifscCode && (
+                      {payInfo?.ifscCode && (
                         <p>
                           <strong>IFSC:</strong>{" "}
-                          <span className="font-mono">{student.mainCenterPayment.ifscCode}</span>
+                          <span className="font-mono">{payInfo.ifscCode}</span>
+                        </p>
+                      )}
+                      {!payInfo?.paymentQrUrl && !payInfo?.upiId && !payInfo?.accountNumber && (
+                        <p className="text-amber-800 bg-amber-50 border border-amber-200 rounded p-2">
+                          Please contact your Study Center ({payInfo?.centerName}) for payment QR / bank details, pay your fee, and upload the receipt with UTR number here.
                         </p>
                       )}
                     </div>
@@ -564,15 +598,16 @@ export default function StudentZonePage() {
                         />
                       </div>
                       <div>
-                        <label className="block font-bold text-slate-700 mb-1">
-                          UTR / Transaction Ref No.
+                        <label className="block font-bold text-[#D65B14] mb-1">
+                          UTR / Transaction Ref No. (Mandatory) *
                         </label>
                         <input
                           type="text"
+                          required
                           value={feeUtr}
                           onChange={(e) => setFeeUtr(e.target.value)}
-                          placeholder="Optional UTR number"
-                          className="w-full px-3 py-2 border border-slate-300 rounded-lg"
+                          placeholder="Enter 12-digit UTR / Transaction No."
+                          className="w-full px-3 py-2 border border-slate-300 rounded-lg font-mono"
                         />
                       </div>
                     </div>
@@ -617,10 +652,10 @@ export default function StudentZonePage() {
 
                     <button
                       type="submit"
-                      disabled={submittingFee || !feeReceiptUrl}
+                      disabled={submittingFee || !feeReceiptUrl || !feeUtr.trim()}
                       className="w-full sm:w-auto px-6 py-2.5 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-bold text-xs disabled:opacity-50"
                     >
-                      {submittingFee ? "Uploading Receipt..." : "Submit Monthly Fee Receipt"}
+                      {submittingFee ? "Uploading Receipt..." : "Submit Fee Receipt"}
                     </button>
                   </form>
                 </div>
@@ -670,7 +705,8 @@ export default function StudentZonePage() {
                   </div>
                 )}
               </div>
-            )}
+              );
+            })()}
 
             {/* Switch Tabs */}
             <div className="no-print flex flex-wrap items-center justify-between gap-3">
@@ -862,7 +898,7 @@ export default function StudentZonePage() {
               </div>
             )}
 
-            {/* TAB 2: PRINTABLE PVC PORTRAIT STUDENT ID CARD (54mm x 86mm CR80) */}
+            {/* TAB 2: PRINTABLE PVC PORTRAIT STUDENT ID CARD (54mm x 86mm CR80 — Premium Dark Theme) */}
             {activeTab === "idcard" && (
               <div className="space-y-3">
                 <p className="no-print text-center text-xs text-slate-500">
@@ -871,108 +907,128 @@ export default function StudentZonePage() {
                 </p>
                 <div id="printable-document" className="flex justify-center py-2">
                   <div
-                    className="pvc-id-card bg-white border-2 border-[#0B3D62] rounded-[12px] shadow-xl overflow-hidden flex flex-col justify-between"
-                    style={{ width: "260px", height: "414px" }}
+                    className="pvc-id-card relative bg-gradient-to-b from-[#06182B] via-[#0B2E52] to-[#051526] border-2 border-[#F07228] rounded-[14px] shadow-2xl overflow-hidden flex flex-col justify-between text-white"
+                    style={{
+                      width: "268px",
+                      minHeight: "426px",
+                      WebkitPrintColorAdjust: "exact",
+                      printColorAdjust: "exact",
+                    }}
                   >
-                    {/* Top Brand Header with Official Institute Logo */}
-                    <div className="bg-white px-3 pt-2.5 pb-2 border-b-[3px] border-[#F07228] text-center">
-                      <div className="flex justify-center">
-                        <BrandLogo height={30} />
+                    {/* Centered Background Logo Watermark */}
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src="/empire-logo.png"
+                        alt=""
+                        aria-hidden="true"
+                        className="w-44 h-44 object-contain opacity-[0.10] brightness-200 contrast-125 select-none"
+                      />
+                    </div>
+
+                    {/* Top Brand Header */}
+                    <div className="relative z-10 bg-gradient-to-r from-[#04111F] via-[#0A2744] to-[#04111F] px-3 pt-2.5 pb-2 border-b-[2.5px] border-[#F07228] text-center">
+                      <div className="inline-flex justify-center bg-white/95 rounded-md px-2.5 py-1 shadow-sm">
+                        <BrandLogo height={26} />
                       </div>
-                      <p className="text-[7.5px] font-bold text-[#0B3D62] tracking-wider uppercase mt-1">
+                      <p className="text-[7px] font-bold text-[#FFB380] tracking-[0.14em] uppercase mt-1">
                         ISO 9001:2015 Certified Institution
                       </p>
-                      <div className="mt-1 inline-block bg-[#0B3D62] text-white text-[8px] font-extrabold tracking-[0.14em] uppercase px-2.5 py-0.5 rounded-sm">
+                      <div className="mt-1 inline-block bg-[#F07228] text-white text-[7.5px] font-extrabold tracking-[0.16em] uppercase px-2.5 py-0.5 rounded-full shadow-sm">
                         STUDENT IDENTITY CARD
                       </div>
                     </div>
 
                     {/* Portrait Body: Centered Photo + Student Details */}
-                    <div className="px-3.5 py-2 flex-1 flex flex-col items-center justify-between">
+                    <div className="relative z-10 px-3 py-2 flex-1 flex flex-col items-center justify-between gap-1.5">
                       {/* Passport Photo */}
-                      <div className="w-[74px] h-[86px] rounded-md border-2 border-[#0B3D62] bg-slate-50 overflow-hidden flex items-center justify-center shadow-sm">
-                        {student.photoUrl ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img
-                            src={student.photoUrl}
-                            alt={student.fullName}
-                            className="w-full h-full object-cover"
-                          />
-                        ) : (
-                          <User className="w-8 h-8 text-slate-300" />
-                        )}
+                      <div className="w-[72px] h-[82px] rounded-lg p-[2px] bg-gradient-to-tr from-[#F07228] via-[#FFB380] to-[#38BDF8] shadow-md shrink-0">
+                        <div className="w-full h-full rounded-[6px] bg-slate-900 overflow-hidden flex items-center justify-center">
+                          {student.photoUrl ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={student.photoUrl}
+                              alt={student.fullName}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <User className="w-8 h-8 text-slate-400" />
+                          )}
+                        </div>
                       </div>
 
                       {/* Name & Enrollment */}
-                      <div className="text-center w-full mt-1">
-                        <p className="text-[12px] font-extrabold text-[#0B3D62] uppercase leading-tight truncate">
+                      <div className="text-center w-full">
+                        <p className="text-[12px] font-extrabold text-white uppercase leading-tight tracking-wide">
                           {student.fullName}
                         </p>
-                        <p className="text-[9.5px] font-mono font-extrabold text-[#D65B14] mt-0.5">
+                        <p className="text-[9.5px] font-mono font-extrabold text-[#FFB380] mt-0.5 tracking-wider">
                           ID: {student.enrollmentNumber}
                         </p>
                       </div>
 
-                      {/* Compact Details Table */}
-                      <div className="w-full bg-slate-50 border border-slate-200 rounded px-2.5 py-1.5 text-[8.5px] space-y-0.5 mt-1">
-                        <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-500 shrink-0">Father&apos;s Name:</span>
-                          <strong className="text-slate-800 truncate text-right uppercase">
-                            {student.fatherName}
-                          </strong>
-                        </div>
-                        <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-500 shrink-0">DOB:</span>
-                          <strong className="text-slate-800">
-                            {formatDisplayDate(student.dob)}
-                          </strong>
-                        </div>
-                        <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-500 shrink-0">Course:</span>
-                          <strong className="text-[#0B3D62] truncate text-right">
+                      {/* Dark Glass Details Box (Full Course Name — No Truncation) */}
+                      <div className="w-full bg-[#041425]/75 border border-white/15 rounded-lg px-2.5 py-2 text-[8.2px] space-y-1 backdrop-blur-[1px]">
+                        <div className="pb-1 border-b border-white/10 text-center">
+                          <span className="text-[6.8px] uppercase tracking-wider text-[#FFB380] font-bold block">
+                            Course / Programme
+                          </span>
+                          <strong className="text-[8.8px] text-white font-bold leading-snug whitespace-normal break-words block mt-0.5">
                             {student.courseName}
                           </strong>
                         </div>
                         <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-500 shrink-0">Session:</span>
-                          <strong className="text-slate-800">
+                          <span className="text-slate-300 shrink-0">Father&apos;s Name:</span>
+                          <strong className="text-white text-right uppercase leading-tight">
+                            {student.fatherName}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between gap-1.5">
+                          <span className="text-slate-300 shrink-0">DOB:</span>
+                          <strong className="text-white">
+                            {formatDisplayDate(student.dob)}
+                          </strong>
+                        </div>
+                        <div className="flex justify-between gap-1.5">
+                          <span className="text-slate-300 shrink-0">Session:</span>
+                          <strong className="text-[#7DD3FC]">
                             {student.session} ({student.courseCode})
                           </strong>
                         </div>
                         <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-500 shrink-0">Mobile:</span>
-                          <strong className="text-slate-800">{student.mobile}</strong>
+                          <span className="text-slate-300 shrink-0">Mobile:</span>
+                          <strong className="text-white">{student.mobile}</strong>
                         </div>
                       </div>
 
                       {/* QR Code + Registrar Signature */}
-                      <div className="w-full flex items-end justify-between pt-1.5 mt-1 border-t border-slate-200">
+                      <div className="w-full flex items-end justify-between pt-1 border-t border-white/15">
                         <div className="flex items-center gap-1.5">
-                          <div className="p-0.5 bg-white border border-slate-300 rounded">
+                          <div className="p-0.5 bg-white rounded shadow-sm">
                             <QRCodeSVG
                               value={`https://${INSTITUTE_INFO.website}/verify-certificate?cert=${student.enrollmentNumber}`}
-                              size={38}
+                              size={36}
                             />
                           </div>
-                          <div className="text-[7px] text-slate-500 leading-tight">
-                            <p className="font-bold text-[#0B3D62]">Scan Verify</p>
+                          <div className="text-[6.8px] text-slate-300 leading-tight">
+                            <p className="font-bold text-[#FFB380]">Scan Verify</p>
                             <p>Valid: {student.session}</p>
                           </div>
                         </div>
-                        <div className="text-right text-[7.5px]">
-                          <div className="w-16 border-b border-slate-500 mb-0.5 ml-auto" />
-                          <p className="font-bold text-[#0B3D62]">Registrar Sign</p>
-                          <p className="text-[6.5px] text-slate-500">Empire Skills India</p>
+                        <div className="text-right text-[7.2px]">
+                          <div className="w-16 border-b border-slate-400 mb-0.5 ml-auto" />
+                          <p className="font-bold text-white">Registrar Sign</p>
+                          <p className="text-[6.5px] text-slate-300">Empire Skills India</p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Bottom Navy Footer Strip */}
-                    <div className="bg-[#0B3D62] text-white px-2.5 py-1.5 text-[7px] text-center leading-tight">
-                      <p className="font-semibold text-[#FFB380]">
+                    {/* Bottom Dark Footer Strip */}
+                    <div className="relative z-10 bg-[#04111F] border-t border-[#F07228]/60 text-white px-2.5 py-1.5 text-[7px] text-center leading-tight">
+                      <p className="font-bold text-[#FFB380]">
                         {INSTITUTE_INFO.website}
                       </p>
-                      <p className="text-slate-200 truncate">
+                      <p className="text-slate-300 truncate">
                         Helpline: {INSTITUTE_INFO.helpline}
                       </p>
                     </div>

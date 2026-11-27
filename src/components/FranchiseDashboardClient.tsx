@@ -120,7 +120,7 @@ export function FranchiseDashboardClient() {
   const [applications, setApplications] = useState<FranchiseAppRow[]>([]);
   const [feeSubmissions, setFeeSubmissions] = useState<FeeSubmissionRow[]>([]);
   const [mainTab, setMainTab] = useState<"applications" | "students" | "fees">("applications");
-  const [partnerFeeSubTab, setPartnerFeeSubTab] = useState<"students" | "royalty">("students");
+  const [partnerFeeSubTab, setPartnerFeeSubTab] = useState<"students" | "royalty" | "receipts">("students");
   const [initialFeeReceived, setInitialFeeReceived] = useState("500");
   const [initialFeeMode, setInitialFeeMode] = useState("UPI / Online");
   const [initialFeeReceipt, setInitialFeeReceipt] = useState("");
@@ -1337,6 +1337,19 @@ export function FranchiseDashboardClient() {
                     <Receipt className="w-3.5 h-3.5" />
                     Admin Royalty Record — ₹500 + 15% ({royaltyApps.length})
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setPartnerFeeSubTab("receipts")}
+                    className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-lg text-xs font-bold transition-colors ${
+                      partnerFeeSubTab === "receipts"
+                        ? "bg-emerald-700 text-white"
+                        : "bg-slate-100 text-slate-700 hover:bg-slate-200"
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    Online Student Receipts (
+                    {feeSubmissions.filter((s) => s.status === "PENDING").length} Pending)
+                  </button>
                 </div>
                 <div className="relative w-full sm:w-64">
                   <Search className="w-4 h-4 text-slate-400 absolute left-3 top-2.5" />
@@ -1594,6 +1607,116 @@ export function FranchiseDashboardClient() {
                                 </tr>
                               );
                             })
+                        )}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              )}
+
+              {/* SUB-TAB 3: ONLINE STUDENT FEE RECEIPTS (Uploaded from Student Zone) */}
+              {partnerFeeSubTab === "receipts" && (
+                <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
+                  <div className="px-5 py-3.5 bg-amber-50 border-b border-amber-200">
+                    <h2 className="text-sm font-extrabold text-[#0B3D62]">
+                      Student Online Fee Receipts ({feeSubmissions.length})
+                    </h2>
+                    <p className="text-[11px] text-slate-600">
+                      Students of your center pay fees via your QR/Bank from Student Zone and upload
+                      screenshots with UTR here. Verify &amp; Approve to auto-update their fee balance.
+                    </p>
+                  </div>
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-xs text-left">
+                      <thead className="bg-[#0B3D62] text-white uppercase text-[11px]">
+                        <tr>
+                          <th className="py-3 px-4">Student &amp; Enrollment</th>
+                          <th className="py-3 px-3">Fee Head &amp; Date</th>
+                          <th className="py-3 px-3">UTR / Transaction No.</th>
+                          <th className="py-3 px-3 text-right">Amount</th>
+                          <th className="py-3 px-3">Status</th>
+                          <th className="py-3 px-4 text-right">Action</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-slate-200">
+                        {feeSubmissions.length === 0 ? (
+                          <tr>
+                            <td colSpan={6} className="py-8 text-center text-slate-500">
+                              No online fee receipts submitted by students yet.
+                            </td>
+                          </tr>
+                        ) : (
+                          feeSubmissions.map((sub) => (
+                            <tr key={sub.id} className="hover:bg-slate-50">
+                              <td className="py-3 px-4">
+                                <div className="font-bold text-[#0B3D62]">{sub.studentName}</div>
+                                <div className="font-mono text-[11px] text-emerald-700 font-semibold">
+                                  {sub.enrollmentNumber}
+                                </div>
+                                <div className="text-[10px] text-slate-500">{sub.courseName}</div>
+                              </td>
+                              <td className="py-3 px-3">
+                                <div className="font-semibold text-slate-800">{sub.feeHead}</div>
+                                <div className="text-[10px] text-slate-500">
+                                  {formatDisplayDate(sub.paymentDate)}
+                                </div>
+                              </td>
+                              <td className="py-3 px-3 font-mono font-semibold text-slate-700">
+                                {sub.utr || "—"}
+                              </td>
+                              <td className="py-3 px-3 text-right font-extrabold text-[#0B3D62]">
+                                {formatINR(sub.amount)}
+                              </td>
+                              <td className="py-3 px-3">
+                                <span
+                                  className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                    sub.status === "APPROVED"
+                                      ? "bg-emerald-100 text-emerald-800"
+                                      : sub.status === "REJECTED"
+                                      ? "bg-red-100 text-red-700"
+                                      : "bg-amber-100 text-amber-900"
+                                  }`}
+                                >
+                                  {sub.status}
+                                </span>
+                              </td>
+                              <td className="py-3 px-4 text-right">
+                                <div className="flex justify-end gap-1.5 flex-wrap">
+                                  <button
+                                    type="button"
+                                    onClick={() => setViewReceiptSub(sub)}
+                                    className="px-2.5 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold"
+                                  >
+                                    View Receipt
+                                  </button>
+                                  {sub.status === "PENDING" && (
+                                    <>
+                                      <button
+                                        type="button"
+                                        disabled={busyId === sub.id}
+                                        onClick={() =>
+                                          handleFeeSubmissionDecision(sub, "APPROVE_FEE_SUBMISSION")
+                                        }
+                                        className="px-2.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-50"
+                                      >
+                                        Verify &amp; Approve
+                                      </button>
+                                      <button
+                                        type="button"
+                                        disabled={busyId === sub.id}
+                                        onClick={() =>
+                                          handleFeeSubmissionDecision(sub, "REJECT_FEE_SUBMISSION")
+                                        }
+                                        className="px-2.5 py-1.5 rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold disabled:opacity-50"
+                                      >
+                                        Reject
+                                      </button>
+                                    </>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          ))
                         )}
                       </tbody>
                     </table>
@@ -1941,15 +2064,16 @@ export function FranchiseDashboardClient() {
                     </div>
 
                     <div>
-                      <label className="block font-bold text-slate-700 mb-1">
-                        UTR / Transaction Ref No. (Optional)
+                      <label className="block font-bold text-[#D65B14] mb-1">
+                        UTR / Transaction Ref No. (Mandatory) *
                       </label>
                       <input
                         type="text"
+                        required
                         value={forwardUtr}
                         onChange={(e) => setForwardUtr(e.target.value)}
-                        placeholder="e.g., 432198765432"
-                        className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                        placeholder="Enter 12-digit UTR / Transaction No."
+                        className="w-full px-3 py-1.5 text-xs font-mono border border-slate-300 rounded-lg bg-white"
                       />
                     </div>
                   </div>
@@ -1981,8 +2105,8 @@ export function FranchiseDashboardClient() {
                     busyId === actionModal.app.id ||
                     ((actionModal.action === "FORWARD_TO_MAIN" ||
                       actionModal.action === "APPROVE_AND_FORWARD") &&
-                      !forwardProofUrl &&
-                      !actionModal.app.franchiseForwardProofUrl)
+                      ((!forwardProofUrl && !actionModal.app.franchiseForwardProofUrl) ||
+                        (!forwardUtr.trim() && !actionModal.app.franchiseForwardUtr)))
                   }
                   onClick={() =>
                     executeAction(
