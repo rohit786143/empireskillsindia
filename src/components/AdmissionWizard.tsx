@@ -146,6 +146,7 @@ export function AdmissionWizard({
   const [declarationAccepted, setDeclarationAccepted] = useState(false);
   const [paymentScreenshotUrl, setPaymentScreenshotUrl] = useState<string>("");
   const [paymentUtr, setPaymentUtr] = useState<string>("");
+  const [paymentAmountPaid, setPaymentAmountPaid] = useState<string>("500");
 
   const selectedCourse = courses.find((c) => c.id === courseId) || courses[0];
   const selectedFranchise = franchises.find((f) => f.id === franchiseId) || null;
@@ -242,10 +243,15 @@ export function AdmissionWizard({
   }
 
   async function handleSubmit() {
+    const manualPaidAmt = Number(paymentAmountPaid || 0);
     if (!paymentScreenshotUrl) {
       setError(
-        `Please pay the ₹${regFeeAmount} Registration Fee and upload the Payment Screenshot before submitting.`
+        `Please pay at least ₹${regFeeAmount} Registration Fee and upload the Payment Screenshot before submitting.`
       );
+      return;
+    }
+    if (!Number.isFinite(manualPaidAmt) || manualPaidAmt <= 0) {
+      setError("Please enter the exact Amount Paid (₹) before submitting.");
       return;
     }
     if (!paymentUtr.trim()) {
@@ -281,7 +287,7 @@ export function AdmissionWizard({
           franchiseId: franchiseId || null,
           paymentScreenshotUrl,
           paymentUtr: paymentUtr.trim(),
-          registrationFeePaid: regFeeAmount,
+          registrationFeePaid: Math.round(Number(paymentAmountPaid || regFeeAmount)),
           session,
           studyMode,
           fullName: fullName.toUpperCase(),
@@ -1196,18 +1202,34 @@ export function AdmissionWizard({
                     </p>
                   )}
 
-                  <div>
-                    <label className="block text-xs font-bold text-[#D65B14] mb-1">
-                      UTR / Transaction Reference No. (Mandatory) *
-                    </label>
-                    <input
-                      type="text"
-                      required
-                      value={paymentUtr}
-                      onChange={(e) => setPaymentUtr(e.target.value)}
-                      placeholder="Enter 12-digit UTR / Transaction No."
-                      className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
-                    />
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs font-bold text-[#D65B14] mb-1">
+                        Amount Paid (₹) (Mandatory) *
+                      </label>
+                      <input
+                        type="number"
+                        required
+                        min={1}
+                        value={paymentAmountPaid}
+                        onChange={(e) => setPaymentAmountPaid(e.target.value)}
+                        placeholder={`e.g., ${regFeeAmount}`}
+                        className="w-full px-3 py-2 text-xs font-bold text-[#0B3D62] border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-bold text-[#D65B14] mb-1">
+                        UTR / Transaction Ref No. (Mandatory) *
+                      </label>
+                      <input
+                        type="text"
+                        required
+                        value={paymentUtr}
+                        onChange={(e) => setPaymentUtr(e.target.value)}
+                        placeholder="Enter 12-digit UTR / Transaction No."
+                        className="w-full px-3 py-2 text-xs font-mono border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -1253,10 +1275,17 @@ export function AdmissionWizard({
             <button
               type="button"
               onClick={handleSubmit}
-              disabled={submitting || !paymentScreenshotUrl || !paymentUtr.trim()}
+              disabled={
+                submitting ||
+                !paymentScreenshotUrl ||
+                !paymentUtr.trim() ||
+                Number(paymentAmountPaid || 0) <= 0
+              }
               title={
                 !paymentScreenshotUrl
-                  ? "Upload Registration Fee payment screenshot first"
+                  ? "Upload payment screenshot first"
+                  : Number(paymentAmountPaid || 0) <= 0
+                  ? "Enter Amount Paid (₹) first"
                   : !paymentUtr.trim()
                   ? "Enter UTR / Transaction Reference Number first"
                   : "Submit Admission Form"

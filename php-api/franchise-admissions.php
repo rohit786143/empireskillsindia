@@ -14,8 +14,38 @@ $isMainCenter = is_main_center_row($fRowDb);
 $franchise['isMainCenter'] = $isMainCenter;
 $method = $_SERVER['REQUEST_METHOD'];
 
-// GET: List ONLY this franchise's applications (+ online fee submissions ONLY for Main Center)
+// GET: List ONLY this franchise's applications (+ online fee submissions + royalty submissions)
 if ($method === 'GET') {
+    // Auto-credit registration_fee_paid for already-approved applications whose fee ledger is still empty
+    try {
+        $fixStmt = $pdo->prepare(
+            'SELECT id, registration_fee_paid, payment_utr, payment_screenshot_url, created_at
+             FROM admission_applications
+             WHERE franchise_id = ?
+               AND status = "APPROVED"
+               AND (fee_paid IS NULL OR fee_paid = 0)
+               AND (fee_payments_json IS NULL OR fee_payments_json = "" OR fee_payments_json = "[]")
+               AND registration_fee_paid > 0'
+        );
+        $fixStmt->execute([$franchiseId]);
+        while ($fx = $fixStmt->fetch()) {
+            $amt = (int)$fx['registration_fee_paid'];
+            $entry = [[
+                'id'         => generate_cuid(),
+                'amount'     => $amt,
+                'feeType'    => 'Registration / Initial Fee',
+                'mode'       => 'UPI / Online',
+                'receiptNo'  => trim((string)($fx['payment_utr'] ?? '')),
+                'date'       => substr((string)($fx['created_at'] ?? date('Y-m-d')), 0, 10),
+                'recordedAt' => $fx['created_at'] ?: date('Y-m-d H:i:s'),
+                'remarks'    => 'Initial fee paid during online admission',
+                'proofUrl'   => $fx['payment_screenshot_url'] ?? null,
+            ]];
+            $pdo->prepare('UPDATE admission_applications SET fee_paid = ?, fee_payments_json = ? WHERE id = ?')
+                ->execute([$amt, json_encode($entry, JSON_UNESCAPED_UNICODE), $fx['id']]);
+        }
+    } catch (PDOException $e) {}
+
     $stmt = $pdo->prepare(
         'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee, c.fee_breakdown_json AS joined_fee_breakdown
          FROM admission_applications a
@@ -306,33 +336,37 @@ if ($method === 'PATCH' || $method === 'PUT') {
             $params[] = 'PENDING';
         }
 
-        // Record initial student fee received on Accept (e.g. ₹500 registration fee) into student's fee ledger
-        $initialFeeAmt = isset($body['initialFeeReceived']) ? max(0, (int)$body['initialFeeReceived']) : 0;
+        // Record initial student fee received on Accept (uses manual entered amount OR student's registration_fee_paid)
+        $initialFeeAmt = isset($body['initialFeeReceived']) && (int)$body['initialFeeReceived'] > 0
+            ? (int)$body['initialFeeReceived']
+            : max(0, (int)($existing['registration_fee_paid'] ?? 0));
         if ($initialFeeAmt > 0) {
             $existingPayments = [];
             if (!empty($existing['fee_payments_json'])) {
                 $dec = json_decode($existing['fee_payments_json'], true);
                 if (is_array($dec)) $existingPayments = $dec;
             }
-            $existingPayments[] = [
-                'id'         => generate_cuid(),
-                'amount'     => $initialFeeAmt,
-                'feeType'    => 'Registration / Initial Fee',
-                'mode'       => trim((string)($body['initialFeeMode'] ?? 'UPI / Online')) ?: 'UPI / Online',
-                'receiptNo'  => trim((string)($body['initialFeeReceipt'] ?? ($existing['payment_utr'] ?? ''))),
-                'date'       => date('Y-m-d'),
-                'recordedAt' => date('Y-m-d H:i:s'),
-                'remarks'    => $remarks !== '' ? $remarks : 'Initial fee received at admission acceptance',
-                'proofUrl'   => $existing['payment_screenshot_url'] ?? null,
-            ];
-            $totalStudentPaid = 0;
-            foreach ($existingPayments as $sp) {
-                $totalStudentPaid += (int)($sp['amount'] ?? 0);
+            if (count($existingPayments) === 0) {
+                $existingPayments[] = [
+                    'id'         => generate_cuid(),
+                    'amount'     => $initialFeeAmt,
+                    'feeType'    => 'Registration / Initial Fee',
+                    'mode'       => trim((string)($body['initialFeeMode'] ?? 'UPI / Online')) ?: 'UPI / Online',
+                    'receiptNo'  => trim((string)($body['initialFeeReceipt'] ?? ($existing['payment_utr'] ?? ''))),
+                    'date'       => date('Y-m-d'),
+                    'recordedAt' => date('Y-m-d H:i:s'),
+                    'remarks'    => $remarks !== '' ? $remarks : 'Initial fee paid during admission',
+                    'proofUrl'   => $existing['payment_screenshot_url'] ?? null,
+                ];
+                $totalStudentPaid = 0;
+                foreach ($existingPayments as $sp) {
+                    $totalStudentPaid += (int)($sp['amount'] ?? 0);
+                }
+                $fields[] = '`fee_paid` = ?';
+                $params[] = $totalStudentPaid;
+                $fields[] = '`fee_payments_json` = ?';
+                $params[] = json_encode($existingPayments, JSON_UNESCAPED_UNICODE);
             }
-            $fields[] = '`fee_paid` = ?';
-            $params[] = $totalStudentPaid;
-            $fields[] = '`fee_payments_json` = ?';
-            $params[] = json_encode($existingPayments, JSON_UNESCAPED_UNICODE);
         }
     } elseif ($action === 'FRANCHISE_REJECT') {
         $fields[] = '`franchise_status` = ?';
