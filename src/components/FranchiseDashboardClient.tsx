@@ -126,6 +126,8 @@ export function FranchiseDashboardClient() {
   const [initialFeeReceipt, setInitialFeeReceipt] = useState("");
   const [courseFilter, setCourseFilter] = useState("ALL");
   const [sessionFilter, setSessionFilter] = useState("ALL");
+  const [receiptDateFrom, setReceiptDateFrom] = useState("");
+  const [receiptDateTo, setReceiptDateTo] = useState("");
   const [viewReceiptSub, setViewReceiptSub] = useState<FeeSubmissionRow | null>(null);
   const [collectApp, setCollectApp] = useState<FranchiseAppRow | null>(null);
   const [collectAmount, setCollectAmount] = useState("");
@@ -378,6 +380,129 @@ export function FranchiseDashboardClient() {
       return true;
     });
   }, [enrolledStudents, courseFilter, sessionFilter, search]);
+
+  // Unified complete payment register from Day 1 (Registration ₹500 + all fee_payments_json + all Student Zone online submissions)
+  const allStudentReceipts = useMemo(() => {
+    type UnifiedReceipt = {
+      key: string;
+      studentName: string;
+      enrollmentNumber: string;
+      courseName: string;
+      feeHead: string;
+      mode: string;
+      utr: string;
+      amount: number;
+      paymentDate: string;
+      status: string;
+      receiptUrl: string | null;
+      pendingSubmission?: FeeSubmissionRow;
+    };
+
+    const items: UnifiedReceipt[] = [];
+    const seenKeys = new Set<string>();
+
+    // 1. Add all Student Zone online fee submissions first (keeps PENDING / APPROVED / REJECTED + action buttons)
+    for (const sub of feeSubmissions) {
+      const dateStr = (sub.paymentDate || sub.createdAt || "").slice(0, 10);
+      const dedupeKey = `${sub.applicationId}|${sub.amount}|${(sub.utr || "").trim().toLowerCase()}|${dateStr}`;
+      seenKeys.add(dedupeKey);
+      items.push({
+        key: `sub-${sub.id}`,
+        studentName: sub.studentName,
+        enrollmentNumber: sub.enrollmentNumber,
+        courseName: sub.courseName,
+        feeHead: sub.feeHead,
+        mode: "Online UPI / Bank",
+        utr: sub.utr || "",
+        amount: Number(sub.amount || 0),
+        paymentDate: dateStr,
+        status: sub.status,
+        receiptUrl: sub.receiptUrl || null,
+        pendingSubmission: sub.status === "PENDING" ? sub : undefined,
+      });
+    }
+
+    // 2. Add all recorded student payments from each application's feePaymentsJson (plus initial ₹500 Registration Fee)
+    for (const app of applications) {
+      let txns: {
+        id: string;
+        amount: number;
+        feeType?: string;
+        mode?: string;
+        receiptNo?: string;
+        date?: string;
+        proofUrl?: string | null;
+      }[] = [];
+      if (app.feePaymentsJson) {
+        try {
+          const dec = JSON.parse(app.feePaymentsJson);
+          if (Array.isArray(dec)) txns = dec;
+        } catch {}
+      }
+
+      let hasRegTxn = false;
+      txns.forEach((t, idx) => {
+        const dateStr = (t.date || app.createdAt || "").slice(0, 10);
+        const utrVal = (t.receiptNo || "").trim();
+        const dedupeKey = `${app.id}|${t.amount}|${utrVal.toLowerCase()}|${dateStr}`;
+        if (seenKeys.has(dedupeKey)) return;
+        seenKeys.add(dedupeKey);
+
+        const isReg = (t.feeType || "").toLowerCase().includes("registration") || idx === 0;
+        if ((t.feeType || "").toLowerCase().includes("registration")) hasRegTxn = true;
+
+        const proof =
+          t.proofUrl ||
+          (isReg && app.paymentScreenshotUrl ? app.paymentScreenshotUrl : null);
+
+        items.push({
+          key: `txn-${app.id}-${t.id || idx}`,
+          studentName: app.fullName,
+          enrollmentNumber: app.enrollmentNumber || app.applicationRef,
+          courseName: app.courseName,
+          feeHead: t.feeType || "Course Fee",
+          mode: t.mode || "Cash",
+          utr: utrVal || (isReg ? app.paymentUtr || "" : ""),
+          amount: Number(t.amount || 0),
+          paymentDate: dateStr,
+          status: "APPROVED",
+          receiptUrl: proof,
+        });
+      });
+
+      // If student uploaded Registration Fee screenshot on admission form and it's not yet in feePaymentsJson
+      if (!hasRegTxn && app.paymentScreenshotUrl && txns.length === 0) {
+        const dateStr = (app.createdAt || "").slice(0, 10);
+        items.push({
+          key: `reg-${app.id}`,
+          studentName: app.fullName,
+          enrollmentNumber: app.enrollmentNumber || app.applicationRef,
+          courseName: app.courseName,
+          feeHead: "Registration Fee (Admission)",
+          mode: "UPI / Online",
+          utr: app.paymentUtr || "",
+          amount: Number(app.registrationFeePaid || 500),
+          paymentDate: dateStr,
+          status: app.franchiseStatus === "PENDING_FRANCHISE" ? "PENDING" : "APPROVED",
+          receiptUrl: app.paymentScreenshotUrl,
+        });
+      }
+    }
+
+    // Sort newest date first
+    items.sort((a, b) => (b.paymentDate || "").localeCompare(a.paymentDate || ""));
+
+    return items.filter((item) => {
+      if (receiptDateFrom && item.paymentDate && item.paymentDate < receiptDateFrom) return false;
+      if (receiptDateTo && item.paymentDate && item.paymentDate > receiptDateTo) return false;
+      if (search.trim()) {
+        const q = search.trim().toLowerCase();
+        const hay = `${item.studentName} ${item.enrollmentNumber} ${item.courseName} ${item.feeHead} ${item.utr} ${item.mode}`.toLowerCase();
+        if (!hay.includes(q)) return false;
+      }
+      return true;
+    });
+  }, [applications, feeSubmissions, receiptDateFrom, receiptDateTo, search]);
 
   async function handleFeeSubmissionDecision(
     sub: FeeSubmissionRow,
@@ -1227,19 +1352,56 @@ export function FranchiseDashboardClient() {
           </div>
         )}
 
-        {/* MAIN CENTER EXCLUSIVE TAB 3: Fee Management & Online Monthly Fee Receipts */}
-        {isMainCenter && mainTab === "fees" && (
+        {/* MAIN CENTER EXCLUSIVE TAB 3: Fee Management & All Student Payment Receipts */}
+        {isMainCenter && mainTab === "fees" && (() => {
+          const filteredTotal = allStudentReceipts
+            .filter((r) => r.status !== "REJECTED")
+            .reduce((sum, r) => sum + r.amount, 0);
+          return (
           <div className="space-y-6">
             <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-              <div className="px-5 py-3.5 bg-amber-50 border-b border-amber-200 flex items-center justify-between">
+              <div className="px-5 py-3.5 bg-amber-50 border-b border-amber-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
                 <div>
                   <h2 className="text-sm font-extrabold text-[#0B3D62]">
-                    Student Online Monthly Fee Receipts ({feeSubmissions.length})
+                    All Student Payment Receipts ({allStudentReceipts.length}) • Total:{" "}
+                    <span className="text-emerald-700">{formatINR(filteredTotal)}</span>
                   </h2>
                   <p className="text-[11px] text-slate-600">
-                    Students of {franchise?.centerName} upload their monthly fee payment receipts
-                    from Student Zone. Verify &amp; Approve to auto-credit their fee balance.
+                    Complete history of every payment from Day 1 (Registration, Online Monthly Receipts &amp;
+                    Cash Payments) for {franchise?.centerName}.
                   </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-2 text-xs">
+                  <label className="inline-flex items-center gap-1 font-semibold text-slate-600">
+                    From:
+                    <input
+                      type="date"
+                      value={receiptDateFrom}
+                      onChange={(e) => setReceiptDateFrom(e.target.value)}
+                      className="px-2 py-1 border border-slate-300 rounded bg-white text-xs"
+                    />
+                  </label>
+                  <label className="inline-flex items-center gap-1 font-semibold text-slate-600">
+                    To:
+                    <input
+                      type="date"
+                      value={receiptDateTo}
+                      onChange={(e) => setReceiptDateTo(e.target.value)}
+                      className="px-2 py-1 border border-slate-300 rounded bg-white text-xs"
+                    />
+                  </label>
+                  {(receiptDateFrom || receiptDateTo) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setReceiptDateFrom("");
+                        setReceiptDateTo("");
+                      }}
+                      className="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 font-bold hover:bg-slate-100"
+                    >
+                      Clear
+                    </button>
+                  )}
                 </div>
               </div>
               <div className="overflow-x-auto">
@@ -1248,69 +1410,87 @@ export function FranchiseDashboardClient() {
                     <tr>
                       <th className="py-3 px-4">Student &amp; Enrollment</th>
                       <th className="py-3 px-3">Fee Head &amp; Date</th>
-                      <th className="py-3 px-3">UTR / Ref</th>
+                      <th className="py-3 px-3">Mode / UTR No.</th>
                       <th className="py-3 px-3 text-right">Amount</th>
                       <th className="py-3 px-3">Status</th>
-                      <th className="py-3 px-4 text-right">Action</th>
+                      <th className="py-3 px-4 text-right">Receipt / Action</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-slate-200">
-                    {feeSubmissions.length === 0 ? (
+                    {allStudentReceipts.length === 0 ? (
                       <tr>
                         <td colSpan={6} className="py-8 text-center text-slate-500">
-                          No online monthly fee receipts submitted yet.
+                          No student payment receipts found for the selected filter/date range.
                         </td>
                       </tr>
                     ) : (
-                      feeSubmissions.map((sub) => (
-                        <tr key={sub.id} className="hover:bg-slate-50">
+                      allStudentReceipts.map((rec) => (
+                        <tr key={rec.key} className="hover:bg-slate-50">
                           <td className="py-3 px-4">
-                            <div className="font-bold text-[#0B3D62]">{sub.studentName}</div>
+                            <div className="font-bold text-[#0B3D62]">{rec.studentName}</div>
                             <div className="font-mono text-[11px] text-emerald-700 font-semibold">
-                              {sub.enrollmentNumber}
+                              {rec.enrollmentNumber}
                             </div>
-                            <div className="text-[10px] text-slate-500">{sub.courseName}</div>
+                            <div className="text-[10px] text-slate-500">{rec.courseName}</div>
                           </td>
                           <td className="py-3 px-3">
-                            <div className="font-semibold text-slate-800">{sub.feeHead}</div>
+                            <div className="font-semibold text-slate-800">{rec.feeHead}</div>
                             <div className="text-[10px] text-slate-500">
-                              {formatDisplayDate(sub.paymentDate)}
+                              {formatDisplayDate(rec.paymentDate)}
                             </div>
                           </td>
-                          <td className="py-3 px-3 font-mono text-slate-600">
-                            {sub.utr || "—"}
+                          <td className="py-3 px-3">
+                            <div className="font-semibold text-slate-700">{rec.mode}</div>
+                            <div className="font-mono text-[10px] text-slate-500">
+                              {rec.utr || "—"}
+                            </div>
                           </td>
                           <td className="py-3 px-3 text-right font-extrabold text-[#0B3D62]">
-                            {formatINR(sub.amount)}
+                            {formatINR(rec.amount)}
                           </td>
                           <td className="py-3 px-3">
                             <span
-                              className={`px-2 py-0.5 rounded font-bold text-[10px] ${sub.status === "APPROVED"
+                              className={`px-2 py-0.5 rounded font-bold text-[10px] ${rec.status === "APPROVED"
                                   ? "bg-emerald-100 text-emerald-800"
-                                  : sub.status === "REJECTED"
+                                  : rec.status === "REJECTED"
                                     ? "bg-red-100 text-red-700"
                                     : "bg-amber-100 text-amber-900"
                                 }`}
                             >
-                              {sub.status}
+                              {rec.status}
                             </span>
                           </td>
                           <td className="py-3 px-4 text-right">
                             <div className="flex justify-end gap-1.5 flex-wrap">
-                              <button
-                                type="button"
-                                onClick={() => setViewReceiptSub(sub)}
-                                className="px-2.5 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold"
-                              >
-                                View Receipt
-                              </button>
-                              {sub.status === "PENDING" && (
+                              {rec.receiptUrl ? (
+                                <button
+                                  type="button"
+                                  onClick={() =>
+                                    setViewTxnProof({
+                                      title: `${rec.feeHead} — ${rec.studentName} (${formatINR(rec.amount)})`,
+                                      url: rec.receiptUrl!,
+                                      utr: rec.utr || undefined,
+                                    })
+                                  }
+                                  className="px-2.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold"
+                                >
+                                  View Receipt
+                                </button>
+                              ) : (
+                                <span className="px-2 py-1 text-[10px] text-slate-400">
+                                  Cash / Direct
+                                </span>
+                              )}
+                              {rec.pendingSubmission && (
                                 <>
                                   <button
                                     type="button"
-                                    disabled={busyId === sub.id}
+                                    disabled={busyId === rec.pendingSubmission.id}
                                     onClick={() =>
-                                      handleFeeSubmissionDecision(sub, "APPROVE_FEE_SUBMISSION")
+                                      handleFeeSubmissionDecision(
+                                        rec.pendingSubmission!,
+                                        "APPROVE_FEE_SUBMISSION"
+                                      )
                                     }
                                     className="px-2.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-50"
                                   >
@@ -1318,9 +1498,12 @@ export function FranchiseDashboardClient() {
                                   </button>
                                   <button
                                     type="button"
-                                    disabled={busyId === sub.id}
+                                    disabled={busyId === rec.pendingSubmission.id}
                                     onClick={() =>
-                                      handleFeeSubmissionDecision(sub, "REJECT_FEE_SUBMISSION")
+                                      handleFeeSubmissionDecision(
+                                        rec.pendingSubmission!,
+                                        "REJECT_FEE_SUBMISSION"
+                                      )
                                     }
                                     className="px-2.5 py-1.5 rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold disabled:opacity-50"
                                   >
@@ -1338,7 +1521,8 @@ export function FranchiseDashboardClient() {
               </div>
             </div>
           </div>
-        )}
+          );
+        })()}
         {/* PARTNER FRANCHISE FEE MANAGEMENT TAB (Non-Main-Center: Students Fee Record + Admin Royalty Record) */}
         {!isMainCenter && mainTab === "fees" && (() => {
           const acceptedApps = applications.filter(
@@ -1709,17 +1893,56 @@ export function FranchiseDashboardClient() {
                 </div>
               )}
 
-              {/* SUB-TAB 3: ONLINE STUDENT FEE RECEIPTS (Uploaded from Student Zone) */}
-              {partnerFeeSubTab === "receipts" && (
+              {/* SUB-TAB 3: ALL STUDENT PAYMENT RECEIPTS (From Day 1 with Date Filter & Screenshots) */}
+              {partnerFeeSubTab === "receipts" && (() => {
+                const filteredTotal = allStudentReceipts
+                  .filter((r) => r.status !== "REJECTED")
+                  .reduce((sum, r) => sum + r.amount, 0);
+                return (
                 <div className="bg-white rounded-xl border border-slate-200 overflow-hidden shadow-sm">
-                  <div className="px-5 py-3.5 bg-amber-50 border-b border-amber-200">
-                    <h2 className="text-sm font-extrabold text-[#0B3D62]">
-                      Student Online Fee Receipts ({feeSubmissions.length})
-                    </h2>
-                    <p className="text-[11px] text-slate-600">
-                      Students of your center pay fees via your QR/Bank from Student Zone and upload
-                      screenshots with UTR here. Verify &amp; Approve to auto-update their fee balance.
-                    </p>
+                  <div className="px-5 py-3.5 bg-amber-50 border-b border-amber-200 flex flex-col lg:flex-row lg:items-center lg:justify-between gap-3">
+                    <div>
+                      <h2 className="text-sm font-extrabold text-[#0B3D62]">
+                        All Student Payment Receipts ({allStudentReceipts.length}) • Total:{" "}
+                        <span className="text-emerald-700">{formatINR(filteredTotal)}</span>
+                      </h2>
+                      <p className="text-[11px] text-slate-600">
+                        Complete history of every payment from Day 1 (Registration ₹500, Monthly Online
+                        Receipts &amp; Cash Payments) with UTR &amp; payment screenshots.
+                      </p>
+                    </div>
+                    <div className="flex flex-wrap items-center gap-2 text-xs">
+                      <label className="inline-flex items-center gap-1 font-semibold text-slate-600">
+                        From:
+                        <input
+                          type="date"
+                          value={receiptDateFrom}
+                          onChange={(e) => setReceiptDateFrom(e.target.value)}
+                          className="px-2 py-1 border border-slate-300 rounded bg-white text-xs"
+                        />
+                      </label>
+                      <label className="inline-flex items-center gap-1 font-semibold text-slate-600">
+                        To:
+                        <input
+                          type="date"
+                          value={receiptDateTo}
+                          onChange={(e) => setReceiptDateTo(e.target.value)}
+                          className="px-2 py-1 border border-slate-300 rounded bg-white text-xs"
+                        />
+                      </label>
+                      {(receiptDateFrom || receiptDateTo) && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setReceiptDateFrom("");
+                            setReceiptDateTo("");
+                          }}
+                          className="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 font-bold hover:bg-slate-100"
+                        >
+                          Clear
+                        </button>
+                      )}
+                    </div>
                   </div>
                   <div className="overflow-x-auto">
                     <table className="w-full text-xs text-left">
@@ -1727,70 +1950,88 @@ export function FranchiseDashboardClient() {
                         <tr>
                           <th className="py-3 px-4">Student &amp; Enrollment</th>
                           <th className="py-3 px-3">Fee Head &amp; Date</th>
-                          <th className="py-3 px-3">UTR / Transaction No.</th>
+                          <th className="py-3 px-3">Mode / UTR No.</th>
                           <th className="py-3 px-3 text-right">Amount</th>
                           <th className="py-3 px-3">Status</th>
-                          <th className="py-3 px-4 text-right">Action</th>
+                          <th className="py-3 px-4 text-right">Receipt / Action</th>
                         </tr>
                       </thead>
                       <tbody className="divide-y divide-slate-200">
-                        {feeSubmissions.length === 0 ? (
+                        {allStudentReceipts.length === 0 ? (
                           <tr>
                             <td colSpan={6} className="py-8 text-center text-slate-500">
-                              No online fee receipts submitted by students yet.
+                              No student payment records found for the selected filter/date range.
                             </td>
                           </tr>
                         ) : (
-                          feeSubmissions.map((sub) => (
-                            <tr key={sub.id} className="hover:bg-slate-50">
+                          allStudentReceipts.map((rec) => (
+                            <tr key={rec.key} className="hover:bg-slate-50">
                               <td className="py-3 px-4">
-                                <div className="font-bold text-[#0B3D62]">{sub.studentName}</div>
+                                <div className="font-bold text-[#0B3D62]">{rec.studentName}</div>
                                 <div className="font-mono text-[11px] text-emerald-700 font-semibold">
-                                  {sub.enrollmentNumber}
+                                  {rec.enrollmentNumber}
                                 </div>
-                                <div className="text-[10px] text-slate-500">{sub.courseName}</div>
+                                <div className="text-[10px] text-slate-500">{rec.courseName}</div>
                               </td>
                               <td className="py-3 px-3">
-                                <div className="font-semibold text-slate-800">{sub.feeHead}</div>
+                                <div className="font-semibold text-slate-800">{rec.feeHead}</div>
                                 <div className="text-[10px] text-slate-500">
-                                  {formatDisplayDate(sub.paymentDate)}
+                                  {formatDisplayDate(rec.paymentDate)}
                                 </div>
                               </td>
-                              <td className="py-3 px-3 font-mono font-semibold text-slate-700">
-                                {sub.utr || "—"}
+                              <td className="py-3 px-3">
+                                <div className="font-semibold text-slate-700">{rec.mode}</div>
+                                <div className="font-mono text-[10px] text-slate-500">
+                                  {rec.utr || "—"}
+                                </div>
                               </td>
                               <td className="py-3 px-3 text-right font-extrabold text-[#0B3D62]">
-                                {formatINR(sub.amount)}
+                                {formatINR(rec.amount)}
                               </td>
                               <td className="py-3 px-3">
                                 <span
                                   className={`px-2 py-0.5 rounded font-bold text-[10px] ${
-                                    sub.status === "APPROVED"
+                                    rec.status === "APPROVED"
                                       ? "bg-emerald-100 text-emerald-800"
-                                      : sub.status === "REJECTED"
+                                      : rec.status === "REJECTED"
                                       ? "bg-red-100 text-red-700"
                                       : "bg-amber-100 text-amber-900"
                                   }`}
                                 >
-                                  {sub.status}
+                                  {rec.status}
                                 </span>
                               </td>
                               <td className="py-3 px-4 text-right">
                                 <div className="flex justify-end gap-1.5 flex-wrap">
-                                  <button
-                                    type="button"
-                                    onClick={() => setViewReceiptSub(sub)}
-                                    className="px-2.5 py-1.5 rounded bg-slate-100 hover:bg-slate-200 text-slate-800 font-bold"
-                                  >
-                                    View Receipt
-                                  </button>
-                                  {sub.status === "PENDING" && (
+                                  {rec.receiptUrl ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setViewTxnProof({
+                                          title: `${rec.feeHead} — ${rec.studentName} (${formatINR(rec.amount)})`,
+                                          url: rec.receiptUrl!,
+                                          utr: rec.utr || undefined,
+                                        })
+                                      }
+                                      className="px-2.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold"
+                                    >
+                                      View Receipt
+                                    </button>
+                                  ) : (
+                                    <span className="px-2 py-1 text-[10px] text-slate-400">
+                                      Cash / Direct
+                                    </span>
+                                  )}
+                                  {rec.pendingSubmission && (
                                     <>
                                       <button
                                         type="button"
-                                        disabled={busyId === sub.id}
+                                        disabled={busyId === rec.pendingSubmission.id}
                                         onClick={() =>
-                                          handleFeeSubmissionDecision(sub, "APPROVE_FEE_SUBMISSION")
+                                          handleFeeSubmissionDecision(
+                                            rec.pendingSubmission!,
+                                            "APPROVE_FEE_SUBMISSION"
+                                          )
                                         }
                                         className="px-2.5 py-1.5 rounded bg-emerald-700 hover:bg-emerald-800 text-white font-bold disabled:opacity-50"
                                       >
@@ -1798,9 +2039,12 @@ export function FranchiseDashboardClient() {
                                       </button>
                                       <button
                                         type="button"
-                                        disabled={busyId === sub.id}
+                                        disabled={busyId === rec.pendingSubmission.id}
                                         onClick={() =>
-                                          handleFeeSubmissionDecision(sub, "REJECT_FEE_SUBMISSION")
+                                          handleFeeSubmissionDecision(
+                                            rec.pendingSubmission!,
+                                            "REJECT_FEE_SUBMISSION"
+                                          )
                                         }
                                         className="px-2.5 py-1.5 rounded bg-red-50 hover:bg-red-100 text-red-700 border border-red-200 font-bold disabled:opacity-50"
                                       >
@@ -1817,7 +2061,8 @@ export function FranchiseDashboardClient() {
                     </table>
                   </div>
                 </div>
-              )}
+                );
+              })()}
             </div>
           );
         })()}
@@ -2428,8 +2673,15 @@ export function FranchiseDashboardClient() {
                         </thead>
                         <tbody className="divide-y divide-slate-200">
                           {txns.map((t, idx) => {
+                            const matchedSub = feeSubmissions.find(
+                              (fs) =>
+                                fs.applicationId === studentLedgerApp.id &&
+                                fs.amount === t.amount &&
+                                (t.receiptNo ? (fs.utr || "").trim() === t.receiptNo.trim() : true)
+                            );
                             const proofUrl =
                               t.proofUrl ||
+                              matchedSub?.receiptUrl ||
                               (idx === 0 &&
                               (t.feeType || "").toLowerCase().includes("registration")
                                 ? studentLedgerApp.paymentScreenshotUrl
