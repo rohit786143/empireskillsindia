@@ -20,6 +20,7 @@ import {
   type PublicNotice,
   type PublicCourse,
 } from "@/components/HomeClientSections";
+import { OurCertificationsSection } from "@/components/OurCertificationsSection";
 import { apiFetch } from "@/lib/api";
 
 export default function HomePage() {
@@ -320,6 +321,11 @@ export default function HomePage() {
       {/* 4. Courses Explorer Grid */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <CoursesExplorerGrid courses={courses} />
+      </div>
+
+      {/* 5. Our Certifications & Official Accreditations */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <OurCertificationsSection />
       </div>
     </div>
   );

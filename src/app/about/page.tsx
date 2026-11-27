@@ -11,6 +11,7 @@ import {
   ArrowRight,
 } from "lucide-react";
 import { INSTITUTE_INFO } from "@/lib/constants";
+import { OurCertificationsSection } from "@/components/OurCertificationsSection";
 
 export default function AboutPage() {
   return (
@@ -139,6 +140,9 @@ export default function AboutPage() {
             </p>
           </div>
         </div>
+
+        {/* Official Institute Certifications & Accreditations */}
+        <OurCertificationsSection />
 
         {/* CTA Bar */}
         <div className="bg-white border border-slate-200 rounded-lg p-6 flex flex-col sm:flex-row items-center justify-between gap-4">
