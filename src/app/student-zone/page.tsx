@@ -898,7 +898,7 @@ export default function StudentZonePage() {
               </div>
             )}
 
-            {/* TAB 2: PRINTABLE PVC PORTRAIT STUDENT ID CARD (54mm x 86mm CR80 — Premium Dark Theme) */}
+            {/* TAB 2: PRINTABLE PVC PORTRAIT STUDENT ID CARD (54mm x 86mm CR80 — Balanced Executive Theme) */}
             {activeTab === "idcard" && (
               <div className="space-y-3">
                 <p className="no-print text-center text-xs text-slate-500">
@@ -907,7 +907,7 @@ export default function StudentZonePage() {
                 </p>
                 <div id="printable-document" className="flex justify-center py-2">
                   <div
-                    className="pvc-id-card relative bg-gradient-to-b from-[#06182B] via-[#0B2E52] to-[#051526] border-2 border-[#F07228] rounded-[14px] shadow-2xl overflow-hidden flex flex-col justify-between text-white"
+                    className="pvc-id-card relative bg-gradient-to-b from-white via-[#F5F9FD] to-[#EBF3FA] border-2 border-[#0B3D62] rounded-[14px] shadow-xl overflow-hidden flex flex-col justify-between text-slate-900 font-sans"
                     style={{
                       width: "268px",
                       minHeight: "426px",
@@ -915,35 +915,38 @@ export default function StudentZonePage() {
                       printColorAdjust: "exact",
                     }}
                   >
-                    {/* Centered Background Logo Watermark */}
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0">
+                    {/* Centered Subtle Logo Watermark in Middle */}
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0 pt-10">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src="/empire-logo.png"
                         alt=""
                         aria-hidden="true"
-                        className="w-44 h-44 object-contain opacity-[0.10] brightness-200 contrast-125 select-none"
+                        className="w-44 h-44 object-contain opacity-[0.08] select-none"
                       />
                     </div>
 
-                    {/* Top Brand Header */}
-                    <div className="relative z-10 bg-gradient-to-r from-[#04111F] via-[#0A2744] to-[#04111F] px-3 pt-2.5 pb-2 border-b-[2.5px] border-[#F07228] text-center">
-                      <div className="inline-flex justify-center bg-white/95 rounded-md px-2.5 py-1 shadow-sm">
-                        <BrandLogo height={26} />
+                    {/* Top Brand Header: Clean White Background for Logo */}
+                    <div className="relative z-10 bg-white pt-2.5 text-center">
+                      <div className="flex justify-center px-3">
+                        <BrandLogo height={30} />
                       </div>
-                      <p className="text-[7px] font-bold text-[#FFB380] tracking-[0.14em] uppercase mt-1">
+                      <p className="text-[7px] font-bold text-[#0B3D62] tracking-[0.12em] uppercase mt-1 px-2">
                         ISO 9001:2015 Certified Institution
                       </p>
-                      <div className="mt-1 inline-block bg-[#F07228] text-white text-[7.5px] font-extrabold tracking-[0.16em] uppercase px-2.5 py-0.5 rounded-full shadow-sm">
-                        STUDENT IDENTITY CARD
+                      {/* Logo-Matched Navy + Saffron Identity Ribbon */}
+                      <div className="mt-1.5 bg-gradient-to-r from-[#0B3D62] via-[#135589] to-[#0B3D62] border-y-2 border-[#F07228] py-1">
+                        <span className="text-white text-[8px] font-extrabold tracking-[0.18em] uppercase">
+                          STUDENT IDENTITY CARD
+                        </span>
                       </div>
                     </div>
 
-                    {/* Portrait Body: Centered Photo + Student Details */}
+                    {/* Portrait Body: Balanced Photo + Structured Professional Details */}
                     <div className="relative z-10 px-3 py-2 flex-1 flex flex-col items-center justify-between gap-1.5">
-                      {/* Passport Photo */}
-                      <div className="w-[72px] h-[82px] rounded-lg p-[2px] bg-gradient-to-tr from-[#F07228] via-[#FFB380] to-[#38BDF8] shadow-md shrink-0">
-                        <div className="w-full h-full rounded-[6px] bg-slate-900 overflow-hidden flex items-center justify-center">
+                      {/* Passport Photo with Logo Navy-Saffron Ring */}
+                      <div className="w-[74px] h-[84px] rounded-lg p-[2px] bg-gradient-to-tr from-[#0B3D62] via-[#135589] to-[#F07228] shadow-md shrink-0">
+                        <div className="w-full h-full rounded-[6px] bg-white overflow-hidden flex items-center justify-center">
                           {student.photoUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
                             <img
@@ -952,83 +955,93 @@ export default function StudentZonePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <User className="w-8 h-8 text-slate-400" />
+                            <User className="w-8 h-8 text-slate-300" />
                           )}
                         </div>
                       </div>
 
-                      {/* Name & Enrollment */}
+                      {/* Student Name & Enrollment Badge */}
                       <div className="text-center w-full">
-                        <p className="text-[12px] font-extrabold text-white uppercase leading-tight tracking-wide">
+                        <p className="text-[12.5px] font-extrabold text-[#0B3D62] uppercase leading-tight tracking-wide">
                           {student.fullName}
                         </p>
-                        <p className="text-[9.5px] font-mono font-extrabold text-[#FFB380] mt-0.5 tracking-wider">
-                          ID: {student.enrollmentNumber}
-                        </p>
+                        <div className="mt-0.5 inline-block px-2.5 py-0.5 rounded-full bg-[#0B3D62]/10 border border-[#0B3D62]/20">
+                          <span className="text-[9px] font-mono font-extrabold text-[#D65B14] tracking-wider">
+                            ID: {student.enrollmentNumber}
+                          </span>
+                        </div>
                       </div>
 
-                      {/* Dark Glass Details Box (Full Course Name — No Truncation) */}
-                      <div className="w-full bg-[#041425]/75 border border-white/15 rounded-lg px-2.5 py-2 text-[8.2px] space-y-1 backdrop-blur-[1px]">
-                        <div className="pb-1 border-b border-white/10 text-center">
-                          <span className="text-[6.8px] uppercase tracking-wider text-[#FFB380] font-bold block">
+                      {/* Balanced Course & Details Card (Full Course Name — Zero Truncation) */}
+                      <div className="w-full bg-white/85 border border-[#0B3D62]/20 rounded-lg overflow-hidden shadow-xs text-[8.3px]">
+                        {/* Logo-Matched Dark Navy Course Strip */}
+                        <div className="bg-gradient-to-r from-[#0B3D62] to-[#135589] px-2.5 py-1.5 text-center">
+                          <span className="text-[6.5px] uppercase tracking-[0.14em] text-[#FFB380] font-bold block leading-none">
                             Course / Programme
                           </span>
                           <strong className="text-[8.8px] text-white font-bold leading-snug whitespace-normal break-words block mt-0.5">
                             {student.courseName}
                           </strong>
                         </div>
-                        <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-300 shrink-0">Father&apos;s Name:</span>
-                          <strong className="text-white text-right uppercase leading-tight">
-                            {student.fatherName}
-                          </strong>
-                        </div>
-                        <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-300 shrink-0">DOB:</span>
-                          <strong className="text-white">
-                            {formatDisplayDate(student.dob)}
-                          </strong>
-                        </div>
-                        <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-300 shrink-0">Session:</span>
-                          <strong className="text-[#7DD3FC]">
-                            {student.session} ({student.courseCode})
-                          </strong>
-                        </div>
-                        <div className="flex justify-between gap-1.5">
-                          <span className="text-slate-300 shrink-0">Mobile:</span>
-                          <strong className="text-white">{student.mobile}</strong>
+
+                        <div className="px-2.5 py-1.5 space-y-1">
+                          <div className="flex justify-between gap-2">
+                            <span className="text-slate-500 font-semibold shrink-0">
+                              Father&apos;s Name:
+                            </span>
+                            <strong className="text-slate-900 font-bold text-right uppercase leading-tight">
+                              {student.fatherName}
+                            </strong>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-slate-500 font-semibold shrink-0">DOB:</span>
+                            <strong className="text-slate-900 font-bold">
+                              {formatDisplayDate(student.dob)}
+                            </strong>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-slate-500 font-semibold shrink-0">Session:</span>
+                            <strong className="text-[#0B3D62] font-bold">
+                              {student.session} ({student.courseCode})
+                            </strong>
+                          </div>
+                          <div className="flex justify-between gap-2">
+                            <span className="text-slate-500 font-semibold shrink-0">Mobile:</span>
+                            <strong className="text-slate-900 font-bold">{student.mobile}</strong>
+                          </div>
                         </div>
                       </div>
 
                       {/* QR Code + Registrar Signature */}
-                      <div className="w-full flex items-end justify-between pt-1 border-t border-white/15">
+                      <div className="w-full flex items-end justify-between pt-1 border-t border-[#0B3D62]/15">
                         <div className="flex items-center gap-1.5">
-                          <div className="p-0.5 bg-white rounded shadow-sm">
+                          <div className="p-0.5 bg-white border border-[#0B3D62]/25 rounded shadow-xs">
                             <QRCodeSVG
                               value={`https://${INSTITUTE_INFO.website}/verify-certificate?cert=${student.enrollmentNumber}`}
                               size={36}
                             />
                           </div>
-                          <div className="text-[6.8px] text-slate-300 leading-tight">
-                            <p className="font-bold text-[#FFB380]">Scan Verify</p>
+                          <div className="text-[6.8px] text-slate-600 leading-tight">
+                            <p className="font-extrabold text-[#0B3D62]">Scan Verify</p>
                             <p>Valid: {student.session}</p>
                           </div>
                         </div>
                         <div className="text-right text-[7.2px]">
-                          <div className="w-16 border-b border-slate-400 mb-0.5 ml-auto" />
-                          <p className="font-bold text-white">Registrar Sign</p>
-                          <p className="text-[6.5px] text-slate-300">Empire Skills India</p>
+                          <div className="w-16 border-b border-[#0B3D62]/60 mb-0.5 ml-auto" />
+                          <p className="font-extrabold text-[#0B3D62]">Registrar Sign</p>
+                          <p className="text-[6.5px] text-slate-500 font-medium">
+                            Empire Skills India
+                          </p>
                         </div>
                       </div>
                     </div>
 
-                    {/* Bottom Dark Footer Strip */}
-                    <div className="relative z-10 bg-[#04111F] border-t border-[#F07228]/60 text-white px-2.5 py-1.5 text-[7px] text-center leading-tight">
-                      <p className="font-bold text-[#FFB380]">
+                    {/* Bottom Logo-Matched Navy Footer Strip */}
+                    <div className="relative z-10 bg-gradient-to-r from-[#0B3D62] via-[#135589] to-[#0B3D62] border-t-2 border-[#F07228] text-white px-2.5 py-1.5 text-[7px] text-center leading-tight">
+                      <p className="font-bold text-[#FFB380] tracking-wide">
                         {INSTITUTE_INFO.website}
                       </p>
-                      <p className="text-slate-300 truncate">
+                      <p className="text-slate-100 truncate">
                         Helpline: {INSTITUTE_INFO.helpline}
                       </p>
                     </div>
