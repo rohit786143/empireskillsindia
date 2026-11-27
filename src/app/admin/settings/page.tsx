@@ -12,6 +12,8 @@ import {
   CheckCircle2,
   AlertCircle,
   Settings,
+  QrCode,
+  Upload,
 } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
 import { apiFetch } from "@/lib/api";
@@ -26,6 +28,12 @@ function AdminSettingsContent() {
     officeHours: INSTITUTE_INFO.officeHours,
     facebook: INSTITUTE_INFO.facebook,
     instagram: INSTITUTE_INFO.instagram,
+    adminPaymentQrUrl: "",
+    adminUpiId: "",
+    adminBankName: "",
+    adminAccountHolder: "",
+    adminAccountNumber: "",
+    adminIfscCode: "",
   });
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -203,6 +211,120 @@ function AdminSettingsContent() {
                 onChange={(e) => setForm({ ...form, instagram: e.target.value })}
                 className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#135589]"
               />
+            </div>
+          </div>
+
+          {/* Main Admin Payment QR & Bank Details (Shown to Franchises when forwarding ₹500) */}
+          <div className="pt-4 border-t border-slate-200 space-y-4">
+            <div>
+              <h2 className="text-sm font-extrabold text-[#0B3D62] uppercase tracking-wide flex items-center gap-1.5">
+                <QrCode className="w-4 h-4 text-[#F07228]" />
+                Main Admin Payment QR &amp; Bank Details (For Franchise ₹500 + 15% Settlement)
+              </h2>
+              <p className="text-xs text-slate-500 mt-0.5">
+                Franchise Centers will see this QR Code &amp; Bank Account when paying ₹500 to
+                forward a student application to Main Admin.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center gap-4">
+              <label className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg border border-slate-300 bg-slate-50 hover:bg-slate-100 cursor-pointer text-xs font-bold text-[#0B3D62]">
+                <Upload className="w-4 h-4" />
+                Upload Main Admin Payment QR
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => {
+                    const file = e.target.files?.[0];
+                    if (!file) return;
+                    const reader = new FileReader();
+                    reader.onload = () => {
+                      if (typeof reader.result === "string") {
+                        setForm((prev) => ({
+                          ...prev,
+                          adminPaymentQrUrl: reader.result as string,
+                        }));
+                      }
+                    };
+                    reader.readAsDataURL(file);
+                  }}
+                  className="hidden"
+                />
+              </label>
+              {form.adminPaymentQrUrl && (
+                <div className="flex items-center gap-2">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={form.adminPaymentQrUrl}
+                    alt="Admin Payment QR"
+                    className="w-16 h-16 object-contain border border-slate-300 rounded bg-white p-0.5"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setForm({ ...form, adminPaymentQrUrl: "" })}
+                    className="text-xs font-bold text-red-600 hover:underline"
+                  >
+                    Remove QR
+                  </button>
+                </div>
+              )}
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Main Admin UPI ID
+                </label>
+                <input
+                  type="text"
+                  value={form.adminUpiId}
+                  onChange={(e) => setForm({ ...form, adminUpiId: e.target.value })}
+                  placeholder="e.g., empireskills@sbi"
+                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">Bank Name</label>
+                <input
+                  type="text"
+                  value={form.adminBankName}
+                  onChange={(e) => setForm({ ...form, adminBankName: e.target.value })}
+                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Account Holder Name
+                </label>
+                <input
+                  type="text"
+                  value={form.adminAccountHolder}
+                  onChange={(e) => setForm({ ...form, adminAccountHolder: e.target.value })}
+                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">
+                  Account Number
+                </label>
+                <input
+                  type="text"
+                  value={form.adminAccountNumber}
+                  onChange={(e) => setForm({ ...form, adminAccountNumber: e.target.value })}
+                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-slate-700 mb-1">IFSC Code</label>
+                <input
+                  type="text"
+                  value={form.adminIfscCode}
+                  onChange={(e) =>
+                    setForm({ ...form, adminIfscCode: e.target.value.toUpperCase() })
+                  }
+                  className="w-full px-3.5 py-2 text-sm border border-slate-300 rounded-lg uppercase"
+                />
+              </div>
             </div>
           </div>
 

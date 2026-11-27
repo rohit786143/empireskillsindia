@@ -9,6 +9,7 @@ import {
   IndianRupee,
   Building2,
   Inbox,
+  Wallet,
   Award,
   FileCheck2,
   ShieldCheck,
@@ -38,6 +39,7 @@ const ADMIN_NAV = [
   { label: "Admissions & Students", href: "/admin/admissions", icon: Users },
   { label: "Franchise Admissions", href: "/admin/franchise-admissions", icon: Inbox },
   { label: "Franchise Centers", href: "/admin/franchises", icon: Building2 },
+  { label: "Franchise Ledger", href: "/admin/franchise-ledger", icon: Wallet },
   { label: "Fee Management", href: "/admin/fees", icon: IndianRupee },
   {
     label: "Certificate Generator",

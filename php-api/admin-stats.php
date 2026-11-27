@@ -37,7 +37,12 @@ if ($hasCenterFilter) {
 
     $stmtRecApps = $pdo->prepare('SELECT * FROM admission_applications WHERE franchise_id = ? AND franchise_status IN ("FORWARDED_TO_MAIN", "MAIN_APPROVED", "MAIN_REJECTED") ORDER BY created_at DESC LIMIT 6');
     $stmtRecApps->execute([$franchiseId]);
-    $recentApps = array_map('map_application', $stmtRecApps->fetchAll());
+    $recentApps = array_map(function ($r) {
+        $m = map_application($r);
+        $m['franchiseName'] = $r['franchise_name'] ?? null;
+        $m['franchiseCode'] = $r['franchise_code'] ?? null;
+        return $m;
+    }, $stmtRecApps->fetchAll());
 
     $stmtRecCerts = $pdo->prepare(
         'SELECT c.* FROM certificates c
@@ -54,7 +59,12 @@ if ($hasCenterFilter) {
     $activeStudents = (int)$pdo->query('SELECT COUNT(*) FROM admission_applications WHERE status = "APPROVED" AND (franchise_id IS NULL OR franchise_status = "MAIN_APPROVED")')->fetchColumn();
     $certificatesIssued = (int)$pdo->query('SELECT COUNT(*) FROM certificates WHERE status = "VALID"')->fetchColumn();
     $recentApps = array_map(
-        'map_application',
+        function ($r) {
+            $m = map_application($r);
+            $m['franchiseName'] = $r['franchise_name'] ?? null;
+            $m['franchiseCode'] = $r['franchise_code'] ?? null;
+            return $m;
+        },
         $pdo->query("SELECT * FROM admission_applications WHERE {$visibleCond} ORDER BY created_at DESC LIMIT 6")->fetchAll()
     );
     $recentCerts = array_map(

@@ -65,12 +65,63 @@ if ($method === 'PATCH' || $method === 'PUT') {
         $fields[] = '`status` = ?';
         $params[] = 'REJECTED';
     } elseif ($action === 'FORWARD_TO_MAIN' || $action === 'APPROVE_AND_FORWARD') {
+        $forwardProof = !empty($body['forwardPaymentProofUrl'])
+            ? (string)$body['forwardPaymentProofUrl']
+            : (string)($existing['franchise_forward_proof_url'] ?? '');
+        $forwardUtr = trim((string)($body['forwardPaymentUtr'] ?? ''));
+
+        if ($forwardProof === '') {
+            json_response([
+                'error' => 'Please pay ₹500 Registration Share to Main Admin and upload the payment screenshot before forwarding.',
+            ], 400);
+        }
+
         $fields[] = '`franchise_status` = ?';
         $params[] = 'FORWARDED_TO_MAIN';
         $fields[] = '`status` = ?';
         $params[] = 'PENDING';
         $fields[] = '`forwarded_at` = ?';
         $params[] = date('Y-m-d H:i:s');
+        $fields[] = '`franchise_forward_proof_url` = ?';
+        $params[] = $forwardProof;
+        if ($forwardUtr !== '') {
+            $fields[] = '`franchise_forward_utr` = ?';
+            $params[] = $forwardUtr;
+        }
+
+        // Auto-record the initial ₹500 Forward Registration Share in Franchise Ledger (only once)
+        $existingFrPayments = [];
+        if (!empty($existing['franchise_payments_json'])) {
+            $dec = json_decode($existing['franchise_payments_json'], true);
+            if (is_array($dec)) $existingFrPayments = $dec;
+        }
+        $hasInitial500 = false;
+        foreach ($existingFrPayments as $ep) {
+            if (($ep['feeType'] ?? '') === 'Initial Forward Fee (₹500)') {
+                $hasInitial500 = true;
+                break;
+            }
+        }
+        if (!$hasInitial500) {
+            $existingFrPayments[] = [
+                'id'         => generate_cuid(),
+                'amount'     => 500,
+                'feeType'    => 'Initial Forward Fee (₹500)',
+                'mode'       => 'UPI / Bank',
+                'receiptNo'  => $forwardUtr,
+                'date'       => date('Y-m-d'),
+                'recordedAt' => date('Y-m-d H:i:s'),
+                'remarks'    => $remarks !== '' ? $remarks : 'Paid ₹500 to Main Admin on application forward',
+            ];
+            $totalFrPaid = 0;
+            foreach ($existingFrPayments as $ep) {
+                $totalFrPaid += (int)($ep['amount'] ?? 0);
+            }
+            $fields[] = '`franchise_paid_to_main` = ?';
+            $params[] = $totalFrPaid;
+            $fields[] = '`franchise_payments_json` = ?';
+            $params[] = json_encode($existingFrPayments, JSON_UNESCAPED_UNICODE);
+        }
     } else {
         json_response(['error' => 'Invalid franchise action.'], 400);
     }

@@ -53,6 +53,13 @@ interface FranchiseAppRow extends AdmissionFormRecord {
   paymentScreenshotUrl?: string | null;
   paymentUtr?: string | null;
   registrationFeePaid?: number;
+  franchiseForwardFee?: number;
+  franchiseRemainingBase?: number;
+  franchiseRoyalty15?: number;
+  franchiseTotalDue?: number;
+  franchisePaidToMain?: number;
+  franchisePendingToMain?: number;
+  franchiseForwardProofUrl?: string | null;
   totalFee?: number;
   courseTotalFee?: number;
   feePaid?: number;
@@ -106,6 +113,16 @@ export function FranchiseDashboardClient() {
     buttonCls: string;
   } | null>(null);
   const [remarks, setRemarks] = useState("");
+  const [forwardProofUrl, setForwardProofUrl] = useState("");
+  const [forwardUtr, setForwardUtr] = useState("");
+  const [adminPayInfo, setAdminPayInfo] = useState<{
+    adminPaymentQrUrl?: string;
+    adminUpiId?: string;
+    adminBankName?: string;
+    adminAccountHolder?: string;
+    adminAccountNumber?: string;
+    adminIfscCode?: string;
+  }>({});
 
   // Change password modal
   const [pwOpen, setPwOpen] = useState(false);
@@ -218,6 +235,12 @@ export function FranchiseDashboardClient() {
 
   useEffect(() => {
     loadData(false);
+    apiFetch(`/site-settings.php?_t=${Date.now()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.settings) setAdminPayInfo(d.settings);
+      })
+      .catch(() => {});
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -256,14 +279,21 @@ export function FranchiseDashboardClient() {
   async function executeAction(
     appId: string,
     action: "FRANCHISE_APPROVE" | "FRANCHISE_REJECT" | "FORWARD_TO_MAIN" | "APPROVE_AND_FORWARD",
-    remarkText = ""
+    remarkText = "",
+    proofUrl = "",
+    utrText = ""
   ) {
     setBusyId(appId);
     try {
       const res = await apiFetch(`/franchise-admissions.php?id=${encodeURIComponent(appId)}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, remarks: remarkText.trim() }),
+        body: JSON.stringify({
+          action,
+          remarks: remarkText.trim(),
+          ...(proofUrl ? { forwardPaymentProofUrl: proofUrl } : {}),
+          ...(utrText.trim() ? { forwardPaymentUtr: utrText.trim() } : {}),
+        }),
       });
       const data = await res.json();
       if (!res.ok) {
@@ -274,6 +304,8 @@ export function FranchiseDashboardClient() {
         );
         setActionModal(null);
         setRemarks("");
+        setForwardProofUrl("");
+        setForwardUtr("");
       }
     } catch {
       alert("Network error. Please try again.");
@@ -569,8 +601,21 @@ export function FranchiseDashboardClient() {
                             {app.session} • {app.studyMode || "Regular"}
                           </div>
                           {totalCourseFee > 0 && (
-                            <div className="text-[11px] font-semibold text-slate-700 mt-1">
-                              Total Fee: {formatINR(totalCourseFee)}
+                            <div className="mt-1 space-y-0.5 text-[11px]">
+                              <div className="font-semibold text-slate-700">
+                                Course Fee: {formatINR(totalCourseFee)}
+                              </div>
+                              <div className="text-[10px] text-[#0B3D62] bg-blue-50 border border-blue-100 rounded px-1.5 py-0.5 inline-block">
+                                Admin Share: <strong>{formatINR(app.franchiseTotalDue || 500)}</strong>{" "}
+                                (₹500 + 15% = {formatINR(app.franchiseRoyalty15 || 0)}) • Paid:{" "}
+                                <strong className="text-emerald-700">
+                                  {formatINR(app.franchisePaidToMain || 0)}
+                                </strong>{" "}
+                                • Due:{" "}
+                                <strong className="text-red-600">
+                                  {formatINR(app.franchisePendingToMain ?? (app.franchiseTotalDue || 500))}
+                                </strong>
+                              </div>
                             </div>
                           )}
                         </td>
@@ -727,10 +772,10 @@ export function FranchiseDashboardClient() {
         </div>
       </main>
 
-      {/* Action / Remarks Modal */}
+      {/* Action / Remarks / ₹500 Forward Payment Modal */}
       {actionModal && (
-        <div className="no-print fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-2xl max-w-md w-full shadow-2xl border border-slate-200 overflow-hidden">
+        <div className="no-print fixed inset-0 z-50 bg-black/50 flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden my-8">
             <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between">
               <h3 className="font-bold text-sm">{actionModal.title}</h3>
               <button
@@ -748,15 +793,141 @@ export function FranchiseDashboardClient() {
                   {actionModal.app.courseName} • Ref: {actionModal.app.applicationRef}
                 </div>
               </div>
+
+              {(actionModal.action === "FORWARD_TO_MAIN" ||
+                actionModal.action === "APPROVE_AND_FORWARD") && (
+                <div className="bg-[#EFF6FF] border border-[#0B3D62]/25 rounded-xl p-3.5 space-y-3 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="font-extrabold text-[#0B3D62] uppercase tracking-wide">
+                      Pay ₹500 Forward Share to Main Admin *
+                    </span>
+                    <span className="px-2 py-0.5 rounded-full bg-[#F07228] text-white font-extrabold text-[11px]">
+                      Pay Now: ₹500
+                    </span>
+                  </div>
+                  <div className="bg-white border border-slate-200 rounded-lg p-2.5 text-[11px] space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">1. Initial Share (Pay Now on Forward):</span>
+                      <strong className="text-[#D65B14]">₹500</strong>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-slate-500">
+                        2. 15% Royalty on Remaining ({formatINR(actionModal.app.franchiseRemainingBase || 0)}):
+                      </span>
+                      <strong>{formatINR(actionModal.app.franchiseRoyalty15 || 0)}</strong>
+                    </div>
+                    <div className="flex justify-between pt-1 border-t border-slate-200 font-bold text-[#0B3D62]">
+                      <span>Total Franchise Share (Ledger):</span>
+                      <span>{formatINR(actionModal.app.franchiseTotalDue || 500)}</span>
+                    </div>
+                  </div>
+
+                  {/* Main Admin QR / Bank Details */}
+                  {(adminPayInfo.adminPaymentQrUrl ||
+                    adminPayInfo.adminUpiId ||
+                    adminPayInfo.adminAccountNumber) && (
+                    <div className="bg-white border border-slate-200 rounded-lg p-2.5 flex flex-col sm:flex-row items-center gap-3">
+                      {adminPayInfo.adminPaymentQrUrl && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={adminPayInfo.adminPaymentQrUrl}
+                          alt="Main Admin Payment QR"
+                          className="w-28 h-28 object-contain border border-slate-200 rounded p-1 bg-white shrink-0"
+                        />
+                      )}
+                      <div className="text-[11px] space-y-0.5 flex-1">
+                        <p className="font-bold text-[#0B3D62]">Main Admin Account Details:</p>
+                        {adminPayInfo.adminUpiId && (
+                          <p>
+                            UPI: <strong className="font-mono">{adminPayInfo.adminUpiId}</strong>
+                          </p>
+                        )}
+                        {adminPayInfo.adminBankName && <p>Bank: {adminPayInfo.adminBankName}</p>}
+                        {adminPayInfo.adminAccountHolder && (
+                          <p>A/c Holder: {adminPayInfo.adminAccountHolder}</p>
+                        )}
+                        {adminPayInfo.adminAccountNumber && (
+                          <p>
+                            A/c No.:{" "}
+                            <strong className="font-mono">{adminPayInfo.adminAccountNumber}</strong>
+                          </p>
+                        )}
+                        {adminPayInfo.adminIfscCode && (
+                          <p>
+                            IFSC: <strong className="font-mono">{adminPayInfo.adminIfscCode}</strong>
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Mandatory ₹500 Forward Payment Screenshot */}
+                  <div>
+                    <label className="block font-bold text-[#D65B14] mb-1">
+                      Upload ₹500 Payment Screenshot to Main Admin (Mandatory) *
+                    </label>
+                    <label className="flex items-center justify-center gap-2 border-2 border-dashed border-[#0B3D62]/40 hover:border-[#F07228] rounded-lg p-2.5 cursor-pointer bg-white font-semibold text-[#0B3D62]">
+                      <Upload className="w-4 h-4" />
+                      {forwardProofUrl || actionModal.app.franchiseForwardProofUrl
+                        ? "Change ₹500 Payment Screenshot"
+                        : "Upload ₹500 Payment Screenshot *"}
+                      <input
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          if (file.size > 2 * 1024 * 1024) {
+                            alert("Image must be under 2 MB.");
+                            return;
+                          }
+                          const reader = new FileReader();
+                          reader.onload = () => {
+                            if (typeof reader.result === "string") {
+                              setForwardProofUrl(reader.result);
+                            }
+                          };
+                          reader.readAsDataURL(file);
+                        }}
+                        className="hidden"
+                      />
+                    </label>
+                    {(forwardProofUrl || actionModal.app.franchiseForwardProofUrl) && (
+                      <div className="mt-2 bg-white border border-emerald-300 rounded p-1.5 flex justify-center">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={forwardProofUrl || actionModal.app.franchiseForwardProofUrl || ""}
+                          alt="Forward Payment Proof"
+                          className="max-h-32 object-contain"
+                        />
+                      </div>
+                    )}
+                  </div>
+
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      UTR / Transaction Ref No. (Optional)
+                    </label>
+                    <input
+                      type="text"
+                      value={forwardUtr}
+                      onChange={(e) => setForwardUtr(e.target.value)}
+                      placeholder="e.g., 432198765432"
+                      className="w-full px-3 py-1.5 text-xs border border-slate-300 rounded-lg bg-white"
+                    />
+                  </div>
+                </div>
+              )}
+
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1.5">
                   Remarks / Notes for Head Office (Optional)
                 </label>
                 <textarea
-                  rows={3}
+                  rows={2}
                   value={remarks}
                   onChange={(e) => setRemarks(e.target.value)}
-                  placeholder="e.g. Original documents verified at center, recommended for enrollment..."
+                  placeholder="e.g. Original documents verified at center, ₹500 paid..."
                   className="w-full px-3 py-2 text-xs border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#0B3D62]/20 focus:border-[#0B3D62]"
                 />
               </div>
@@ -770,9 +941,23 @@ export function FranchiseDashboardClient() {
                 </button>
                 <button
                   type="button"
-                  disabled={busyId === actionModal.app.id}
-                  onClick={() => executeAction(actionModal.app.id, actionModal.action, remarks)}
-                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-60 ${actionModal.buttonCls}`}
+                  disabled={
+                    busyId === actionModal.app.id ||
+                    ((actionModal.action === "FORWARD_TO_MAIN" ||
+                      actionModal.action === "APPROVE_AND_FORWARD") &&
+                      !forwardProofUrl &&
+                      !actionModal.app.franchiseForwardProofUrl)
+                  }
+                  onClick={() =>
+                    executeAction(
+                      actionModal.app.id,
+                      actionModal.action,
+                      remarks,
+                      forwardProofUrl || actionModal.app.franchiseForwardProofUrl || "",
+                      forwardUtr
+                    )
+                  }
+                  className={`px-4 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${actionModal.buttonCls}`}
                 >
                   {busyId === actionModal.app.id ? "Processing..." : actionModal.buttonLabel}
                 </button>

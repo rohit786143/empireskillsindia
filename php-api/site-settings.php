@@ -18,13 +18,19 @@ try {
 } catch (PDOException $e) {}
 
 $defaults = [
-    'helpline'        => '7560001910 / 9882269009 / 01905356777',
-    'email'           => 'info@empireskillsindia.com',
-    'admissionsEmail' => 'admissions@empireskillsindia.com',
-    'address'         => 'Academic Block, Plot No. 14, Institutional Area, Sector 62, Noida - 201309 (NCR), India',
-    'officeHours'     => 'Monday – Saturday: 09:30 AM to 06:00 PM IST',
-    'facebook'        => 'https://www.facebook.com/share/1A9d2LWUKC/',
-    'instagram'       => 'https://www.instagram.com/empire_skillsindia?utm_source=qr&jplx=MWp1dXZrYmU0OWcycg==',
+    'helpline'           => '7560001910 / 9882269009 / 01905356777',
+    'email'              => 'info@empireskillsindia.com',
+    'admissionsEmail'    => 'admissions@empireskillsindia.com',
+    'address'            => 'Academic Block, Plot No. 14, Institutional Area, Sector 62, Noida - 201309 (NCR), India',
+    'officeHours'        => 'Monday – Saturday: 09:30 AM to 06:00 PM IST',
+    'facebook'           => 'https://www.facebook.com/share/1A9d2LWUKC/',
+    'instagram'          => 'https://www.instagram.com/empire_skillsindia?utm_source=qr&jplx=MWp1dXZrYmU0OWcycg==',
+    'adminPaymentQrUrl'  => '',
+    'adminUpiId'         => '',
+    'adminBankName'      => '',
+    'adminAccountHolder' => '',
+    'adminAccountNumber' => '',
+    'adminIfscCode'      => '',
 ];
 
 function load_site_settings(PDO $pdo, array $defaults): array {

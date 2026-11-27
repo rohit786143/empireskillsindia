@@ -31,6 +31,8 @@ interface RecentApp {
   enrollmentNumber: string | null;
   applicationRef: string;
   status: string;
+  franchiseName?: string | null;
+  franchiseCode?: string | null;
 }
 
 interface RecentCert {
@@ -189,7 +191,15 @@ function DashboardContent() {
                     className="px-5 py-3 flex items-center justify-between gap-3 text-xs"
                   >
                     <div>
-                      <p className="font-bold text-[#0B3D62]">{app.fullName}</p>
+                      <div className="flex flex-wrap items-center gap-1.5">
+                        <p className="font-bold text-[#0B3D62]">{app.fullName}</p>
+                        {app.franchiseName && (
+                          <span className="px-1.5 py-0.5 rounded bg-orange-50 border border-orange-200 text-[#D65B14] font-bold text-[10px]">
+                            {app.franchiseCode ? `[${app.franchiseCode}] ` : ""}
+                            {app.franchiseName}
+                          </span>
+                        )}
+                      </div>
                       <p className="text-slate-500">
                         {app.courseCode} •{" "}
                         <span className="font-mono">

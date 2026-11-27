@@ -64,5 +64,24 @@ function enrich_application(array $rawRow, array $mapped): array {
     if ($mapped['totalFee'] <= 0 && $courseGrandTotal > 0) {
         $mapped['totalFee'] = $courseGrandTotal;
     }
+
+    // Franchise-to-Main-Admin Settlement Math: ₹500 on forward + 15% of remaining course fee
+    $effectiveTotal = max(0, (int)$mapped['totalFee']);
+    $forwardFee = 500;
+    $remainingBase = max(0, $effectiveTotal - $forwardFee);
+    $royalty15 = (int)round($remainingBase * 0.15);
+    $franchiseTotalDue = $forwardFee + $royalty15;
+    $franchisePaid = isset($rawRow['franchise_paid_to_main']) ? (int)$rawRow['franchise_paid_to_main'] : 0;
+
+    $mapped['franchiseForwardFee'] = $forwardFee;
+    $mapped['franchiseRemainingBase'] = $remainingBase;
+    $mapped['franchiseRoyalty15'] = $royalty15;
+    $mapped['franchiseTotalDue'] = $franchiseTotalDue;
+    $mapped['franchisePaidToMain'] = $franchisePaid;
+    $mapped['franchisePendingToMain'] = max(0, $franchiseTotalDue - $franchisePaid);
+    $mapped['franchisePaymentsJson'] = $rawRow['franchise_payments_json'] ?? null;
+    $mapped['franchiseForwardProofUrl'] = $rawRow['franchise_forward_proof_url'] ?? null;
+    $mapped['franchiseForwardUtr'] = $rawRow['franchise_forward_utr'] ?? null;
+
     return $mapped;
 }

@@ -300,6 +300,36 @@ if ($method === 'PATCH' || $method === 'PUT') {
         $params[] = max(0, (int)$body['feePaid']);
     }
 
+    // Handle Franchise-to-Main-Admin Settlement Payment Recording (₹500 + 15% Royalty Ledger)
+    if (!empty($body['franchisePayment']) && is_array($body['franchisePayment'])) {
+        $frPayAmount = max(0, (int)($body['franchisePayment']['amount'] ?? 0));
+        $existingFrPayments = [];
+        if (!empty($existing['franchise_payments_json'])) {
+            $decodedFr = json_decode($existing['franchise_payments_json'], true);
+            if (is_array($decodedFr)) $existingFrPayments = $decodedFr;
+        }
+        if ($frPayAmount > 0) {
+            $existingFrPayments[] = [
+                'id'         => generate_cuid(),
+                'amount'     => $frPayAmount,
+                'feeType'    => trim((string)($body['franchisePayment']['feeType'] ?? '15% Royalty Settlement')),
+                'mode'       => trim((string)($body['franchisePayment']['mode'] ?? 'UPI')),
+                'receiptNo'  => trim((string)($body['franchisePayment']['receiptNo'] ?? '')),
+                'date'       => trim((string)($body['franchisePayment']['date'] ?? '')) ?: date('Y-m-d'),
+                'recordedAt' => date('Y-m-d H:i:s'),
+                'remarks'    => trim((string)($body['franchisePayment']['remarks'] ?? '')),
+            ];
+            $totalFrPaid = 0;
+            foreach ($existingFrPayments as $fp) {
+                $totalFrPaid += (int)($fp['amount'] ?? 0);
+            }
+            $fields[] = '`franchise_paid_to_main` = ?';
+            $params[] = $totalFrPaid;
+            $fields[] = '`franchise_payments_json` = ?';
+            $params[] = json_encode($existingFrPayments, JSON_UNESCAPED_UNICODE);
+        }
+    }
+
     if (array_key_exists('remarks', $body)) {
         $fields[] = '`remarks` = ?';
         $params[] = (string)$body['remarks'];
