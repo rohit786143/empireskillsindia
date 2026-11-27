@@ -10,7 +10,6 @@ import {
   Award,
   Users,
   Building2,
-  CheckCircle2,
   ArrowRight,
 } from "lucide-react";
 import {
@@ -20,6 +19,7 @@ import {
   type PublicCourse,
 } from "@/components/HomeClientSections";
 import { OurCertificationsSection } from "@/components/OurCertificationsSection";
+import { HeroGallerySlider } from "@/components/HeroGallerySlider";
 import { apiFetch } from "@/lib/api";
 
 export default function HomePage() {
@@ -58,15 +58,26 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12 pb-8">
-      {/* 1. Institutional Hero Banner */}
-      <section className="bg-[#0B3D62] text-white border-b-4 border-[#F07228]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
+      {/* 1. Institutional Hero Banner — Balanced Navy, Ocean Teal & Saffron Logo Palette */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#0B3D62] via-[#135589] to-[#0E7490] text-white border-b-4 border-[#F07228]">
+        {/* Subtle luminous ambient accents */}
+        <div
+          className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#F07228]/20 blur-3xl"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute -bottom-24 right-1/4 w-96 h-96 rounded-full bg-[#38BDF8]/20 blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-11">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-8 space-y-4">
+            <div className="lg:col-span-7 space-y-4">
               <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-tight text-white">
-                Empowering Youth Through Industry-Recognized Skill &amp; Vocational Education
+                Empowering Youth Through{" "}
+                <span className="text-[#FFB36B]">Industry-Recognized</span> Skill &amp;
+                Vocational Education
               </h1>
-              <p className="text-slate-200 text-sm sm:text-base max-w-2xl leading-relaxed">
+              <p className="text-sky-100/95 text-sm sm:text-base max-w-2xl leading-relaxed">
                 Empire Skills India delivers structured, employment-focused diploma and
                 certification programmes in IT, Accounting, Technical Trades, Management, and
                 Teacher Training — backed by transparent online admission and instant QR-code
@@ -76,7 +87,7 @@ export default function HomePage() {
               <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link
                   href="/admission"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-bold text-sm shadow transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-sm shadow-lg transition-all"
                 >
                   <FileText className="w-4 h-4" />
                   Apply Online 2026
@@ -84,50 +95,23 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/verify-certificate"
-                  className="inline-flex items-center gap-2 px-6 py-3 rounded bg-white text-[#0B3D62] hover:bg-slate-100 font-bold text-sm shadow transition-colors"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded-lg bg-white text-[#0B3D62] hover:bg-sky-50 font-bold text-sm shadow-md transition-colors"
                 >
-                  <ShieldCheck className="w-4 h-4 text-[#135589]" />
+                  <ShieldCheck className="w-4 h-4 text-[#0E7490]" />
                   Verify Certificate
                 </Link>
                 <Link
                   href="/courses"
-                  className="inline-flex items-center gap-2 px-5 py-3 rounded border border-white/30 hover:bg-white/10 text-white font-semibold text-sm transition-colors"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded-lg border border-white/40 bg-white/10 hover:bg-white/20 text-white font-semibold text-sm backdrop-blur-sm transition-colors"
                 >
                   Explore Courses
                 </Link>
               </div>
             </div>
 
-            {/* Right Institutional Highlights Box */}
-            <div className="lg:col-span-4">
-              <div className="bg-[#072A44] border border-white/15 rounded-lg p-6 space-y-4 shadow-lg">
-                <div className="border-b border-white/15 pb-3">
-                  <p className="text-xs font-bold uppercase tracking-widest text-[#FF9B5E]">
-                    National Portal Highlights
-                  </p>
-                  <h2 className="text-lg font-bold text-white mt-0.5">
-                    Why Empire Skills India?
-                  </h2>
-                </div>
-                <ul className="space-y-3 text-sm text-slate-200">
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
-                    <span>Standardized National Curriculum &amp; Practical Lab Assessments</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
-                    <span>Unique Enrollment ID &amp; Printable Digital Student ID Card</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
-                    <span>Instant Employer Verification via QR-Enabled Certificates</span>
-                  </li>
-                  <li className="flex items-start gap-2.5">
-                    <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
-                    <span>Affordable Fee Structure with Regular, Online &amp; Hybrid Modes</span>
-                  </li>
-                </ul>
-              </div>
+            {/* Right: Colorful-Bordered Auto-Rotating Gallery Image Slider (5 images, 2s slide, 5m refresh) */}
+            <div className="lg:col-span-5">
+              <HeroGallerySlider />
             </div>
           </div>
         </div>
@@ -260,14 +244,21 @@ export default function HomePage() {
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-              {stats.map((stat) => {
+              {stats.map((stat, idx) => {
                 const Icon = stat.icon;
+                const accents = [
+                  "border-t-[#0B3D62] text-[#0B3D62]",
+                  "border-t-[#F07228] text-[#D65B14]",
+                  "border-t-[#0E7490] text-[#0E7490]",
+                  "border-t-[#059669] text-[#059669]",
+                ];
+                const accent = accents[idx % accents.length];
                 return (
                   <div
                     key={stat.label}
-                    className="bg-white border border-slate-200 rounded-lg p-4 text-center shadow-sm"
+                    className={`bg-white border border-slate-200 border-t-4 ${accent.split(" ")[0]} rounded-lg p-4 text-center shadow-sm hover:shadow-md transition-shadow`}
                   >
-                    <Icon className="w-6 h-6 text-[#0B3D62] mx-auto mb-2" />
+                    <Icon className={`w-6 h-6 mx-auto mb-2 ${accent.split(" ")[1]}`} />
                     <div className="text-2xl font-extrabold text-[#0B3D62]">
                       {stat.value}
                     </div>

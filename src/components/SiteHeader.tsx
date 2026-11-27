@@ -74,7 +74,7 @@ export function SiteHeader() {
   return (
     <header className="no-print w-full">
       {/* Top Institutional Utility Bar */}
-      <div className="bg-[#072A44] text-slate-100 text-xs border-b border-[#F07228]/40">
+      <div className="bg-gradient-to-r from-[#0B3D62] via-[#114B75] to-[#0E647A] text-slate-100 text-xs border-b border-[#F07228]/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-2">
           <div className="flex flex-wrap items-center gap-4">
             <span className="inline-flex items-center gap-1.5 text-slate-200">

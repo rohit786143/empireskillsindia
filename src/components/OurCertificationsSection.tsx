@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Award,
   BadgeCheck,
@@ -10,6 +10,7 @@ import {
   ShieldCheck,
   X,
 } from "lucide-react";
+import { apiFetch } from "@/lib/api";
 
 interface InstituteCertification {
   id: string;
@@ -88,7 +89,20 @@ const INSTITUTE_CERTIFICATIONS: InstituteCertification[] = [
 ];
 
 export function OurCertificationsSection() {
+  const [certifications, setCertifications] =
+    useState<InstituteCertification[]>(INSTITUTE_CERTIFICATIONS);
   const [activeCert, setActiveCert] = useState<InstituteCertification | null>(null);
+
+  useEffect(() => {
+    apiFetch(`/institute-certifications.php?_t=${Date.now()}`)
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => {
+        if (d?.certifications && Array.isArray(d.certifications)) {
+          setCertifications(d.certifications);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   return (
     <section
@@ -122,7 +136,7 @@ export function OurCertificationsSection() {
 
       {/* Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {INSTITUTE_CERTIFICATIONS.map((cert) => (
+        {certifications.map((cert) => (
           <div
             key={cert.id}
             className="bg-white border border-slate-200/90 rounded-xl shadow-sm hover:shadow-xl hover:border-[#135589]/40 hover:-translate-y-1 transition-all duration-200 flex flex-col overflow-hidden group"

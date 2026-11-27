@@ -15,7 +15,7 @@ export function SiteFooter() {
   }
 
   return (
-    <footer className="no-print bg-[#0B3D62] text-slate-200 border-t-4 border-[#F07228] mt-16">
+    <footer className="no-print bg-gradient-to-br from-[#0B3D62] via-[#114B75] to-[#0E5E74] text-slate-100 border-t-4 border-[#F07228] mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Column 1: Brand & Accreditation */}
