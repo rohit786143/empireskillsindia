@@ -125,7 +125,7 @@ export const INSTITUTE_INFO = {
   tagline: "An ISO 9001:2015 Certified Vocational & Skill Development Institution",
   registrationLine: "Regd. Under Govt. of NCT / MSME & National Skill Development Framework",
   regNumber: "REG. NO: ESI/IND/2018/09412 | ISO 9001:2015 CERTIFIED",
-  helpline: "+91-1800-120-4589 / +91-98104-55210",
+  helpline: "7560001910 / 9882269009 / 01905356777",
   email: "info@empireskillsindia.com",
   admissionsEmail: "admissions@empireskillsindia.com",
   website: "www.empireskillsindia.com",

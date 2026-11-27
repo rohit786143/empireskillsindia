@@ -14,8 +14,7 @@ export function SiteFooter() {
   }
 
   return (
-    <footer className="no-print bg-gradient-to-br from-[#061E33] via-[#0B3D62] to-[#0D4670] text-slate-200 mt-16 relative overflow-hidden">
-      <div className="h-1 w-full bg-gradient-to-r from-[#F07228] via-[#FF9B5E] to-[#135589]" />
+    <footer className="no-print bg-[#0B3D62] text-slate-200 border-t-4 border-[#F07228] mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
           {/* Column 1: Brand & Accreditation */}
@@ -61,6 +60,11 @@ export function SiteFooter() {
               <li>
                 <Link href="/student-zone" className="hover:text-[#FFB380] transition-colors">
                   Student Result &amp; ID Card
+                </Link>
+              </li>
+              <li>
+                <Link href="/gallery" className="hover:text-[#FFB380] transition-colors">
+                  Photo Gallery &amp; Events
                 </Link>
               </li>
               <li>
@@ -145,7 +149,7 @@ export function SiteFooter() {
       </div>
 
       {/* Bottom Legal Bar */}
-      <div className="bg-[#041524] border-t border-white/10">
+      <div className="bg-[#072A44] border-t border-white/10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-slate-400">
           <p>
             © {new Date().getFullYear()} Empire Skills India. All Rights Reserved. Official Institutional Portal.

@@ -59,51 +59,29 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12 pb-8">
-      {/* 1. Executive Gradient Hero Banner */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#061E33] via-[#0B3D62] to-[#135589] text-white border-b-4 border-[#F07228]">
-        {/* Ambient Brand Gradient Glows & Subtle Grid */}
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -top-28 -left-24 w-96 h-96 rounded-full bg-[#1D6FA8]/25 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute -bottom-28 right-0 w-[440px] h-[440px] rounded-full bg-[#F07228]/20 blur-3xl"
-        />
-        <div
-          aria-hidden="true"
-          className="pointer-events-none absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage:
-              "radial-gradient(circle at 1px 1px, #ffffff 1px, transparent 0)",
-            backgroundSize: "26px 26px",
-          }}
-        />
-
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14 lg:py-20">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
+      {/* 1. Institutional Hero Banner */}
+      <section className="bg-[#0B3D62] text-white border-b-4 border-[#F07228]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
             <div className="lg:col-span-8 space-y-5">
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-[#FF9B5E]/40 text-[#FFD0B0] text-xs font-semibold tracking-wide uppercase shadow-sm">
-                <BadgeCheck className="w-4 h-4 text-[#FF8A3D]" />
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#072A44] border border-[#F07228]/50 text-[#FFB380] text-xs font-semibold tracking-wide uppercase">
+                <BadgeCheck className="w-4 h-4 text-[#FF9B5E]" />
                 ISO 9001:2015 Certified • Academic Session 2026 Admissions Open
               </div>
-              <h1 className="text-3xl sm:text-4xl lg:text-[46px] font-extrabold tracking-tight leading-[1.14] text-white">
-                Empowering Youth Through Industry-Recognized{" "}
-                <span className="bg-gradient-to-r from-[#FFD0B0] via-[#FF9B5E] to-[#F07228] bg-clip-text text-transparent">
-                  Skill &amp; Vocational Education
-                </span>
+              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-tight text-white">
+                Empowering Youth Through Industry-Recognized Skill &amp; Vocational Education
               </h1>
-              <p className="text-slate-200/95 text-sm sm:text-base max-w-2xl leading-relaxed">
+              <p className="text-slate-200 text-sm sm:text-base max-w-2xl leading-relaxed">
                 Empire Skills India delivers structured, employment-focused diploma and
                 certification programmes in IT, Accounting, Technical Trades, Management, and
                 Teacher Training — backed by transparent online admission and instant QR-code
                 certificate verification.
               </p>
 
-              <div className="flex flex-wrap items-center gap-3.5 pt-2">
+              <div className="flex flex-wrap items-center gap-3 pt-2">
                 <Link
                   href="/admission"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-[#F07228] to-[#D65B14] hover:from-[#FF8238] hover:to-[#E06016] text-white font-bold text-sm shadow-lg shadow-[#F07228]/35 transition-all hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-bold text-sm shadow transition-colors"
                 >
                   <FileText className="w-4 h-4" />
                   Apply Online 2026
@@ -111,52 +89,49 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/verify-certificate"
-                  className="inline-flex items-center gap-2 px-6 py-3.5 rounded-xl bg-white text-[#0B3D62] hover:bg-slate-50 font-bold text-sm shadow-lg shadow-black/15 transition-all hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 px-6 py-3 rounded bg-white text-[#0B3D62] hover:bg-slate-100 font-bold text-sm shadow transition-colors"
                 >
                   <ShieldCheck className="w-4 h-4 text-[#135589]" />
                   Verify Certificate
                 </Link>
                 <Link
                   href="/courses"
-                  className="inline-flex items-center gap-2 px-5 py-3.5 rounded-xl border border-white/30 bg-white/5 hover:bg-white/15 backdrop-blur-sm text-white font-semibold text-sm transition-all"
+                  className="inline-flex items-center gap-2 px-5 py-3 rounded border border-white/30 hover:bg-white/10 text-white font-semibold text-sm transition-colors"
                 >
                   Explore Courses
                 </Link>
               </div>
             </div>
 
-            {/* Right Glassmorphic Institutional Highlights Card */}
+            {/* Right Institutional Highlights Box */}
             <div className="lg:col-span-4">
-              <div className="bg-white/[0.07] backdrop-blur-md border border-white/15 rounded-2xl overflow-hidden shadow-2xl">
-                <div className="h-1.5 w-full bg-gradient-to-r from-[#F07228] via-[#FF9B5E] to-[#38BDF8]" />
-                <div className="p-6 space-y-4">
-                  <div className="border-b border-white/15 pb-3">
-                    <p className="text-[11px] font-bold uppercase tracking-widest text-[#FF9B5E]">
-                      National Portal Highlights
-                    </p>
-                    <h2 className="text-lg font-extrabold text-white mt-0.5">
-                      Why Empire Skills India?
-                    </h2>
-                  </div>
-                  <ul className="space-y-3 text-sm text-slate-100/90">
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
-                      <span>Standardized National Curriculum &amp; Practical Lab Assessments</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
-                      <span>Unique Enrollment ID &amp; Printable Digital Student ID Card</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
-                      <span>Instant Employer Verification via QR-Enabled Certificates</span>
-                    </li>
-                    <li className="flex items-start gap-2.5">
-                      <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
-                      <span>Affordable Fee Structure with Regular, Online &amp; Hybrid Modes</span>
-                    </li>
-                  </ul>
+              <div className="bg-[#072A44] border border-white/15 rounded-lg p-6 space-y-4 shadow-lg">
+                <div className="border-b border-white/15 pb-3">
+                  <p className="text-xs font-bold uppercase tracking-widest text-[#FF9B5E]">
+                    National Portal Highlights
+                  </p>
+                  <h2 className="text-lg font-bold text-white mt-0.5">
+                    Why Empire Skills India?
+                  </h2>
                 </div>
+                <ul className="space-y-3 text-sm text-slate-200">
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
+                    <span>Standardized National Curriculum &amp; Practical Lab Assessments</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
+                    <span>Unique Enrollment ID &amp; Printable Digital Student ID Card</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
+                    <span>Instant Employer Verification via QR-Enabled Certificates</span>
+                  </li>
+                  <li className="flex items-start gap-2.5">
+                    <CheckCircle2 className="w-4 h-4 text-[#FF9B5E] shrink-0 mt-0.5" />
+                    <span>Affordable Fee Structure with Regular, Online &amp; Hybrid Modes</span>
+                  </li>
+                </ul>
               </div>
             </div>
           </div>
@@ -164,80 +139,76 @@ export default function HomePage() {
       </section>
 
       {/* 2. 4-Column Quick Service Bar */}
-      <section className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-10">
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 -mt-6">
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Link
             href="/admission"
-            className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group overflow-hidden relative"
+            className="bg-white border border-slate-200 border-t-4 border-t-[#0B3D62] rounded-lg p-5 shadow-sm hover:shadow-md transition-all group"
           >
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#0B3D62] to-[#135589]" />
             <div className="flex items-start justify-between">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#0B3D62] to-[#135589] text-white shadow-sm">
-                <FileText className="w-5 h-5" />
+              <div className="p-2.5 rounded bg-blue-50 text-[#0B3D62]">
+                <FileText className="w-6 h-6" />
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#0B3D62] group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#135589] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <h3 className="text-base font-bold text-[#0B3D62] mt-3.5">
+            <h3 className="text-base font-bold text-[#0B3D62] mt-3">
               Online Admission Form
             </h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-600 mt-1">
               Apply for July 2026 diploma &amp; skill courses and download acknowledgement slip.
             </p>
           </Link>
 
           <Link
             href="/verify-certificate"
-            className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group overflow-hidden relative"
+            className="bg-white border border-slate-200 border-t-4 border-t-[#D65B14] rounded-lg p-5 shadow-sm hover:shadow-md transition-all group"
           >
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#F07228] to-[#FF9B5E]" />
             <div className="flex items-start justify-between">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#F07228] to-[#D65B14] text-white shadow-sm">
-                <ShieldCheck className="w-5 h-5" />
+              <div className="p-2.5 rounded bg-amber-50 text-[#D65B14]">
+                <ShieldCheck className="w-6 h-6" />
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#D65B14] group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#D65B14] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <h3 className="text-base font-bold text-[#0B3D62] mt-3.5">
+            <h3 className="text-base font-bold text-[#0B3D62] mt-3">
               Certificate Verification
             </h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-600 mt-1">
               Instant online authenticity check for employers &amp; institutions by Certificate No.
             </p>
           </Link>
 
           <Link
             href="/courses"
-            className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group overflow-hidden relative"
+            className="bg-white border border-slate-200 border-t-4 border-t-[#135589] rounded-lg p-5 shadow-sm hover:shadow-md transition-all group"
           >
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-[#135589] to-[#2580C0]" />
             <div className="flex items-start justify-between">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-[#135589] to-[#1D6FA8] text-white shadow-sm">
-                <BookOpen className="w-5 h-5" />
+              <div className="p-2.5 rounded bg-blue-50 text-[#135589]">
+                <BookOpen className="w-6 h-6" />
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#135589] group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-[#135589] group-hover:translate-x-0.5 transition-all" />
             </div>
-            <h3 className="text-base font-bold text-[#0B3D62] mt-3.5">
+            <h3 className="text-base font-bold text-[#0B3D62] mt-3">
               Download Syllabus / Prospectus
             </h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-600 mt-1">
               Browse detailed semester-wise syllabi, eligibility criteria, and fee structures.
             </p>
           </Link>
 
           <Link
             href="/student-zone"
-            className="bg-white border border-slate-200/90 rounded-xl p-5 shadow-md hover:shadow-xl hover:-translate-y-1 transition-all duration-200 group overflow-hidden relative"
+            className="bg-white border border-slate-200 border-t-4 border-t-emerald-700 rounded-lg p-5 shadow-sm hover:shadow-md transition-all group"
           >
-            <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-emerald-600 to-teal-500" />
             <div className="flex items-start justify-between">
-              <div className="p-2.5 rounded-xl bg-gradient-to-br from-emerald-600 to-teal-700 text-white shadow-sm">
-                <GraduationCap className="w-5 h-5" />
+              <div className="p-2.5 rounded bg-emerald-50 text-emerald-700">
+                <GraduationCap className="w-6 h-6" />
               </div>
-              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-700 group-hover:translate-x-1 transition-all" />
+              <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-emerald-700 group-hover:translate-x-0.5 transition-all" />
             </div>
-            <h3 className="text-base font-bold text-[#0B3D62] mt-3.5">
+            <h3 className="text-base font-bold text-[#0B3D62] mt-3">
               Student Result &amp; ID Card
             </h3>
-            <p className="text-xs text-slate-600 mt-1 leading-relaxed">
+            <p className="text-xs text-slate-600 mt-1">
               Check examination marksheet and print your official Empire Skills India ID card.
             </p>
           </Link>
@@ -252,7 +223,7 @@ export default function HomePage() {
           </div>
 
           <div className="lg:col-span-7 flex flex-col gap-6">
-            <div className="bg-white border border-slate-200/90 rounded-xl p-6 shadow-sm space-y-4">
+            <div className="bg-white border border-slate-200 rounded-lg p-6 shadow-sm space-y-4">
               <div className="flex items-center justify-between border-b border-slate-200 pb-3">
                 <div>
                   <span className="text-[11px] font-bold uppercase tracking-widest text-[#D65B14]">
@@ -264,7 +235,7 @@ export default function HomePage() {
                 </div>
                 <Link
                   href="/about"
-                  className="text-xs font-bold text-[#135589] hover:text-[#D65B14] transition-colors shrink-0"
+                  className="text-xs font-bold text-[#135589] hover:underline shrink-0"
                 >
                   Read More →
                 </Link>
@@ -277,7 +248,7 @@ export default function HomePage() {
                 learners across urban and rural India with verified, career-ready credentials.
               </p>
 
-              <div className="bg-gradient-to-r from-[#EFF6FF] via-[#F8FAFC] to-[#FFF7ED] border-l-4 border-[#F07228] p-4 rounded-r-xl">
+              <div className="bg-[#F8FAFC] border-l-4 border-[#0B3D62] p-4 rounded-r">
                 <p className="text-xs font-bold uppercase tracking-wider text-[#0B3D62] mb-1">
                   Director&apos;s Message
                 </p>
@@ -299,12 +270,10 @@ export default function HomePage() {
                 return (
                   <div
                     key={stat.label}
-                    className="bg-gradient-to-b from-white to-[#F8FAFC] border border-slate-200/90 rounded-xl p-4 text-center shadow-sm hover:shadow-md transition-shadow"
+                    className="bg-white border border-slate-200 rounded-lg p-4 text-center shadow-sm"
                   >
-                    <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#0B3D62] to-[#135589] text-white flex items-center justify-center mx-auto mb-2.5 shadow-sm">
-                      <Icon className="w-5 h-5" />
-                    </div>
-                    <div className="text-2xl font-extrabold bg-gradient-to-r from-[#0B3D62] to-[#135589] bg-clip-text text-transparent">
+                    <Icon className="w-6 h-6 text-[#0B3D62] mx-auto mb-2" />
+                    <div className="text-2xl font-extrabold text-[#0B3D62]">
                       {stat.value}
                     </div>
                     <div className="text-xs font-semibold text-slate-600 mt-0.5">

@@ -48,7 +48,7 @@ export default function ContactPage() {
 
   return (
     <div className="pb-14">
-      <section className="bg-gradient-to-r from-[#061E33] via-[#0B3D62] to-[#135589] text-white border-b-4 border-[#F07228] py-10">
+      <section className="bg-[#0B3D62] text-white border-b-4 border-[#F07228] py-10">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <p className="text-xs font-bold uppercase tracking-widest text-[#FF9B5E]">
             Student Helpdesk &amp; Administrative Office
