@@ -97,7 +97,8 @@ if ($method === 'PATCH' || $method === 'PUT') {
                     'receiptNo'  => $sub['utr'] ?: '',
                     'date'       => $sub['payment_date'] ?: date('Y-m-d'),
                     'recordedAt' => date('Y-m-d H:i:s'),
-                    'remarks'    => $subRemarks ?: 'Verified Online Monthly Fee Receipt',
+                    'remarks'    => $subRemarks ?: 'Verified Online Fee Receipt',
+                    'proofUrl'   => $sub['receipt_url'] ?: null,
                 ];
                 $totalPaid = 0;
                 foreach ($existingPayments as $p) {
@@ -142,6 +143,7 @@ if ($method === 'PATCH' || $method === 'PUT') {
             'date'       => trim((string)($payment['date'] ?? '')) ?: date('Y-m-d'),
             'recordedAt' => date('Y-m-d H:i:s'),
             'remarks'    => trim((string)($payment['remarks'] ?? '')),
+            'proofUrl'   => !empty($payment['proofUrl']) ? (string)$payment['proofUrl'] : null,
         ];
         $totalPaid = 0;
         foreach ($existingPayments as $p) {
@@ -214,6 +216,7 @@ if ($method === 'PATCH' || $method === 'PUT') {
                 'date'       => date('Y-m-d'),
                 'recordedAt' => date('Y-m-d H:i:s'),
                 'remarks'    => $remarks !== '' ? $remarks : 'Initial fee received at admission acceptance',
+                'proofUrl'   => $existing['payment_screenshot_url'] ?? null,
             ];
             $totalStudentPaid = 0;
             foreach ($existingPayments as $sp) {

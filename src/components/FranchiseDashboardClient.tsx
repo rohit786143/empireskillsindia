@@ -170,9 +170,11 @@ export function FranchiseDashboardClient() {
   const [pwMsg, setPwMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
   const [pwBusy, setPwBusy] = useState(false);
 
-  // Payment proof viewer modal
+  // Payment proof & ledger modals
   const [proofApp, setProofApp] = useState<FranchiseAppRow | null>(null);
   const [ledgerApp, setLedgerApp] = useState<FranchiseAppRow | null>(null);
+  const [studentLedgerApp, setStudentLedgerApp] = useState<FranchiseAppRow | null>(null);
+  const [viewTxnProof, setViewTxnProof] = useState<{ title: string; url: string; utr?: string } | null>(null);
 
   // Center Payment QR & Bank settings modal
   const [payModalOpen, setPayModalOpen] = useState(false);
@@ -373,6 +375,9 @@ export function FranchiseDashboardClient() {
         setApplications((prev) =>
           prev.map((x) => (x.id === collectApp.id ? data.application : x))
         );
+        if (studentLedgerApp?.id === collectApp.id) {
+          setStudentLedgerApp(data.application);
+        }
         setCollectApp(null);
       } else {
         alert(data?.error || "Failed to record fee.");
@@ -666,7 +671,7 @@ export function FranchiseDashboardClient() {
                 }`}
             >
               <IndianRupee className="w-3.5 h-3.5" />
-              Fee Management (Students Fee &amp; Admin Royalty)
+              Fee Management (Students Ledger &amp; Admin Ledger)
             </button>
           </div>
         )}
@@ -893,16 +898,14 @@ export function FranchiseDashboardClient() {
                                   Form
                                 </button>
 
-                                {app.paymentScreenshotUrl && (
-                                  <button
-                                    type="button"
-                                    onClick={() => setProofApp(app)}
-                                    className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold transition-colors"
-                                  >
-                                    <Receipt className="w-3.5 h-3.5" />
-                                    Payment Proof
-                                  </button>
-                                )}
+                                <button
+                                  type="button"
+                                  onClick={() => setStudentLedgerApp(app)}
+                                  className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-semibold transition-colors"
+                                >
+                                  <IndianRupee className="w-3.5 h-3.5" />
+                                  {isMainCenter ? "Student Fee Ledger" : "Student Ledger"}
+                                </button>
 
                                 {!isMainCenter && (
                                   <button
@@ -910,8 +913,8 @@ export function FranchiseDashboardClient() {
                                     onClick={() => setLedgerApp(app)}
                                     className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 hover:bg-blue-100 text-[#0B3D62] border border-blue-200 font-semibold transition-colors"
                                   >
-                                    <IndianRupee className="w-3.5 h-3.5" />
-                                    Ledger
+                                    <Receipt className="w-3.5 h-3.5" />
+                                    Admin Ledger
                                   </button>
                                 )}
 
@@ -1138,6 +1141,13 @@ export function FranchiseDashboardClient() {
                               </button>
                               <button
                                 type="button"
+                                onClick={() => setStudentLedgerApp(s)}
+                                className="px-2.5 py-1.5 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold"
+                              >
+                                Fee Ledger
+                              </button>
+                              <button
+                                type="button"
                                 onClick={() => {
                                   setCollectApp(s);
                                   setCollectAmount(String(pend > 0 ? Math.min(1500, pend) : 0));
@@ -1148,7 +1158,7 @@ export function FranchiseDashboardClient() {
                                 }}
                                 className="px-2.5 py-1.5 rounded bg-[#F07228] text-white font-bold"
                               >
-                                Collect Fee
+                                Collect Payment
                               </button>
                             </div>
                           </td>
@@ -1323,7 +1333,7 @@ export function FranchiseDashboardClient() {
                     }`}
                   >
                     <Users className="w-3.5 h-3.5" />
-                    Students Fee Record ({acceptedApps.length})
+                    Students Ledger ({acceptedApps.length})
                   </button>
                   <button
                     type="button"
@@ -1335,7 +1345,7 @@ export function FranchiseDashboardClient() {
                     }`}
                   >
                     <Receipt className="w-3.5 h-3.5" />
-                    Admin Royalty Record — ₹500 + 15% ({royaltyApps.length})
+                    Admin Ledger — ₹500 + 15% ({royaltyApps.length})
                   </button>
                   <button
                     type="button"
@@ -1466,25 +1476,35 @@ export function FranchiseDashboardClient() {
                                     )}
                                   </td>
                                   <td className="py-3 px-4 text-right">
-                                    <button
-                                      type="button"
-                                      onClick={() => {
-                                        setCollectApp(s);
-                                        setCollectAmount(String(pend > 0 ? Math.min(2000, pend) : 0));
-                                        setCollectHead("Monthly Fee Installment");
-                                        setCollectMode("Cash");
-                                        setCollectReceipt("");
-                                        setCollectRemarks("");
-                                      }}
-                                      className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold text-xs ${
-                                        cleared
-                                          ? "bg-slate-100 text-[#0B3D62] border border-slate-300"
-                                          : "bg-[#F07228] hover:bg-[#D65B14] text-white"
-                                      }`}
-                                    >
-                                      <IndianRupee className="w-3.5 h-3.5" />
-                                      {cleared ? "View / Add" : "Collect Fee"}
-                                    </button>
+                                    <div className="inline-flex items-center gap-1.5">
+                                      <button
+                                        type="button"
+                                        onClick={() => setStudentLedgerApp(s)}
+                                        className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-xs"
+                                      >
+                                        <Receipt className="w-3.5 h-3.5" />
+                                        Student Ledger
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCollectApp(s);
+                                          setCollectAmount(String(pend > 0 ? Math.min(2000, pend) : 0));
+                                          setCollectHead("Monthly Fee Installment");
+                                          setCollectMode("Cash");
+                                          setCollectReceipt("");
+                                          setCollectRemarks("");
+                                        }}
+                                        className={`inline-flex items-center gap-1 px-3 py-1.5 rounded-lg font-bold text-xs ${
+                                          cleared
+                                            ? "bg-slate-100 text-[#0B3D62] border border-slate-300"
+                                            : "bg-[#F07228] hover:bg-[#D65B14] text-white"
+                                        }`}
+                                      >
+                                        <IndianRupee className="w-3.5 h-3.5" />
+                                        Collect Payment
+                                      </button>
+                                    </div>
                                   </td>
                                 </tr>
                               );
@@ -2205,7 +2225,230 @@ export function FranchiseDashboardClient() {
         </div>
       )}
 
-      {/* Student-Wise Franchise Settlement Ledger Modal (for Partner Centers) */}
+      {/* Student Fee Ledger Modal (Shows all student fee transactions + payment proof per transaction + Collect Payment) */}
+      {studentLedgerApp && (() => {
+        const courseTot = studentLedgerApp.totalFee || studentLedgerApp.courseTotalFee || 0;
+        const paidAmt = studentLedgerApp.feePaid || 0;
+        const pendAmt = Math.max(0, courseTot - paidAmt);
+        let txns: {
+          id: string;
+          amount: number;
+          feeType?: string;
+          mode: string;
+          receiptNo?: string;
+          date: string;
+          remarks?: string;
+          proofUrl?: string | null;
+        }[] = [];
+        if (studentLedgerApp.feePaymentsJson) {
+          try {
+            const dec = JSON.parse(studentLedgerApp.feePaymentsJson);
+            if (Array.isArray(dec)) txns = dec;
+          } catch {}
+        }
+
+        return (
+          <div
+            className="no-print fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto"
+            onClick={() => setStudentLedgerApp(null)}
+          >
+            <div
+              className="bg-white rounded-2xl max-w-2xl w-full shadow-2xl border border-slate-200 overflow-hidden my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="bg-emerald-800 text-white px-5 py-4 flex items-center justify-between gap-2">
+                <div>
+                  <div className="text-sm font-bold">
+                    {isMainCenter ? "Student Fee Ledger" : "Student Ledger"} — {studentLedgerApp.fullName}
+                  </div>
+                  <div className="text-[11px] text-emerald-100">
+                    {studentLedgerApp.courseName} • {studentLedgerApp.enrollmentNumber || studentLedgerApp.applicationRef}
+                  </div>
+                </div>
+                <button type="button" onClick={() => setStudentLedgerApp(null)}>
+                  <X className="w-4 h-4" />
+                </button>
+              </div>
+              <div className="p-5 space-y-4 text-xs">
+                <div className="grid grid-cols-3 gap-3 text-center">
+                  <div className="bg-slate-50 border border-slate-200 rounded-lg p-3">
+                    <span className="text-slate-500 block">Total Course Fee</span>
+                    <strong className="text-base text-[#0B3D62]">{formatINR(courseTot)}</strong>
+                  </div>
+                  <div className="bg-emerald-50 border border-emerald-200 rounded-lg p-3">
+                    <span className="text-emerald-700 block">Received from Student</span>
+                    <strong className="text-base text-emerald-800">{formatINR(paidAmt)}</strong>
+                  </div>
+                  <div
+                    className={`border rounded-lg p-3 ${
+                      pendAmt === 0 && courseTot > 0
+                        ? "bg-emerald-100 border-emerald-300"
+                        : "bg-red-50 border-red-200"
+                    }`}
+                  >
+                    <span className="text-slate-600 block">Pending Balance</span>
+                    {pendAmt === 0 && courseTot > 0 ? (
+                      <strong className="text-xs font-extrabold text-emerald-800">
+                        ✓ FEE CLEARED
+                      </strong>
+                    ) : (
+                      <strong className="text-base text-red-700">{formatINR(pendAmt)}</strong>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <div className="flex items-center justify-between gap-2 mb-2">
+                    <p className="font-bold text-[#0B3D62] uppercase text-[11px]">
+                      Student Payment Transactions ({txns.length})
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setCollectApp(studentLedgerApp);
+                        setCollectAmount(String(pendAmt > 0 ? Math.min(2000, pendAmt) : 0));
+                        setCollectHead("Monthly Fee Installment");
+                        setCollectMode("Cash");
+                        setCollectReceipt("");
+                        setCollectRemarks("");
+                      }}
+                      className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[#F07228] hover:bg-[#D65B14] text-white font-bold text-xs shadow-sm"
+                    >
+                      <IndianRupee className="w-3.5 h-3.5" />
+                      Collect Payment (Cash / UPI)
+                    </button>
+                  </div>
+
+                  {txns.length === 0 ? (
+                    <div className="p-4 rounded-lg bg-slate-50 border border-slate-200 text-slate-500 text-center space-y-2">
+                      <p>No fee payments recorded in Student Ledger yet.</p>
+                      {studentLedgerApp.paymentScreenshotUrl && (
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setViewTxnProof({
+                              title: `Registration Payment Proof — ${studentLedgerApp.fullName}`,
+                              url: studentLedgerApp.paymentScreenshotUrl!,
+                              utr: studentLedgerApp.paymentUtr || undefined,
+                            })
+                          }
+                          className="inline-flex items-center gap-1 px-3 py-1.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-bold text-xs"
+                        >
+                          <Receipt className="w-3.5 h-3.5" />
+                          View Uploaded Registration Proof (₹{studentLedgerApp.registrationFeePaid || 500})
+                        </button>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="border border-slate-200 rounded-lg overflow-x-auto">
+                      <table className="w-full text-left text-[11px]">
+                        <thead className="bg-slate-100 text-slate-700">
+                          <tr>
+                            <th className="py-2 px-2.5">Date</th>
+                            <th className="py-2 px-2.5">Fee Head</th>
+                            <th className="py-2 px-2.5">Mode / UTR</th>
+                            <th className="py-2 px-2.5 text-right">Amount</th>
+                            <th className="py-2 px-2.5 text-right">Proof</th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-slate-200">
+                          {txns.map((t, idx) => {
+                            const proofUrl =
+                              t.proofUrl ||
+                              (idx === 0 &&
+                              (t.feeType || "").toLowerCase().includes("registration")
+                                ? studentLedgerApp.paymentScreenshotUrl
+                                : null);
+                            return (
+                              <tr key={t.id}>
+                                <td className="py-2 px-2.5 whitespace-nowrap">
+                                  {formatDisplayDate(t.date)}
+                                </td>
+                                <td className="py-2 px-2.5 font-semibold text-[#0B3D62]">
+                                  {t.feeType || "Course Fee"}
+                                </td>
+                                <td className="py-2 px-2.5">
+                                  <span className="font-semibold">{t.mode}</span>
+                                  {t.receiptNo ? (
+                                    <span className="block font-mono text-[10px] text-slate-500">
+                                      UTR/Ref: {t.receiptNo}
+                                    </span>
+                                  ) : null}
+                                </td>
+                                <td className="py-2 px-2.5 text-right font-bold text-emerald-700">
+                                  {formatINR(t.amount)}
+                                </td>
+                                <td className="py-2 px-2.5 text-right">
+                                  {proofUrl ? (
+                                    <button
+                                      type="button"
+                                      onClick={() =>
+                                        setViewTxnProof({
+                                          title: `${t.feeType || "Fee"} Proof — ${studentLedgerApp.fullName} (${formatINR(t.amount)})`,
+                                          url: proofUrl,
+                                          utr: t.receiptNo || studentLedgerApp.paymentUtr || undefined,
+                                        })
+                                      }
+                                      className="inline-flex items-center gap-1 px-2 py-1 rounded bg-emerald-50 hover:bg-emerald-100 text-emerald-800 border border-emerald-200 font-bold text-[10px]"
+                                    >
+                                      <Receipt className="w-3 h-3" />
+                                      View Proof
+                                    </button>
+                                  ) : (
+                                    <span className="text-[10px] text-slate-400">Cash / Direct</span>
+                                  )}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
+      {/* Transaction Payment Proof Lightbox Modal */}
+      {viewTxnProof && (
+        <div
+          className="no-print fixed inset-0 z-[60] bg-black/75 flex items-center justify-center p-4"
+          onClick={() => setViewTxnProof(null)}
+        >
+          <div
+            className="bg-white rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="bg-[#0B3D62] text-white px-5 py-3.5 flex items-center justify-between">
+              <span className="text-sm font-bold">{viewTxnProof.title}</span>
+              <button type="button" onClick={() => setViewTxnProof(null)}>
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <div className="p-5 space-y-3">
+              {viewTxnProof.utr && (
+                <div className="bg-emerald-50 border border-emerald-200 rounded-lg px-3 py-2 text-xs">
+                  <strong>UTR / Transaction No.:</strong>{" "}
+                  <span className="font-mono font-bold text-[#0B3D62]">{viewTxnProof.utr}</span>
+                </div>
+              )}
+              <div className="border border-slate-200 rounded-lg bg-slate-50 p-2 flex justify-center">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={viewTxnProof.url}
+                  alt="Transaction Payment Proof"
+                  className="max-h-[65vh] w-auto object-contain rounded"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Ledger Modal (Franchise-to-Main-Admin ₹500 + 15% Royalty Settlement — Partner Centers Only) */}
       {ledgerApp && (
         <div
           className="no-print fixed inset-0 z-50 bg-black/70 flex items-center justify-center p-4 overflow-y-auto"
@@ -2217,7 +2460,7 @@ export function FranchiseDashboardClient() {
           >
             <div className="bg-[#0B3D62] text-white px-5 py-4 flex items-center justify-between">
               <div className="text-sm font-bold">
-                Student Settlement Ledger — {ledgerApp.fullName}
+                Admin Ledger (₹500 + 15%) — {ledgerApp.fullName}
               </div>
               <button type="button" onClick={() => setLedgerApp(null)}>
                 <X className="w-4 h-4" />
