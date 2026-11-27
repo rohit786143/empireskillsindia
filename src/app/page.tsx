@@ -69,10 +69,10 @@ export default function HomePage() {
           className="pointer-events-none absolute -bottom-24 right-1/4 w-96 h-96 rounded-full bg-[#38BDF8]/20 blur-3xl"
           aria-hidden="true"
         />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-11">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-7 space-y-4">
-              <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-tight text-white">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 lg:py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+            <div className="lg:col-span-7 space-y-3 lg:pt-2">
+              <h1 className="text-3xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight leading-tight text-white">
                 Empowering Youth Through{" "}
                 <span className="text-[#FFB36B]">Industry-Recognized</span> Skill &amp;
                 Vocational Education

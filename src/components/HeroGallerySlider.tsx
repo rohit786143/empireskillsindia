@@ -121,13 +121,13 @@ export function HeroGallerySlider() {
 
   return (
     <div
-      className="p-[3px] rounded-2xl bg-gradient-to-tr from-[#F07228] via-[#F59E0B] via-[#38BDF8] to-[#10B981] shadow-2xl"
+      className="relative p-[4px] rounded-2xl bg-gradient-to-tr from-[#F07228] via-[#FBBF24] via-[#38BDF8] to-[#10B981] shadow-[0_0_28px_rgba(240,114,40,0.35),0_0_40px_rgba(56,189,248,0.28)] ring-2 ring-white/30"
       onMouseEnter={() => setPaused(true)}
       onMouseLeave={() => setPaused(false)}
     >
-      <div className="bg-[#072A44] rounded-[13px] overflow-hidden">
+      <div className="bg-[#072A44] rounded-[13px] overflow-hidden ring-1 ring-white/25">
         {/* Top Bar */}
-        <div className="px-4 py-2.5 bg-gradient-to-r from-[#0B3D62] via-[#125488] to-[#0E7490] flex items-center justify-between border-b border-white/15">
+        <div className="px-4 py-2 bg-gradient-to-r from-[#0B3D62] via-[#125488] to-[#0E7490] flex items-center justify-between border-b border-white/15">
           <div className="flex items-center gap-1.5 text-[11px] font-extrabold uppercase tracking-wider text-amber-200">
             <Sparkles className="w-3.5 h-3.5 text-[#FF9B5E]" />
             <span>Campus &amp; Event Highlights</span>
@@ -142,7 +142,7 @@ export function HeroGallerySlider() {
         </div>
 
         {/* Main Image Stage */}
-        <div className="relative aspect-[4/3] w-full bg-slate-950 overflow-hidden">
+        <div className="relative aspect-[16/10] w-full bg-slate-950 overflow-hidden">
           {slides.map((slide, idx) => (
             <div
               key={`${batchIndex}-${slide.id}`}
