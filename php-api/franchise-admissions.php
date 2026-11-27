@@ -53,7 +53,38 @@ if ($method === 'GET') {
         ];
     }
 
-    json_response(['applications' => $apps, 'franchise' => $franchise, 'feeSubmissions' => $feeSubmissions]);
+    $royaltySubmissions = [];
+    if (!$isMainCenter) {
+        $rsStmt = $pdo->prepare('SELECT * FROM franchise_royalty_submissions WHERE franchise_id = ? ORDER BY created_at DESC');
+        $rsStmt->execute([$franchiseId]);
+        while ($rr = $rsStmt->fetch()) {
+            $royaltySubmissions[] = [
+                'id'               => $rr['id'],
+                'applicationId'    => $rr['application_id'],
+                'franchiseId'      => $rr['franchise_id'],
+                'franchiseName'    => $rr['franchise_name'],
+                'franchiseCode'    => $rr['franchise_code'],
+                'enrollmentNumber' => $rr['enrollment_number'],
+                'studentName'      => $rr['student_name'],
+                'courseName'       => $rr['course_name'],
+                'amount'           => (int)$rr['amount'],
+                'utr'              => $rr['utr'],
+                'paymentDate'      => $rr['payment_date'],
+                'proofUrl'         => $rr['proof_url'],
+                'franchiseRemarks' => $rr['franchise_remarks'] ?? '',
+                'status'           => $rr['status'],
+                'adminRemarks'     => $rr['admin_remarks'] ?? '',
+                'createdAt'        => $rr['created_at'],
+            ];
+        }
+    }
+
+    json_response([
+        'applications'       => $apps,
+        'franchise'          => $franchise,
+        'feeSubmissions'     => $feeSubmissions,
+        'royaltySubmissions' => $royaltySubmissions,
+    ]);
 }
 
 // PATCH: Franchise Approve, Reject, Forward to Main Institute, OR Main Center Fee Actions
@@ -163,7 +194,7 @@ if ($method === 'PATCH' || $method === 'PUT') {
         json_response(['application' => $mapped]);
     }
 
-    // Franchise pays remaining 15% Royalty Balance to Main Admin (with mandatory UTR & screenshot proof)
+    // Franchise submits Royalty Balance payment request to Main Admin (requires Main Admin Approval before crediting ledger)
     if ($action === 'PAY_ADMIN_ROYALTY') {
         if ($isMainCenter) {
             json_response(['error' => 'Main Center does not pay franchise royalty.'], 400);
@@ -195,34 +226,48 @@ if ($method === 'PATCH' || $method === 'PUT') {
             $payAmt = $curPending;
         }
 
-        $existingFrPayments = [];
-        if (!empty($existing['franchise_payments_json'])) {
-            $dec = json_decode($existing['franchise_payments_json'], true);
-            if (is_array($dec)) $existingFrPayments = $dec;
-        }
-        $existingFrPayments[] = [
-            'id'         => generate_cuid(),
-            'amount'     => $payAmt,
-            'feeType'    => ($payAmt >= $curPending) ? 'Final Royalty Settlement' : '15% Royalty Installment',
-            'mode'       => 'UPI / Bank',
-            'receiptNo'  => $payUtr,
-            'date'       => $payDate,
-            'recordedAt' => date('Y-m-d H:i:s'),
-            'remarks'    => $payRemarks !== '' ? $payRemarks : 'Royalty balance paid by franchise to Main Admin',
-            'proofUrl'   => $payProof,
-        ];
-        $totalFrPaid = 0;
-        foreach ($existingFrPayments as $ep) {
-            $totalFrPaid += (int)($ep['amount'] ?? 0);
-        }
-        $pdo->prepare('UPDATE admission_applications SET franchise_paid_to_main = ?, franchise_payments_json = ? WHERE id = ?')
-            ->execute([$totalFrPaid, json_encode($existingFrPayments, JSON_UNESCAPED_UNICODE), $id]);
+        $subId = generate_cuid();
+        $pdo->prepare(
+            'INSERT INTO franchise_royalty_submissions
+             (id, application_id, franchise_id, franchise_name, franchise_code, enrollment_number, student_name, course_name, amount, utr, payment_date, proof_url, franchise_remarks, status)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "PENDING")'
+        )->execute([
+            $subId,
+            $id,
+            $franchiseId,
+            $fRowDb['center_name'] ?? ($existing['franchise_name'] ?? ''),
+            $fRowDb['center_code'] ?? ($existing['franchise_code'] ?? ''),
+            $existing['enrollment_number'] ?: $existing['application_ref'],
+            $existing['full_name'],
+            $existing['course_name'],
+            $payAmt,
+            $payUtr,
+            $payDate,
+            $payProof,
+            $payRemarks !== '' ? $payRemarks : null,
+        ]);
 
-        $cStmt->execute([$id]);
-        $updRow = $cStmt->fetch();
-        $mapped = enrich_application($updRow, map_application($updRow));
-        $mapped['courseDuration'] = $updRow['joined_course_duration'] ?: '1 Year';
-        json_response(['application' => $mapped]);
+        json_response([
+            'submission' => [
+                'id'               => $subId,
+                'applicationId'    => $id,
+                'franchiseId'      => $franchiseId,
+                'franchiseName'    => $fRowDb['center_name'] ?? '',
+                'franchiseCode'    => $fRowDb['center_code'] ?? '',
+                'enrollmentNumber' => $existing['enrollment_number'] ?: $existing['application_ref'],
+                'studentName'      => $existing['full_name'],
+                'courseName'       => $existing['course_name'],
+                'amount'           => $payAmt,
+                'utr'              => $payUtr,
+                'paymentDate'      => $payDate,
+                'proofUrl'         => $payProof,
+                'franchiseRemarks' => $payRemarks,
+                'status'           => 'PENDING',
+                'adminRemarks'     => '',
+                'createdAt'        => date('Y-m-d H:i:s'),
+            ],
+            'message' => 'Payment request sent to Main Admin. Balance will update once Main Admin verifies & approves.',
+        ], 201);
     }
 
     // Do not allow franchise to modify once Main Institute has already finalized

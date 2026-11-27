@@ -91,6 +91,33 @@ function ensure_franchise_schema(PDO $pdo): void {
             ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
         );
     } catch (PDOException $e) {}
+
+    // Franchise-to-Main-Admin Royalty Payment Requests (requires Main Admin Approve / Reject with remark)
+    try {
+        $pdo->exec(
+            'CREATE TABLE IF NOT EXISTS `franchise_royalty_submissions` (
+              `id` VARCHAR(64) NOT NULL,
+              `application_id` VARCHAR(64) NOT NULL,
+              `franchise_id` VARCHAR(64) NOT NULL,
+              `franchise_name` VARCHAR(191) NOT NULL DEFAULT "",
+              `franchise_code` VARCHAR(32) NOT NULL DEFAULT "",
+              `enrollment_number` VARCHAR(64) NOT NULL DEFAULT "",
+              `student_name` VARCHAR(191) NOT NULL,
+              `course_name` VARCHAR(191) NOT NULL DEFAULT "",
+              `amount` INT NOT NULL DEFAULT 0,
+              `utr` VARCHAR(120) NOT NULL,
+              `payment_date` VARCHAR(32) NOT NULL,
+              `proof_url` LONGTEXT NOT NULL,
+              `franchise_remarks` TEXT DEFAULT NULL,
+              `status` VARCHAR(32) NOT NULL DEFAULT "PENDING",
+              `admin_remarks` TEXT DEFAULT NULL,
+              `created_at` DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+              PRIMARY KEY (`id`),
+              KEY `idx_frs_app` (`application_id`),
+              KEY `idx_frs_fr` (`franchise_id`)
+            ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+        );
+    } catch (PDOException $e) {}
 }
 
 function is_main_center_row(array $r): bool {

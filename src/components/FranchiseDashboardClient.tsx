@@ -59,6 +59,25 @@ interface FeeSubmissionRow {
   createdAt: string;
 }
 
+interface RoyaltySubmissionRow {
+  id: string;
+  applicationId: string;
+  franchiseId: string;
+  franchiseName: string;
+  franchiseCode: string;
+  enrollmentNumber: string;
+  studentName: string;
+  courseName: string;
+  amount: number;
+  utr: string;
+  paymentDate: string;
+  proofUrl: string;
+  franchiseRemarks: string;
+  status: "PENDING" | "APPROVED" | "REJECTED" | string;
+  adminRemarks: string;
+  createdAt: string;
+}
+
 interface FranchiseAppRow extends AdmissionFormRecord {
   id: string;
   status: string;
@@ -119,6 +138,7 @@ export function FranchiseDashboardClient() {
   const [franchise, setFranchise] = useState<FranchiseSession | null>(null);
   const [applications, setApplications] = useState<FranchiseAppRow[]>([]);
   const [feeSubmissions, setFeeSubmissions] = useState<FeeSubmissionRow[]>([]);
+  const [royaltySubmissions, setRoyaltySubmissions] = useState<RoyaltySubmissionRow[]>([]);
   const [mainTab, setMainTab] = useState<"applications" | "students" | "fees">("applications");
   const [partnerFeeSubTab, setPartnerFeeSubTab] = useState<"students" | "royalty" | "receipts">("students");
   const [initialFeeReceived, setInitialFeeReceived] = useState("500");
@@ -217,14 +237,13 @@ export function FranchiseDashboardClient() {
         }),
       });
       const data = await res.json();
-      if (res.ok && data.application) {
-        setApplications((prev) =>
-          prev.map((x) => (x.id === payAdminApp.id ? data.application : x))
-        );
-        if (ledgerApp?.id === payAdminApp.id) {
-          setLedgerApp(data.application);
-        }
+      if (res.ok && data.submission) {
+        setRoyaltySubmissions((prev) => [data.submission, ...prev]);
         setPayAdminApp(null);
+        alert(
+          data.message ||
+            "Payment request sent to Main Admin! Balance will update after Main Admin verifies & approves."
+        );
       } else {
         alert(data?.error || "Failed to submit royalty payment.");
       }
@@ -324,6 +343,7 @@ export function FranchiseDashboardClient() {
         setFranchise(data.franchise || null);
         setApplications(data.applications || []);
         setFeeSubmissions(data.feeSubmissions || []);
+        setRoyaltySubmissions(data.royaltySubmissions || []);
       }
     } catch {
       // ignore
@@ -1819,6 +1839,12 @@ export function FranchiseDashboardClient() {
                               const paidAdmin = s.franchisePaidToMain || 0;
                               const balAdmin = Math.max(0, dueTot - paidAdmin);
                               const complete = balAdmin === 0;
+                              const pendingReqAmt = royaltySubmissions
+                                .filter((rs) => rs.applicationId === s.id && rs.status === "PENDING")
+                                .reduce((acc, rs) => acc + rs.amount, 0);
+                              const latestRejected = royaltySubmissions.find(
+                                (rs) => rs.applicationId === s.id && rs.status === "REJECTED"
+                              );
                               return (
                                 <tr key={s.id} className="hover:bg-slate-50">
                                   <td className="py-3 px-4">
@@ -1848,9 +1874,24 @@ export function FranchiseDashboardClient() {
                                         ✓ COMPLETE PAYMENT
                                       </span>
                                     ) : (
-                                      <span className="font-extrabold text-red-600">
-                                        {formatINR(balAdmin)}
-                                      </span>
+                                      <div className="space-y-0.5">
+                                        <span className="font-extrabold text-red-600 block">
+                                          {formatINR(balAdmin)}
+                                        </span>
+                                        {pendingReqAmt > 0 && (
+                                          <span className="inline-block px-1.5 py-0.5 rounded bg-amber-100 text-amber-900 font-bold text-[9.5px]">
+                                            Pending Admin Approval: {formatINR(pendingReqAmt)}
+                                          </span>
+                                        )}
+                                        {latestRejected && (
+                                          <span
+                                            title={latestRejected.adminRemarks}
+                                            className="inline-block px-1.5 py-0.5 rounded bg-red-100 text-red-700 font-bold text-[9.5px]"
+                                          >
+                                            Rejected: {latestRejected.adminRemarks || "Correct & Resend"}
+                                          </span>
+                                        )}
+                                      </div>
                                     )}
                                   </td>
                                   <td className="py-3 px-4 text-right">
@@ -2943,6 +2984,83 @@ export function FranchiseDashboardClient() {
                     </div>
                   )}
                 </div>
+
+                {/* Pending / Rejected Payment Requests Sent to Main Admin */}
+                {(() => {
+                  const appReqs = royaltySubmissions.filter(
+                    (rs) => rs.applicationId === ledgerApp.id && rs.status !== "APPROVED"
+                  );
+                  if (appReqs.length === 0) return null;
+                  return (
+                    <div className="pt-2 border-t border-slate-200 space-y-2">
+                      <p className="font-bold text-[#D65B14] uppercase text-[11px]">
+                        Payment Requests Sent to Main Admin ({appReqs.length})
+                      </p>
+                      <div className="space-y-2">
+                        {appReqs.map((req) => (
+                          <div
+                            key={req.id}
+                            className={`rounded-lg border p-3 flex flex-wrap items-center justify-between gap-2 ${
+                              req.status === "REJECTED"
+                                ? "bg-red-50 border-red-200"
+                                : "bg-amber-50 border-amber-200"
+                            }`}
+                          >
+                            <div className="space-y-0.5">
+                              <div className="flex items-center gap-2">
+                                <strong className="text-[#0B3D62]">{formatINR(req.amount)}</strong>
+                                <span className="font-mono text-[10px] text-slate-600">
+                                  UTR: {req.utr}
+                                </span>
+                                <span
+                                  className={`px-2 py-0.5 rounded font-bold text-[10px] ${
+                                    req.status === "REJECTED"
+                                      ? "bg-red-600 text-white"
+                                      : "bg-amber-200 text-amber-950"
+                                  }`}
+                                >
+                                  {req.status === "PENDING" ? "PENDING ADMIN APPROVAL" : "REJECTED"}
+                                </span>
+                              </div>
+                              <div className="text-[10px] text-slate-500">
+                                Submitted: {formatDisplayDate(req.paymentDate)}
+                              </div>
+                              {req.status === "REJECTED" && req.adminRemarks && (
+                                <div className="text-[11px] font-bold text-red-700">
+                                  Admin Remark: {req.adminRemarks}
+                                </div>
+                              )}
+                            </div>
+                            <div className="flex items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() =>
+                                  setViewTxnProof({
+                                    title: `Royalty Request Proof — ${ledgerApp.fullName} (${formatINR(req.amount)})`,
+                                    url: req.proofUrl,
+                                    utr: req.utr,
+                                  })
+                                }
+                                className="px-2.5 py-1 rounded bg-white border border-slate-300 text-slate-700 font-bold text-[10px]"
+                              >
+                                View Proof
+                              </button>
+                              {req.status === "REJECTED" && !isComplete && (
+                                <button
+                                  type="button"
+                                  onClick={() => openPayAdminModal(ledgerApp)}
+                                  className="px-2.5 py-1 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-bold text-[10px]"
+                                >
+                                  Correct &amp; Resend
+                                </button>
+                              )}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  );
+                })()}
               </div>
             </div>
           </div>
