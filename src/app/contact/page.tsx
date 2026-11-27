@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { MapPin, Phone, Mail, Clock, Send, CheckCircle2 } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, Send, CheckCircle2, Facebook, Instagram } from "lucide-react";
 import { INSTITUTE_INFO } from "@/lib/constants";
 import { apiFetch } from "@/lib/api";
 
@@ -101,6 +101,29 @@ export default function ContactPage() {
                 <div>
                   <p className="font-bold text-[#0B3D62]">Office Hours</p>
                   <p className="text-slate-600">{INSTITUTE_INFO.officeHours}</p>
+                </div>
+              </div>
+              <div className="pt-3 border-t border-slate-200">
+                <p className="font-bold text-[#0B3D62] mb-2">Connect on Social Media</p>
+                <div className="flex flex-wrap gap-2">
+                  <a
+                    href={INSTITUTE_INFO.facebook}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-[#1877F2] hover:bg-[#1565C0] text-white text-xs font-bold transition-colors"
+                  >
+                    <Facebook className="w-4 h-4" />
+                    Facebook Page
+                  </a>
+                  <a
+                    href={INSTITUTE_INFO.instagram}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded bg-[#E4405F] hover:bg-[#C13584] text-white text-xs font-bold transition-colors"
+                  >
+                    <Instagram className="w-4 h-4" />
+                    Instagram
+                  </a>
                 </div>
               </div>
             </div>

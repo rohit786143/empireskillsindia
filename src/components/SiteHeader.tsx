@@ -14,6 +14,8 @@ import {
   Bell,
   FileText,
   Building2,
+  Facebook,
+  Instagram,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { INSTITUTE_INFO } from "@/lib/constants";
@@ -82,6 +84,26 @@ export function SiteHeader() {
               <Mail className="w-3.5 h-3.5 text-[#FF9B5E]" />
               {INSTITUTE_INFO.email}
             </span>
+            <div className="inline-flex items-center gap-1.5">
+              <a
+                href={INSTITUTE_INFO.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Empire Skills India Facebook"
+                className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/10 hover:bg-[#1877F2] text-white transition-colors"
+              >
+                <Facebook className="w-3.5 h-3.5" />
+              </a>
+              <a
+                href={INSTITUTE_INFO.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                aria-label="Empire Skills India Instagram"
+                className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/10 hover:bg-[#E4405F] text-white transition-colors"
+              >
+                <Instagram className="w-3.5 h-3.5" />
+              </a>
+            </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-2">

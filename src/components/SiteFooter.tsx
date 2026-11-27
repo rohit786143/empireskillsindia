@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, Phone, Mail, Clock, ShieldCheck, Lock, ExternalLink } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, ShieldCheck, Lock, ExternalLink, Facebook, Instagram } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { INSTITUTE_INFO } from "@/lib/constants";
 
@@ -144,6 +144,26 @@ export function SiteFooter() {
                 <span>{INSTITUTE_INFO.officeHours}</span>
               </li>
             </ul>
+            <div className="mt-4 pt-3 border-t border-white/15 flex items-center gap-2">
+              <a
+                href={INSTITUTE_INFO.facebook}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#1877F2]/90 hover:bg-[#1877F2] text-white text-xs font-semibold transition-colors"
+              >
+                <Facebook className="w-3.5 h-3.5" />
+                Facebook
+              </a>
+              <a
+                href={INSTITUTE_INFO.instagram}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#E4405F]/90 hover:bg-[#E4405F] text-white text-xs font-semibold transition-colors"
+              >
+                <Instagram className="w-3.5 h-3.5" />
+                Instagram
+              </a>
+            </div>
           </div>
         </div>
       </div>

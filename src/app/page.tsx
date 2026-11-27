@@ -12,7 +12,6 @@ import {
   Building2,
   CheckCircle2,
   ArrowRight,
-  BadgeCheck,
 } from "lucide-react";
 import {
   NoticeBoardSection,
@@ -61,13 +60,9 @@ export default function HomePage() {
     <div className="space-y-12 pb-8">
       {/* 1. Institutional Hero Banner */}
       <section className="bg-[#0B3D62] text-white border-b-4 border-[#F07228]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 lg:py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-10">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-            <div className="lg:col-span-8 space-y-5">
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded bg-[#072A44] border border-[#F07228]/50 text-[#FFB380] text-xs font-semibold tracking-wide uppercase">
-                <BadgeCheck className="w-4 h-4 text-[#FF9B5E]" />
-                ISO 9001:2015 Certified • Academic Session 2026 Admissions Open
-              </div>
+            <div className="lg:col-span-8 space-y-4">
               <h1 className="text-3xl sm:text-4xl lg:text-[42px] font-extrabold tracking-tight leading-tight text-white">
                 Empowering Youth Through Industry-Recognized Skill &amp; Vocational Education
               </h1>

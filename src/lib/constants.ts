@@ -131,4 +131,6 @@ export const INSTITUTE_INFO = {
   website: "www.empireskillsindia.com",
   address: "Academic Block, Plot No. 14, Institutional Area, Sector 62, Noida - 201309 (NCR), India",
   officeHours: "Monday – Saturday: 09:30 AM to 06:00 PM IST",
+  facebook: "https://www.facebook.com/share/1A9d2LWUKC/",
+  instagram: "https://www.instagram.com/empire_skillsindia?utm_source=qr&jplx=MWp1dXZrYmU0OWcycg==",
 };
