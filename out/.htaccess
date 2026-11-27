@@ -12,6 +12,9 @@ RewriteEngine On
 # Do not rewrite php-api requests
 RewriteRule ^php-api/ - [L]
 
+# Redirect legacy printed QR code URL (/student or /student/) to Verify Certificate page
+RewriteRule ^student/?$ /verify-certificate/ [R=301,L,QSA]
+
 # Serve existing files and directories directly
 RewriteCond %{REQUEST_FILENAME} -f [OR]
 RewriteCond %{REQUEST_FILENAME} -d
