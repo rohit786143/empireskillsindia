@@ -147,7 +147,7 @@ export function SiteFooter() {
                   href={siteSettings.facebook}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#1877F2]/90 hover:bg-[#1877F2] text-white text-xs font-semibold transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#1877F2] hover:bg-[#166FE5] text-white text-xs font-semibold shadow-sm transition-colors"
                 >
                   <Facebook className="w-3.5 h-3.5" />
                   Facebook
@@ -158,7 +158,7 @@ export function SiteFooter() {
                   href={siteSettings.instagram}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-[#E4405F]/90 hover:bg-[#E4405F] text-white text-xs font-semibold transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] hover:opacity-95 text-white text-xs font-semibold shadow-sm transition-all"
                 >
                   <Instagram className="w-3.5 h-3.5" />
                   Instagram

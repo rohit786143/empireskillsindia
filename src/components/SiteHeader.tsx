@@ -92,7 +92,7 @@ export function SiteHeader() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Empire Skills India Facebook"
-                  className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/10 hover:bg-[#1877F2] text-white transition-colors"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded bg-[#1877F2] hover:bg-[#166FE5] hover:scale-105 text-white shadow-sm transition-all"
                 >
                   <Facebook className="w-3.5 h-3.5" />
                 </a>
@@ -103,7 +103,7 @@ export function SiteHeader() {
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label="Empire Skills India Instagram"
-                  className="inline-flex items-center justify-center w-6 h-6 rounded bg-white/10 hover:bg-[#E4405F] text-white transition-colors"
+                  className="inline-flex items-center justify-center w-6 h-6 rounded bg-gradient-to-tr from-[#F58529] via-[#DD2A7B] to-[#8134AF] hover:scale-105 text-white shadow-sm transition-all"
                 >
                   <Instagram className="w-3.5 h-3.5" />
                 </a>
