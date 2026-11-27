@@ -34,7 +34,7 @@ export function CoursesDirectoryClient({ courses }: { courses: PublicCourse[] })
   const [category, setCategory] = useState("All");
   const [duration, setDuration] = useState("All");
   const [eligibility, setEligibility] = useState("All");
-  const [viewMode, setViewMode] = useState<"table" | "cards">("table");
+  const [viewMode, setViewMode] = useState<"table" | "cards">("cards");
 
   const filtered = useMemo(() => {
     return courses.filter((c) => {
