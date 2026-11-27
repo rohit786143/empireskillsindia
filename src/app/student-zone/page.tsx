@@ -907,45 +907,45 @@ export default function StudentZonePage() {
                 </p>
                 <div id="printable-document" className="flex justify-center py-2">
                   <div
-                    className="pvc-id-card relative bg-gradient-to-b from-white via-[#F5F9FD] to-[#EBF3FA] border-2 border-[#0B3D62] rounded-[14px] shadow-xl overflow-hidden flex flex-col justify-between text-slate-900 font-sans"
+                    className="pvc-id-card relative bg-gradient-to-b from-white via-[#F5F9FD] to-[#EBF3FA] border-2 border-[#0B3D62] rounded-[12px] shadow-xl overflow-hidden flex flex-col justify-between text-slate-900 font-sans"
                     style={{
-                      width: "268px",
-                      minHeight: "426px",
+                      width: "260px",
+                      height: "414px",
                       WebkitPrintColorAdjust: "exact",
                       printColorAdjust: "exact",
                     }}
                   >
                     {/* Centered Subtle Logo Watermark in Middle */}
-                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0 pt-10">
+                    <div className="pointer-events-none absolute inset-0 flex items-center justify-center z-0 pt-8">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img
                         src="/empire-logo.png"
                         alt=""
                         aria-hidden="true"
-                        className="w-44 h-44 object-contain opacity-[0.08] select-none"
+                        className="w-40 h-40 object-contain opacity-[0.08] select-none"
                       />
                     </div>
 
                     {/* Top Brand Header: Clean White Background for Logo */}
-                    <div className="relative z-10 bg-white pt-2.5 text-center">
+                    <div className="relative z-10 bg-white pt-2 text-center">
                       <div className="flex justify-center px-3">
-                        <BrandLogo height={30} />
+                        <BrandLogo height={27} />
                       </div>
-                      <p className="text-[7px] font-bold text-[#0B3D62] tracking-[0.12em] uppercase mt-1 px-2">
+                      <p className="text-[6.8px] font-bold text-[#0B3D62] tracking-[0.12em] uppercase mt-0.5 px-2 leading-tight">
                         ISO 9001:2015 Certified Institution
                       </p>
                       {/* Logo-Matched Navy + Saffron Identity Ribbon */}
-                      <div className="mt-1.5 bg-gradient-to-r from-[#0B3D62] via-[#135589] to-[#0B3D62] border-y-2 border-[#F07228] py-1">
-                        <span className="text-white text-[8px] font-extrabold tracking-[0.18em] uppercase">
+                      <div className="mt-1 bg-gradient-to-r from-[#0B3D62] via-[#135589] to-[#0B3D62] border-y-[1.5px] border-[#F07228] py-0.5 leading-none">
+                        <span className="text-white text-[7.5px] font-extrabold tracking-[0.18em] uppercase">
                           STUDENT IDENTITY CARD
                         </span>
                       </div>
                     </div>
 
                     {/* Portrait Body: Balanced Photo + Structured Professional Details */}
-                    <div className="relative z-10 px-3 py-2 flex-1 flex flex-col items-center justify-between gap-1.5">
+                    <div className="relative z-10 px-3 py-1.5 flex-1 flex flex-col items-center justify-between gap-1">
                       {/* Passport Photo with Logo Navy-Saffron Ring */}
-                      <div className="w-[74px] h-[84px] rounded-lg p-[2px] bg-gradient-to-tr from-[#0B3D62] via-[#135589] to-[#F07228] shadow-md shrink-0">
+                      <div className="w-[68px] h-[78px] rounded-lg p-[2px] bg-gradient-to-tr from-[#0B3D62] via-[#135589] to-[#F07228] shadow-sm shrink-0">
                         <div className="w-full h-full rounded-[6px] bg-white overflow-hidden flex items-center justify-center">
                           {student.photoUrl ? (
                             // eslint-disable-next-line @next/next/no-img-element
@@ -955,36 +955,36 @@ export default function StudentZonePage() {
                               className="w-full h-full object-cover"
                             />
                           ) : (
-                            <User className="w-8 h-8 text-slate-300" />
+                            <User className="w-7 h-7 text-slate-300" />
                           )}
                         </div>
                       </div>
 
-                      {/* Student Name & Enrollment Badge */}
-                      <div className="text-center w-full">
-                        <p className="text-[12.5px] font-extrabold text-[#0B3D62] uppercase leading-tight tracking-wide">
+                      {/* Student Name & Compact Centered Id No. Pill */}
+                      <div className="flex flex-col items-center text-center w-full gap-1">
+                        <p className="text-[12px] font-extrabold text-[#0B3D62] uppercase leading-none tracking-wide">
                           {student.fullName}
                         </p>
-                        <div className="mt-0.5 inline-block px-2.5 py-0.5 rounded-full bg-[#0B3D62]/10 border border-[#0B3D62]/20">
-                          <span className="text-[9px] font-mono font-extrabold text-[#D65B14] tracking-wider">
-                            ID: {student.enrollmentNumber}
+                        <div className="inline-flex items-center justify-center px-2.5 py-1 rounded-full bg-white border-[1.5px] border-[#F07228] shadow-xs leading-none">
+                          <span className="text-[8.8px] font-mono font-extrabold text-[#0B3D62] tracking-wide leading-none">
+                            <span className="text-[#D65B14]">Id No.</span> {student.enrollmentNumber}
                           </span>
                         </div>
                       </div>
 
                       {/* Balanced Course & Details Card (Full Course Name — Zero Truncation) */}
-                      <div className="w-full bg-white/85 border border-[#0B3D62]/20 rounded-lg overflow-hidden shadow-xs text-[8.3px]">
+                      <div className="w-full bg-white/90 border border-[#0B3D62]/20 rounded-lg overflow-hidden shadow-xs text-[8px]">
                         {/* Logo-Matched Dark Navy Course Strip */}
-                        <div className="bg-gradient-to-r from-[#0B3D62] to-[#135589] px-2.5 py-1.5 text-center">
-                          <span className="text-[6.5px] uppercase tracking-[0.14em] text-[#FFB380] font-bold block leading-none">
+                        <div className="bg-gradient-to-r from-[#0B3D62] to-[#135589] px-2 py-1 text-center">
+                          <span className="text-[6.2px] uppercase tracking-[0.14em] text-[#FFB380] font-bold block leading-none">
                             Course / Programme
                           </span>
-                          <strong className="text-[8.8px] text-white font-bold leading-snug whitespace-normal break-words block mt-0.5">
+                          <strong className="text-[8.3px] text-white font-bold leading-tight whitespace-normal break-words block mt-0.5">
                             {student.courseName}
                           </strong>
                         </div>
 
-                        <div className="px-2.5 py-1.5 space-y-1">
+                        <div className="px-2.5 py-1 space-y-0.5">
                           <div className="flex justify-between gap-2">
                             <span className="text-slate-500 font-semibold shrink-0">
                               Father&apos;s Name:
@@ -1018,18 +1018,18 @@ export default function StudentZonePage() {
                           <div className="p-0.5 bg-white border border-[#0B3D62]/25 rounded shadow-xs">
                             <QRCodeSVG
                               value={`https://${INSTITUTE_INFO.website}/verify-certificate?cert=${student.enrollmentNumber}`}
-                              size={36}
+                              size={34}
                             />
                           </div>
-                          <div className="text-[6.8px] text-slate-600 leading-tight">
+                          <div className="text-[6.5px] text-slate-600 leading-tight">
                             <p className="font-extrabold text-[#0B3D62]">Scan Verify</p>
                             <p>Valid: {student.session}</p>
                           </div>
                         </div>
-                        <div className="text-right text-[7.2px]">
+                        <div className="text-right text-[7px]">
                           <div className="w-16 border-b border-[#0B3D62]/60 mb-0.5 ml-auto" />
                           <p className="font-extrabold text-[#0B3D62]">Registrar Sign</p>
-                          <p className="text-[6.5px] text-slate-500 font-medium">
+                          <p className="text-[6.2px] text-slate-500 font-medium">
                             Empire Skills India
                           </p>
                         </div>
@@ -1037,7 +1037,7 @@ export default function StudentZonePage() {
                     </div>
 
                     {/* Bottom Logo-Matched Navy Footer Strip */}
-                    <div className="relative z-10 bg-gradient-to-r from-[#0B3D62] via-[#135589] to-[#0B3D62] border-t-2 border-[#F07228] text-white px-2.5 py-1.5 text-[7px] text-center leading-tight">
+                    <div className="relative z-10 bg-gradient-to-r from-[#0B3D62] via-[#135589] to-[#0B3D62] border-t-2 border-[#F07228] text-white px-2.5 py-1 text-[6.8px] text-center leading-tight">
                       <p className="font-bold text-[#FFB380] tracking-wide">
                         {INSTITUTE_INFO.website}
                       </p>
