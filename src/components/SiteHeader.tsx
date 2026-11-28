@@ -5,8 +5,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   Phone,
-  Mail,
-  ShieldCheck,
   GraduationCap,
   Lock,
   Menu,
@@ -89,10 +87,6 @@ export function SiteHeader() {
                 {siteSettings.helpline.split("/")[0]?.trim()}
               </span>
             </a>
-            <span className="hidden md:inline-flex items-center gap-1.5 text-slate-200">
-              <Mail className="w-3.5 h-3.5 text-[#FF9B5E]" />
-              {siteSettings.email}
-            </span>
             <div className="inline-flex items-center gap-1.5">
               {siteSettings.facebook && (
                 <a
@@ -127,8 +121,8 @@ export function SiteHeader() {
               title="Download Empire Skills India Android App (.apk)"
             >
               <Download className="w-3 h-3" />
-              <span>App</span>
               <span className="hidden sm:inline">Download</span>
+              <span>App</span>
             </a>
             <Link
               href="/admission"
@@ -136,13 +130,6 @@ export function SiteHeader() {
             >
               <FileText className="w-3 h-3" />
               Apply Online
-            </Link>
-            <Link
-              href="/verify-certificate"
-              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#135589] hover:bg-blue-600 text-white font-medium transition-colors"
-            >
-              <ShieldCheck className="w-3 h-3" />
-              Verify Certificate
             </Link>
             <Link
               href="/student-zone"
