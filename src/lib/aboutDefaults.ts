@@ -67,12 +67,13 @@ export const DEFAULT_ABOUT_CONFIG: AboutPageConfig = {
   showAccreditation: true,
   accreditationTitle: "Accreditation & Recognition",
   accreditationPoints: [
-    "ISO 9001:2015 Certified Quality Management System",
-    "Registered under MSME / Govt. of India Skill Ecosystem",
-    "100% Online QR-Code Verifiable Digital & Print Certificates",
-    "Pan-India Network of Authorized Training & Study Centres",
+    "ISO 9001:2015 Certified Quality Management System (IAF & EGAC Accredited)",
+    "Registered with Ministry of Corporate Affairs (MCA), Government of India",
+    "Recognized by Startup India (DPIIT) & Skill India / NCVET Affiliated Training Partner",
+    "100% Online QR-Code Verifiable Digital & Print Diplomas & Marksheets",
+    "Dedicated Practical Labs, Govt. Project Implementation & Career Placement Support",
   ],
-  accreditationFooter: INSTITUTE_INFO.regNumber,
+  accreditationFooter: "ISO 9001:2015 CERTIFIED • GOVT. OF INDIA (MCA) REGISTERED",
 
   showVisionMission: true,
   visionMissionCards: [

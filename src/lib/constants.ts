@@ -124,7 +124,7 @@ export const STUDY_MODES = [
 export const INSTITUTE_INFO = {
   name: "EMPIRE SKILLS INDIA",
   tagline: "An ISO 9001:2015 Certified Vocational & Skill Development Institution",
-  registrationLine: "Regd. Under Govt. of NCT / MSME & National Skill Development Framework",
+  registrationLine: "Registered with Ministry of Corporate Affairs (MCA), Government of India",
   regNumber: "REG. NO: ESI/IND/2018/09412 | ISO 9001:2015 CERTIFIED",
   helpline: "7560001910 / 9882269009 / 01905356777",
   email: "info@empireskillsindia.com",
