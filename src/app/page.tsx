@@ -77,6 +77,11 @@ export default function HomePage() {
                 <span className="text-[#FFB36B]">Skill Development, Training,</span>{" "}
                 Placement &amp; Project Implementation Organization
               </h1>
+              <p className="text-xs sm:text-[15px] text-sky-100/90 max-w-2xl leading-relaxed font-medium">
+                Empowering India&apos;s youth and partner institutions with globally benchmarked
+                vocational programmes, government skill mission delivery, and verified career
+                pathways.
+              </p>
               <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-2.5 sm:gap-y-3.5 pt-1 max-w-2xl">
                 <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
                   <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
@@ -112,18 +117,7 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="pt-1.5">
-                <Link
-                  href="/our-team"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 border border-[#FFB36B]/70 text-white font-bold text-xs sm:text-sm backdrop-blur-sm shadow-sm transition-all"
-                >
-                  <Users className="w-4 h-4 text-[#FFB36B] shrink-0" />
-                  <span>Our Team</span>
-                  <ArrowRight className="w-3.5 h-3.5 text-[#FFB36B]" />
-                </Link>
-              </div>
-
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
                 <Link
                   href="/admission"
                   className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-xs sm:text-sm shadow-lg transition-all"
