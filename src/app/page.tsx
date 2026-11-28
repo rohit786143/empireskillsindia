@@ -11,6 +11,9 @@ import {
   Users,
   Building2,
   ArrowRight,
+  Briefcase,
+  Globe,
+  Landmark,
 } from "lucide-react";
 import {
   NoticeBoardSection,
@@ -82,38 +85,73 @@ export default function HomePage() {
                 vocational programmes, government skill mission delivery, and verified career
                 pathways.
               </p>
-              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-2.5 sm:gap-y-3.5 pt-1 max-w-2xl">
-                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
-                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
-                    SKILL DEVELOPMENT
-                  </p>
-                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
-                    Training &amp; Certification Programmes
-                  </p>
+              <div className="grid grid-cols-2 gap-2 sm:gap-2.5 pt-0.5 max-w-2xl">
+                <div className="group relative flex items-center gap-2.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-[#FFB36B]/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-[#F07228]/25 ring-1 ring-[#FFB36B]/40 text-[#FFB36B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <GraduationCap className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider text-white leading-tight truncate">
+                      SKILL DEVELOPMENT
+                    </p>
+                    <p className="text-[10px] sm:text-[11.5px] text-sky-100/85 mt-0.5 leading-tight line-clamp-1">
+                      Training &amp; Certification Programmes
+                    </p>
+                  </div>
+                  <span className="hidden sm:block text-[10px] font-black text-white/20 group-hover:text-[#FFB36B]/80 transition-colors self-start">
+                    01
+                  </span>
                 </div>
-                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
-                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
-                    GOVERNMENT PROJECTS
-                  </p>
-                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
-                    Project Implementation
-                  </p>
+
+                <div className="group relative flex items-center gap-2.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-sky-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-sky-400/20 ring-1 ring-sky-300/40 text-sky-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Landmark className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider text-white leading-tight truncate">
+                      GOVERNMENT PROJECTS
+                    </p>
+                    <p className="text-[10px] sm:text-[11.5px] text-sky-100/85 mt-0.5 leading-tight line-clamp-1">
+                      Project Implementation
+                    </p>
+                  </div>
+                  <span className="hidden sm:block text-[10px] font-black text-white/20 group-hover:text-sky-300/80 transition-colors self-start">
+                    02
+                  </span>
                 </div>
-                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
-                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
-                    PLACEMENT SERVICES
-                  </p>
-                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
-                    Employment &amp; Recruitment Support
-                  </p>
+
+                <div className="group relative flex items-center gap-2.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-emerald-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-emerald-400/20 ring-1 ring-emerald-300/40 text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Briefcase className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider text-white leading-tight truncate">
+                      PLACEMENT SERVICES
+                    </p>
+                    <p className="text-[10px] sm:text-[11.5px] text-sky-100/85 mt-0.5 leading-tight line-clamp-1">
+                      Employment &amp; Recruitment Support
+                    </p>
+                  </div>
+                  <span className="hidden sm:block text-[10px] font-black text-white/20 group-hover:text-emerald-300/80 transition-colors self-start">
+                    03
+                  </span>
                 </div>
-                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
-                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
-                    NATIONAL PARTNERSHIPS
-                  </p>
-                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
-                    Institutional &amp; Corporate Network
-                  </p>
+
+                <div className="group relative flex items-center gap-2.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-amber-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+                  <div className="w-8 h-8 rounded-lg bg-amber-400/20 ring-1 ring-amber-300/40 text-amber-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
+                    <Globe className="w-4 h-4" />
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider text-white leading-tight truncate">
+                      NATIONAL PARTNERSHIPS
+                    </p>
+                    <p className="text-[10px] sm:text-[11.5px] text-sky-100/85 mt-0.5 leading-tight line-clamp-1">
+                      Institutional &amp; Corporate Network
+                    </p>
+                  </div>
+                  <span className="hidden sm:block text-[10px] font-black text-white/20 group-hover:text-amber-300/80 transition-colors self-start">
+                    04
+                  </span>
                 </div>
               </div>
 
