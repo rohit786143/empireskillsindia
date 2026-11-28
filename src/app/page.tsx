@@ -72,21 +72,21 @@ export default function HomePage() {
           className="pointer-events-none absolute -bottom-24 right-1/4 w-96 h-96 rounded-full bg-[#38BDF8]/20 blur-3xl"
           aria-hidden="true"
         />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
-            <div className="lg:col-span-7 space-y-3.5 lg:pt-2">
-              <h1 className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold tracking-tight leading-snug sm:leading-tight text-white">
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
+            <div className="lg:col-span-7 space-y-2.5">
+              <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-extrabold tracking-tight leading-[1.16] text-white">
                 A National{" "}
                 <span className="text-[#FFB36B]">Skill Development, Training,</span>{" "}
                 Placement &amp; Project Implementation Organization
               </h1>
-              <p className="text-xs sm:text-[15px] text-sky-100/90 max-w-2xl leading-relaxed font-medium">
+              <p className="text-xs sm:text-[13.5px] text-sky-100/90 max-w-2xl leading-snug font-medium">
                 Empowering India&apos;s youth and partner institutions with globally benchmarked
                 vocational programmes, government skill mission delivery, and verified career
                 pathways.
               </p>
-              <div className="grid grid-cols-2 gap-2 sm:gap-2.5 pt-0.5 max-w-2xl">
-                <div className="group relative flex items-center gap-2.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-[#FFB36B]/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+              <div className="grid grid-cols-2 gap-2 pt-0.5 max-w-2xl">
+                <div className="group relative flex items-center gap-2.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-[#FFB36B]/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
                   <div className="w-8 h-8 rounded-lg bg-[#F07228]/25 ring-1 ring-[#FFB36B]/40 text-[#FFB36B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                     <GraduationCap className="w-4 h-4" />
                   </div>
@@ -103,7 +103,7 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <div className="group relative flex items-center gap-2.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-sky-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+                <div className="group relative flex items-center gap-2.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-sky-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
                   <div className="w-8 h-8 rounded-lg bg-sky-400/20 ring-1 ring-sky-300/40 text-sky-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                     <Landmark className="w-4 h-4" />
                   </div>
@@ -120,7 +120,7 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <div className="group relative flex items-center gap-2.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-emerald-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+                <div className="group relative flex items-center gap-2.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-emerald-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
                   <div className="w-8 h-8 rounded-lg bg-emerald-400/20 ring-1 ring-emerald-300/40 text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                     <Briefcase className="w-4 h-4" />
                   </div>
@@ -137,7 +137,7 @@ export default function HomePage() {
                   </span>
                 </div>
 
-                <div className="group relative flex items-center gap-2.5 px-2.5 py-2 sm:px-3 sm:py-2.5 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-amber-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
+                <div className="group relative flex items-center gap-2.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-amber-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
                   <div className="w-8 h-8 rounded-lg bg-amber-400/20 ring-1 ring-amber-300/40 text-amber-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
                     <Globe className="w-4 h-4" />
                   </div>
@@ -155,10 +155,10 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
                 <Link
                   href="/admission"
-                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-xs sm:text-sm shadow-lg transition-all"
+                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-xs sm:text-sm shadow-lg transition-all"
                 >
                   <FileText className="w-4 h-4 shrink-0" />
                   <span>Apply Online</span>
@@ -166,14 +166,14 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/verify-certificate"
-                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white text-[#0B3D62] hover:bg-sky-50 font-bold text-xs sm:text-sm shadow-md transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-white text-[#0B3D62] hover:bg-sky-50 font-bold text-xs sm:text-sm shadow-md transition-colors"
                 >
                   <ShieldCheck className="w-4 h-4 text-[#0E7490] shrink-0" />
                   <span>Verify Cert.</span>
                 </Link>
                 <Link
                   href="/courses"
-                  className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 rounded-lg border border-white/40 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm backdrop-blur-sm transition-colors"
+                  className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg border border-white/40 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm backdrop-blur-sm transition-colors"
                 >
                   Explore Courses
                 </Link>
