@@ -85,6 +85,7 @@ export const COURSE_CATEGORIES = [
   "NIELIT Courses",
   "Fashion Designing",
   "Hair & Skin Care",
+  "Beauty & Wellness",
   "Stenography",
 ] as const;
 
