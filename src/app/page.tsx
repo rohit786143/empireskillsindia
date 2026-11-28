@@ -11,10 +11,6 @@ import {
   Users,
   Building2,
   ArrowRight,
-  Briefcase,
-  Globe,
-  Landmark,
-  Sparkles,
 } from "lucide-react";
 import {
   NoticeBoardSection,
@@ -62,115 +58,64 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12 pb-8">
-      {/* 1. International-Grade Animated Hero Banner with Muted Students Background */}
-      <section className="relative overflow-hidden bg-[#06243D] text-white border-b-4 border-[#F07228]">
-        {/* Layer 1: Subtle Dull Institute Students Photo with Slow Cinematic Ken-Burns Motion */}
-        <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden="true">
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img
-            src="/hero-students-bg.jpg"
-            alt=""
-            className="w-full h-full object-cover object-center opacity-[0.22] grayscale-[25%] esi-hero-kenburns"
-          />
-          {/* Deep Executive Navy-Teal Veil so foreground text stays razor-sharp */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#051E34]/95 via-[#0B3D62]/86 to-[#0A536C]/82" />
-          {/* Slowly moving architectural tech grid */}
-          <div className="absolute inset-0 esi-hero-grid opacity-60" />
-          {/* Drifting luminous ambient orbs */}
-          <div className="absolute -top-28 -left-24 w-96 h-96 rounded-full bg-[#F07228]/20 blur-3xl esi-hero-orb" />
-          <div className="absolute -bottom-28 right-1/4 w-[28rem] h-[28rem] rounded-full bg-[#38BDF8]/20 blur-3xl esi-hero-orb-delayed" />
-        </div>
-
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 lg:gap-7 items-center">
-            <div className="lg:col-span-7 space-y-4">
-              {/* Institutional Credibility Pill */}
-              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 border border-white/20 backdrop-blur-md text-[10.5px] sm:text-xs font-semibold text-sky-100 shadow-sm">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400" />
-                </span>
-                <Sparkles className="w-3.5 h-3.5 text-[#FFB36B] shrink-0" />
-                <span>ISO 9001:2015 Certified • Govt. of India (MCA) Reg. Organization</span>
-              </div>
-
-              {/* High-Impact Brand Headline */}
-              <h1 className="text-2xl sm:text-3xl lg:text-[38px] font-extrabold tracking-tight leading-[1.18] text-white drop-shadow-sm">
+      {/* 1. Institutional Hero Banner — Balanced Navy, Ocean Teal & Saffron Logo Palette */}
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#0B3D62] via-[#135589] to-[#0E7490] text-white border-b-4 border-[#F07228]">
+        {/* Subtle luminous ambient accents */}
+        <div
+          className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#F07228]/20 blur-3xl"
+          aria-hidden="true"
+        />
+        <div
+          className="pointer-events-none absolute -bottom-24 right-1/4 w-96 h-96 rounded-full bg-[#38BDF8]/20 blur-3xl"
+          aria-hidden="true"
+        />
+        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
+            <div className="lg:col-span-7 space-y-3.5 lg:pt-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold tracking-tight leading-snug sm:leading-tight text-white">
                 A National{" "}
-                <span className="esi-shimmer-text">Skill Development, Training,</span>{" "}
+                <span className="text-[#FFB36B]">Skill Development, Training,</span>{" "}
                 Placement &amp; Project Implementation Organization
               </h1>
-
-              {/* Executive Sub-line */}
-              <p className="text-xs sm:text-[15px] text-sky-100/90 max-w-2xl leading-relaxed font-medium">
-                Empowering India&apos;s youth and partner institutions with globally benchmarked
-                vocational programmes, government skill mission delivery, and verified career
-                pathways.
-              </p>
-
-              {/* 4-Pillar Animated Glassmorphic Cards */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5 sm:gap-3 pt-1 max-w-2xl">
-                <div className="group flex items-start gap-3 p-3 rounded-xl bg-white/[0.07] hover:bg-white/[0.13] border border-white/15 hover:border-[#FFB36B]/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm">
-                  <div className="w-9 h-9 rounded-lg bg-[#F07228]/20 border border-[#FFB36B]/40 text-[#FFB36B] flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <GraduationCap className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-white">
-                      SKILL DEVELOPMENT
-                    </p>
-                    <p className="text-[11px] sm:text-xs text-sky-100/85 mt-0.5 leading-snug">
-                      Industry-Aligned Training &amp; National Certification Programmes
-                    </p>
-                  </div>
+              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-2.5 sm:gap-y-3.5 pt-1 max-w-2xl">
+                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
+                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
+                    SKILL DEVELOPMENT
+                  </p>
+                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
+                    Training &amp; Certification Programmes
+                  </p>
                 </div>
-
-                <div className="group flex items-start gap-3 p-3 rounded-xl bg-white/[0.07] hover:bg-white/[0.13] border border-white/15 hover:border-sky-300/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm">
-                  <div className="w-9 h-9 rounded-lg bg-sky-400/20 border border-sky-300/40 text-sky-300 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Landmark className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-white">
-                      GOVERNMENT PROJECTS
-                    </p>
-                    <p className="text-[11px] sm:text-xs text-sky-100/85 mt-0.5 leading-snug">
-                      End-to-End State &amp; Central Skill Mission Implementation
-                    </p>
-                  </div>
+                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
+                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
+                    GOVERNMENT PROJECTS
+                  </p>
+                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
+                    Project Implementation
+                  </p>
                 </div>
-
-                <div className="group flex items-start gap-3 p-3 rounded-xl bg-white/[0.07] hover:bg-white/[0.13] border border-white/15 hover:border-emerald-300/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm">
-                  <div className="w-9 h-9 rounded-lg bg-emerald-400/20 border border-emerald-300/40 text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Briefcase className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-white">
-                      PLACEMENT SERVICES
-                    </p>
-                    <p className="text-[11px] sm:text-xs text-sky-100/85 mt-0.5 leading-snug">
-                      Career Readiness, Recruitment Drives &amp; Employer Connect
-                    </p>
-                  </div>
+                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
+                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
+                    PLACEMENT SERVICES
+                  </p>
+                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
+                    Employment &amp; Recruitment Support
+                  </p>
                 </div>
-
-                <div className="group flex items-start gap-3 p-3 rounded-xl bg-white/[0.07] hover:bg-white/[0.13] border border-white/15 hover:border-amber-300/60 backdrop-blur-md transition-all duration-300 hover:-translate-y-0.5 shadow-sm">
-                  <div className="w-9 h-9 rounded-lg bg-amber-400/20 border border-amber-300/40 text-amber-300 flex items-center justify-center shrink-0 group-hover:scale-110 transition-transform">
-                    <Globe className="w-4.5 h-4.5" />
-                  </div>
-                  <div className="min-w-0">
-                    <p className="text-xs font-extrabold uppercase tracking-wider text-white">
-                      NATIONAL PARTNERSHIPS
-                    </p>
-                    <p className="text-[11px] sm:text-xs text-sky-100/85 mt-0.5 leading-snug">
-                      Authorized Study Centers, Institutional &amp; Corporate Network
-                    </p>
-                  </div>
+                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
+                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
+                    NATIONAL PARTNERSHIPS
+                  </p>
+                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
+                    Institutional &amp; Corporate Network
+                  </p>
                 </div>
               </div>
 
-              <div className="pt-1">
+              <div className="pt-1.5">
                 <Link
                   href="/our-team"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 border border-[#FFB36B]/70 text-white font-bold text-xs sm:text-sm backdrop-blur-md shadow-sm transition-all hover:-translate-y-0.5"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 border border-[#FFB36B]/70 text-white font-bold text-xs sm:text-sm backdrop-blur-sm shadow-sm transition-all"
                 >
                   <Users className="w-4 h-4 text-[#FFB36B] shrink-0" />
                   <span>Our Team</span>
@@ -178,10 +123,10 @@ export default function HomePage() {
                 </Link>
               </div>
 
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-0.5">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
                 <Link
                   href="/admission"
-                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-xs sm:text-sm shadow-lg shadow-orange-950/30 transition-all hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-xs sm:text-sm shadow-lg transition-all"
                 >
                   <FileText className="w-4 h-4 shrink-0" />
                   <span>Apply Online</span>
@@ -189,14 +134,14 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/verify-certificate"
-                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white text-[#0B3D62] hover:bg-sky-50 font-bold text-xs sm:text-sm shadow-md transition-all hover:-translate-y-0.5"
+                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white text-[#0B3D62] hover:bg-sky-50 font-bold text-xs sm:text-sm shadow-md transition-colors"
                 >
                   <ShieldCheck className="w-4 h-4 text-[#0E7490] shrink-0" />
                   <span>Verify Cert.</span>
                 </Link>
                 <Link
                   href="/courses"
-                  className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 rounded-lg border border-white/40 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm backdrop-blur-md transition-all hover:-translate-y-0.5"
+                  className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 rounded-lg border border-white/40 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm backdrop-blur-sm transition-colors"
                 >
                   Explore Courses
                 </Link>

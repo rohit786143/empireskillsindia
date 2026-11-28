@@ -51,7 +51,7 @@ export function SiteHeader() {
       .then((d) => {
         if (d?.notices) setTickerNotices(d.notices);
       })
-      .catch(() => {});
+      .catch(() => { });
   }, [pathname]);
 
   if (pathname?.startsWith("/admin") || pathname?.startsWith("/franchise")) {
@@ -62,13 +62,13 @@ export function SiteHeader() {
     tickerNotices.length > 0
       ? tickerNotices
       : [
-          {
-            id: "default-1",
-            title: "Online Admission Open for Academic Session July 2026 — Apply Now",
-            publishedDate: "2026-06-15",
-            category: "Admission",
-          },
-        ];
+        {
+          id: "default-1",
+          title: "Online Admission Open for Academic Session July 2026 — Apply Now",
+          publishedDate: "2026-06-15",
+          category: "Admission",
+        },
+      ];
 
   return (
     <header className="no-print w-full">
@@ -212,11 +212,10 @@ export function SiteHeader() {
                   <Link
                     key={item.href}
                     href={item.href}
-                    className={`px-2.5 xl:px-3 py-2 rounded text-[12.5px] xl:text-[13.5px] font-semibold whitespace-nowrap transition-colors ${
-                      isActive
-                        ? "bg-[#0B3D62] text-white"
-                        : "text-slate-700 hover:bg-slate-100 hover:text-[#0B3D62]"
-                    }`}
+                    className={`px-2.5 xl:px-3 py-2 rounded text-[12.5px] xl:text-[13.5px] font-semibold whitespace-nowrap transition-colors ${isActive
+                      ? "bg-[#0B3D62] text-white"
+                      : "text-slate-700 hover:bg-slate-100 hover:text-[#0B3D62]"
+                      }`}
                   >
                     {item.label}
                   </Link>
@@ -250,11 +249,10 @@ export function SiteHeader() {
                     key={item.href}
                     href={item.href}
                     onClick={() => setMobileOpen(false)}
-                    className={`block px-3.5 py-2.5 rounded-lg text-sm font-semibold ${
-                      isActive
-                        ? "bg-[#0B3D62] text-white"
-                        : "text-slate-700 hover:bg-slate-100"
-                    }`}
+                    className={`block px-3.5 py-2.5 rounded-lg text-sm font-semibold ${isActive
+                      ? "bg-[#0B3D62] text-white"
+                      : "text-slate-700 hover:bg-slate-100"
+                      }`}
                   >
                     {item.label}
                   </Link>
