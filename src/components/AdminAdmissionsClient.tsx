@@ -60,6 +60,7 @@ interface ApplicationRow {
   applicationRef: string;
   status: string;
   enrollmentNumber: string | null;
+  serialNumber?: string | null;
   courseId: string | null;
   courseName: string;
   courseCode: string;
@@ -495,6 +496,11 @@ export function AdminAdmissionsClient({
                     {app.enrollmentNumber && (
                       <div className="font-bold text-emerald-700 mt-0.5">
                         {app.enrollmentNumber}
+                      </div>
+                    )}
+                    {app.serialNumber && (
+                      <div className="text-[10.5px] font-bold text-[#D65B14] mt-0.5">
+                        Sr: {app.serialNumber}
                       </div>
                     )}
                   </td>

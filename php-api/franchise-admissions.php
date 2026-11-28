@@ -317,9 +317,22 @@ if ($method === 'PATCH' || $method === 'PUT') {
             $params[] = 'MAIN_APPROVED';
             $fields[] = '`status` = ?';
             $params[] = 'APPROVED';
-            if (empty($existing['enrollment_number'])) {
-                $fields[] = '`enrollment_number` = ?';
-                $params[] = generate_enrollment_number($pdo);
+            if (empty($existing['enrollment_number']) || empty($existing['serial_number'])) {
+                $genNums = generate_course_enrollment_and_serial(
+                    $pdo,
+                    $existing['course_id'] ?? null,
+                    $existing['course_code'] ?? null,
+                    $existing['enrollment_number'] ?? null,
+                    $existing['serial_number'] ?? null
+                );
+                if (empty($existing['enrollment_number'])) {
+                    $fields[] = '`enrollment_number` = ?';
+                    $params[] = $genNums['enrollmentNumber'];
+                }
+                if (empty($existing['serial_number'])) {
+                    $fields[] = '`serial_number` = ?';
+                    $params[] = $genNums['serialNumber'];
+                }
             }
             if (empty($existing['approved_at'])) {
                 $fields[] = '`approved_at` = ?';

@@ -23,6 +23,7 @@ import { apiFetch } from "@/lib/api";
 interface EnrolledStudentOption {
   id: string;
   enrollmentNumber: string | null;
+  serialNumber?: string | null;
   fullName: string;
   fatherName: string;
   dob: string;
@@ -519,6 +520,12 @@ export function AdminCertificateGeneratorClient({
                       <span className="text-slate-500 block">Enrollment No.</span>
                       <strong className="font-mono text-[#0B3D62]">
                         {selectedStudent.enrollmentNumber}
+                      </strong>
+                    </div>
+                    <div>
+                      <span className="text-slate-500 block">Serial / Cert. No.</span>
+                      <strong className="font-mono text-[#D65B14]">
+                        {selectedStudent.serialNumber || "Auto on Generate"}
                       </strong>
                     </div>
                     <div>

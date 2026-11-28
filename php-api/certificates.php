@@ -1,6 +1,7 @@
 <?php
 require_once __DIR__ . '/config.php';
 require_once __DIR__ . '/franchise-schema.php';
+require_once __DIR__ . '/enrichers.php';
 
 $pdo = get_db();
 ensure_franchise_schema($pdo);
@@ -152,7 +153,22 @@ if ($method === 'POST') {
             ], 400);
         }
 
-        $enrollmentNumber = $student['enrollment_number'] ?: generate_enrollment_number($pdo);
+        $genNums = generate_course_enrollment_and_serial(
+            $pdo,
+            $student['course_id'] ?? null,
+            $student['course_code'] ?? null,
+            $student['enrollment_number'] ?? null,
+            $student['serial_number'] ?? null
+        );
+        $enrollmentNumber = $genNums['enrollmentNumber'];
+        $candidateSerial = $genNums['serialNumber'];
+
+        // Use the student's pre-assigned serial_number as certificate_number if not already used by another certificate
+        $chkCert = $pdo->prepare('SELECT id FROM certificates WHERE certificate_number = ? LIMIT 1');
+        $chkCert->execute([$candidateSerial]);
+        if (!$chkCert->fetch()) {
+            $certificateNumber = $candidateSerial;
+        }
         $subjects = sanitize_subjects($body['subjects'] ?? null);
         if (count($subjects) > 0) {
             $marksObtained = 0;
@@ -200,15 +216,16 @@ if ($method === 'POST') {
         $studyCentre = trim((string)($body['studyCentre'] ?? ''))
             ?: (!empty($student['franchise_name']) ? $student['franchise_name'] : 'Empire Institute of Skills Technology, Mandi');
 
-        // Mark student completed & save marksheet
+        // Mark student completed & save marksheet + ensure serial_number is saved
         $pdo->prepare(
             'UPDATE admission_applications
-             SET status = "APPROVED", enrollment_number = ?, is_completed = 1,
+             SET status = "APPROVED", enrollment_number = ?, serial_number = ?, is_completed = 1,
                  marks_obtained = ?, total_marks = ?, percentage = ?, grade = ?,
                  completion_date = ?, result_json = ?
              WHERE id = ?'
         )->execute([
             $enrollmentNumber,
+            $certificateNumber,
             $marksObtained,
             $totalMarks,
             $percentage,
@@ -275,7 +292,16 @@ if ($method === 'POST') {
         ], 400);
     }
 
-    $enrollmentNumber = trim((string)($body['enrollmentNumber'] ?? '')) ?: generate_enrollment_number($pdo);
+    $qCourseCode = !empty($body['courseCode']) ? trim((string)$body['courseCode']) : null;
+    $qGenNums = generate_course_enrollment_and_serial(
+        $pdo,
+        null,
+        $qCourseCode,
+        !empty($body['enrollmentNumber']) ? trim((string)$body['enrollmentNumber']) : null,
+        null
+    );
+    $enrollmentNumber = $qGenNums['enrollmentNumber'];
+    $certificateNumber = $qGenNums['serialNumber'];
     $subjects = sanitize_subjects($body['subjects'] ?? null);
     if (count($subjects) > 0) {
         $marksObtained = 0;

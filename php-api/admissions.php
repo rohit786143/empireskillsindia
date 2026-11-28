@@ -103,7 +103,13 @@ if ($method === 'POST') {
     $applicationRef = generate_application_ref($pdo);
     $admin = get_optional_admin();
     $isDirectApproved = ($admin !== null && !empty($body['autoApprove']));
-    $enrollmentNumber = $isDirectApproved ? generate_enrollment_number($pdo) : null;
+    $enrollmentNumber = null;
+    $serialNumber = null;
+    if ($isDirectApproved) {
+        $genNums = generate_course_enrollment_and_serial($pdo, $courseId, $courseCode);
+        $enrollmentNumber = $genNums['enrollmentNumber'];
+        $serialNumber = $genNums['serialNumber'];
+    }
     $approvedAt = $isDirectApproved ? date('Y-m-d H:i:s') : null;
 
     $qualificationsJson = is_string($body['qualifications'] ?? null)
@@ -160,18 +166,19 @@ if ($method === 'POST') {
     $id = generate_cuid();
     $stmt = $pdo->prepare(
         'INSERT INTO admission_applications
-        (id, application_ref, status, enrollment_number, course_id, course_name, course_code, session, study_mode,
+        (id, application_ref, status, enrollment_number, serial_number, course_id, course_name, course_code, session, study_mode,
          franchise_id, franchise_name, franchise_code, franchise_status,
          payment_screenshot_url, payment_utr, registration_fee_paid,
          full_name, father_name, mother_name, dob, gender, category, aadhar_number, mobile, email,
          address, city, state, pincode, qualifications_json, extra_details_json, photo_url, signature_url, marksheet_url, id_proof_url, approved_at)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
     );
     $stmt->execute([
         $id,
         $applicationRef,
         $isDirectApproved ? 'APPROVED' : 'PENDING',
         $enrollmentNumber,
+        $serialNumber,
         $courseId,
         $courseName,
         $courseCode ?: 'ESI-GEN',
@@ -245,9 +252,22 @@ if ($method === 'PATCH' || $method === 'PUT') {
             $fields[] = '`franchise_status` = ?';
             $params[] = 'MAIN_APPROVED';
         }
-        if (empty($existing['enrollment_number'])) {
-            $fields[] = '`enrollment_number` = ?';
-            $params[] = generate_enrollment_number($pdo);
+        if (empty($existing['enrollment_number']) || empty($existing['serial_number'])) {
+            $genNums = generate_course_enrollment_and_serial(
+                $pdo,
+                $existing['course_id'] ?? null,
+                $existing['course_code'] ?? null,
+                $existing['enrollment_number'] ?? null,
+                $existing['serial_number'] ?? null
+            );
+            if (empty($existing['enrollment_number'])) {
+                $fields[] = '`enrollment_number` = ?';
+                $params[] = $genNums['enrollmentNumber'];
+            }
+            if (empty($existing['serial_number'])) {
+                $fields[] = '`serial_number` = ?';
+                $params[] = $genNums['serialNumber'];
+            }
         }
         if (empty($existing['approved_at'])) {
             $fields[] = '`approved_at` = ?';

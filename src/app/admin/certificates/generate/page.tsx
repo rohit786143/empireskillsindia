@@ -9,6 +9,7 @@ import { apiFetch } from "@/lib/api";
 interface RawApp {
   id: string;
   enrollmentNumber: string | null;
+  serialNumber?: string | null;
   fullName: string;
   fatherName: string;
   dob: string;
@@ -30,6 +31,7 @@ function GeneratorLoader() {
     {
       id: string;
       enrollmentNumber: string | null;
+      serialNumber?: string | null;
       fullName: string;
       fatherName: string;
       dob: string;
@@ -65,6 +67,7 @@ function GeneratorLoader() {
           .map((s) => ({
             id: s.id,
             enrollmentNumber: s.enrollmentNumber,
+            serialNumber: s.serialNumber || null,
             fullName: s.fullName,
             fatherName: s.fatherName,
             dob: s.dob,

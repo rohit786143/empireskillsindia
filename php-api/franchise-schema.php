@@ -47,6 +47,9 @@ function ensure_franchise_schema(PDO $pdo): void {
         'ALTER TABLE franchises ADD COLUMN ifsc_code VARCHAR(32) DEFAULT NULL',
         'ALTER TABLE franchises ADD COLUMN registration_fee INT NOT NULL DEFAULT 500',
         'ALTER TABLE franchises ADD COLUMN is_main_center TINYINT(1) NOT NULL DEFAULT 0',
+        'ALTER TABLE courses ADD COLUMN enrollment_prefix VARCHAR(64) DEFAULT NULL',
+        'ALTER TABLE courses ADD COLUMN serial_prefix VARCHAR(64) DEFAULT NULL',
+        'ALTER TABLE admission_applications ADD COLUMN serial_number VARCHAR(64) DEFAULT NULL',
     ];
     foreach ($alters as $sql) {
         try { $pdo->exec($sql); } catch (PDOException $e) {}

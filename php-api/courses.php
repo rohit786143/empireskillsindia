@@ -90,12 +90,17 @@ if ($method === 'POST') {
         : null;
 
     try { $pdo->exec('ALTER TABLE courses ADD COLUMN fee_breakdown_json LONGTEXT DEFAULT NULL'); } catch (PDOException $e) {}
+    try { $pdo->exec('ALTER TABLE courses ADD COLUMN enrollment_prefix VARCHAR(64) DEFAULT NULL'); } catch (PDOException $e) {}
+    try { $pdo->exec('ALTER TABLE courses ADD COLUMN serial_prefix VARCHAR(64) DEFAULT NULL'); } catch (PDOException $e) {}
+
+    $enrollmentPrefix = strtoupper(trim((string)($body['enrollmentPrefix'] ?? '')));
+    $serialPrefix = strtoupper(trim((string)($body['serialPrefix'] ?? '')));
 
     $id = generate_cuid();
     try {
         $stmt = $pdo->prepare(
-            'INSERT INTO courses (id, code, slug, title, category, duration, eligibility, fee, registration_fee, study_mode, overview, syllabus_json, career_opportunities_json, fee_breakdown_json, featured, is_active)
-             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
+            'INSERT INTO courses (id, code, slug, title, category, duration, eligibility, fee, registration_fee, study_mode, overview, syllabus_json, career_opportunities_json, fee_breakdown_json, enrollment_prefix, serial_prefix, featured, is_active)
+             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)'
         );
         $stmt->execute([
             $id,
@@ -112,6 +117,8 @@ if ($method === 'POST') {
             $syllabusJson,
             $careersJson,
             $feeBreakdownJson,
+            $enrollmentPrefix !== '' ? $enrollmentPrefix : null,
+            $serialPrefix !== '' ? $serialPrefix : null,
             isset($body['featured']) ? ($body['featured'] ? 1 : 0) : 1,
             isset($body['isActive']) ? ($body['isActive'] ? 1 : 0) : 1,
         ]);
@@ -178,6 +185,18 @@ if ($method === 'PATCH' || $method === 'PUT') {
         try { $pdo->exec('ALTER TABLE courses ADD COLUMN fee_breakdown_json LONGTEXT DEFAULT NULL'); } catch (PDOException $e) {}
         $fields[] = '`fee_breakdown_json` = ?';
         $params[] = is_string($body['feeBreakdown']) ? $body['feeBreakdown'] : json_encode($body['feeBreakdown'], JSON_UNESCAPED_UNICODE);
+    }
+    if (array_key_exists('enrollmentPrefix', $body)) {
+        try { $pdo->exec('ALTER TABLE courses ADD COLUMN enrollment_prefix VARCHAR(64) DEFAULT NULL'); } catch (PDOException $e) {}
+        $ep = strtoupper(trim((string)$body['enrollmentPrefix']));
+        $fields[] = '`enrollment_prefix` = ?';
+        $params[] = $ep !== '' ? $ep : null;
+    }
+    if (array_key_exists('serialPrefix', $body)) {
+        try { $pdo->exec('ALTER TABLE courses ADD COLUMN serial_prefix VARCHAR(64) DEFAULT NULL'); } catch (PDOException $e) {}
+        $sp = strtoupper(trim((string)$body['serialPrefix']));
+        $fields[] = '`serial_prefix` = ?';
+        $params[] = $sp !== '' ? $sp : null;
     }
 
     if (!empty($fields)) {

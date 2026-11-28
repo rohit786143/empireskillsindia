@@ -23,11 +23,108 @@ function enrich_course(array $rawRow, array $mapped): array {
     $examFee = isset($fb['examFee']) ? (int)$fb['examFee'] : 0;
     $mapped['examFee'] = $examFee;
     $mapped['grandTotalFee'] = (int)$mapped['fee'] + $examFee;
+    $mapped['enrollmentPrefix'] = !empty($rawRow['enrollment_prefix']) ? trim((string)$rawRow['enrollment_prefix']) : '';
+    $mapped['serialPrefix'] = !empty($rawRow['serial_prefix']) ? trim((string)$rawRow['serial_prefix']) : '';
     return $mapped;
+}
+
+function next_prefixed_sequence(PDO $pdo, string $prefix, array $sources, int $padLen = 4): string {
+    $cleanPrefix = strtoupper(trim($prefix));
+    $maxNum = 0;
+    $prefixLen = strlen($cleanPrefix);
+
+    foreach ($sources as $src) {
+        $table = $src[0];
+        $col = $src[1];
+        try {
+            $stmt = $pdo->prepare("SELECT `{$col}` FROM `{$table}` WHERE `{$col}` LIKE ?");
+            $stmt->execute([$cleanPrefix . '%']);
+            while ($val = $stmt->fetchColumn()) {
+                $valStr = strtoupper((string)$val);
+                if (strpos($valStr, $cleanPrefix) === 0) {
+                    $suffix = substr($valStr, $prefixLen);
+                    if ($suffix !== '' && ctype_digit($suffix)) {
+                        $n = (int)$suffix;
+                        if ($n > $maxNum) $maxNum = $n;
+                    }
+                }
+            }
+        } catch (PDOException $e) {}
+    }
+
+    return $cleanPrefix . str_pad((string)($maxNum + 1), $padLen, '0', STR_PAD_LEFT);
+}
+
+function generate_course_enrollment_and_serial(
+    PDO $pdo,
+    ?string $courseId,
+    ?string $courseCode = null,
+    ?string $existingEnrollment = null,
+    ?string $existingSerial = null
+): array {
+    foreach ([
+        'ALTER TABLE courses ADD COLUMN enrollment_prefix VARCHAR(64) DEFAULT NULL',
+        'ALTER TABLE courses ADD COLUMN serial_prefix VARCHAR(64) DEFAULT NULL',
+        'ALTER TABLE admission_applications ADD COLUMN serial_number VARCHAR(64) DEFAULT NULL',
+    ] as $sql) {
+        try { $pdo->exec($sql); } catch (PDOException $e) {}
+    }
+
+    $enrPrefix = '';
+    $serPrefix = '';
+    try {
+        if (!empty($courseId)) {
+            $stmt = $pdo->prepare('SELECT enrollment_prefix, serial_prefix FROM courses WHERE id = ? LIMIT 1');
+            $stmt->execute([$courseId]);
+            $cRow = $stmt->fetch();
+            if ($cRow) {
+                $enrPrefix = strtoupper(trim((string)($cRow['enrollment_prefix'] ?? '')));
+                $serPrefix = strtoupper(trim((string)($cRow['serial_prefix'] ?? '')));
+            }
+        } elseif (!empty($courseCode)) {
+            $stmt = $pdo->prepare('SELECT enrollment_prefix, serial_prefix FROM courses WHERE code = ? LIMIT 1');
+            $stmt->execute([$courseCode]);
+            $cRow = $stmt->fetch();
+            if ($cRow) {
+                $enrPrefix = strtoupper(trim((string)($cRow['enrollment_prefix'] ?? '')));
+                $serPrefix = strtoupper(trim((string)($cRow['serial_prefix'] ?? '')));
+            }
+        }
+    } catch (PDOException $e) {}
+
+    $enrollmentNumber = !empty($existingEnrollment) ? trim($existingEnrollment) : '';
+    if ($enrollmentNumber === '') {
+        if ($enrPrefix !== '') {
+            $enrollmentNumber = next_prefixed_sequence($pdo, $enrPrefix, [
+                ['admission_applications', 'enrollment_number'],
+                ['certificates', 'enrollment_number'],
+            ], 4);
+        } else {
+            $enrollmentNumber = generate_enrollment_number($pdo);
+        }
+    }
+
+    $serialNumber = !empty($existingSerial) ? trim($existingSerial) : '';
+    if ($serialNumber === '') {
+        if ($serPrefix !== '') {
+            $serialNumber = next_prefixed_sequence($pdo, $serPrefix, [
+                ['admission_applications', 'serial_number'],
+                ['certificates', 'certificate_number'],
+            ], 4);
+        } else {
+            $serialNumber = generate_certificate_number($pdo);
+        }
+    }
+
+    return [
+        'enrollmentNumber' => $enrollmentNumber,
+        'serialNumber'     => $serialNumber,
+    ];
 }
 
 function enrich_application(array $rawRow, array $mapped): array {
     $mapped['extraDetailsJson'] = $rawRow['extra_details_json'] ?? ($mapped['extraDetailsJson'] ?? null);
+    $mapped['serialNumber'] = !empty($rawRow['serial_number']) ? trim((string)$rawRow['serial_number']) : null;
     $mapped['franchiseId'] = $rawRow['franchise_id'] ?? null;
     $mapped['franchiseName'] = $rawRow['franchise_name'] ?? null;
     $mapped['franchiseCode'] = $rawRow['franchise_code'] ?? null;

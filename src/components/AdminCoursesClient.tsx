@@ -26,6 +26,8 @@ interface CourseItem {
   syllabusJson: string;
   careerOpportunitiesJson: string;
   feeBreakdownJson?: string | null;
+  enrollmentPrefix?: string;
+  serialPrefix?: string;
   isActive: boolean;
 }
 
@@ -55,6 +57,8 @@ const EMPTY_FORM = {
   fee: 21500,
   examFee: 1500,
   examFeeNote: "",
+  enrollmentPrefix: "",
+  serialPrefix: "",
   studyMode: "Regular / Hybrid",
   overview: "",
   syllabusText:
@@ -189,6 +193,8 @@ export function AdminCoursesClient({
       fee: c.fee,
       examFee: fb.examFee ?? 0,
       examFeeNote: fb.examFeeNote ?? "",
+      enrollmentPrefix: c.enrollmentPrefix ?? "",
+      serialPrefix: c.serialPrefix ?? "",
       studyMode: c.studyMode,
       overview: c.overview,
       syllabusText,
@@ -250,6 +256,8 @@ export function AdminCoursesClient({
         fee: Number(form.fee),
         registrationFee: Number(form.registrationFee),
         feeBreakdown,
+        enrollmentPrefix: form.enrollmentPrefix.trim().toUpperCase(),
+        serialPrefix: form.serialPrefix.trim().toUpperCase(),
         studyMode: form.studyMode,
         overview: form.overview,
         syllabus: parseSyllabus(form.syllabusText),
@@ -362,6 +370,20 @@ export function AdminCoursesClient({
                     <div className="text-[10px] text-slate-500">
                       <span className="font-mono">{c.code}</span> • {c.category}
                     </div>
+                    {(c.enrollmentPrefix || c.serialPrefix) && (
+                      <div className="mt-1 flex flex-wrap gap-1 text-[10px] font-mono">
+                        {c.enrollmentPrefix && (
+                          <span className="px-1.5 py-0.5 rounded bg-sky-50 border border-sky-200 text-[#0B3D62] font-bold">
+                            Enr: {c.enrollmentPrefix}
+                          </span>
+                        )}
+                        {c.serialPrefix && (
+                          <span className="px-1.5 py-0.5 rounded bg-amber-50 border border-amber-200 text-[#D65B14] font-bold">
+                            Sr: {c.serialPrefix}
+                          </span>
+                        )}
+                      </div>
+                    )}
                   </td>
                   <td className="py-3 px-3 font-semibold">{c.duration}</td>
                   <td className="py-3 px-3 text-right">
@@ -456,6 +478,62 @@ export function AdminCoursesClient({
                     className="w-full px-3 py-2 border border-slate-300 rounded font-mono uppercase"
                   />
                 </div>
+              </div>
+
+              {/* Course Numbering Prefixes (Auto Enrollment & Serial / Certificate No.) */}
+              <div className="rounded-lg border border-sky-200 bg-sky-50/60 p-3.5 space-y-2.5">
+                <div>
+                  <p className="text-xs font-extrabold text-[#0B3D62]">
+                    Enrollment &amp; Serial (Certificate) Number Prefixes
+                  </p>
+                  <p className="text-[11px] text-slate-600">
+                    When any student enrolls in this course, both their Enrollment No. and Serial
+                    (Certificate) No. auto-generate sequentially using these prefixes.
+                  </p>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Enrollment Number Prefix
+                    </label>
+                    <input
+                      type="text"
+                      value={form.enrollmentPrefix}
+                      onChange={(e) =>
+                        updateField("enrollmentPrefix", e.target.value.toUpperCase())
+                      }
+                      placeholder="e.g., ESI2627BW"
+                      className="w-full px-3 py-2 border border-slate-300 rounded bg-white font-mono uppercase"
+                    />
+                    {form.enrollmentPrefix.trim() && (
+                      <p className="text-[10.5px] text-[#0B3D62] font-mono mt-1">
+                        Preview: <strong>{form.enrollmentPrefix.trim()}0001</strong>
+                      </p>
+                    )}
+                  </div>
+                  <div>
+                    <label className="block font-bold text-slate-700 mb-1">
+                      Serial / Certificate Number Prefix
+                    </label>
+                    <input
+                      type="text"
+                      value={form.serialPrefix}
+                      onChange={(e) =>
+                        updateField("serialPrefix", e.target.value.toUpperCase())
+                      }
+                      placeholder="e.g., BWSN"
+                      className="w-full px-3 py-2 border border-slate-300 rounded bg-white font-mono uppercase"
+                    />
+                    {form.serialPrefix.trim() && (
+                      <p className="text-[10.5px] text-[#D65B14] font-mono mt-1">
+                        Preview: <strong>{form.serialPrefix.trim()}0001</strong>
+                      </p>
+                    )}
+                  </div>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">
                     Category *
