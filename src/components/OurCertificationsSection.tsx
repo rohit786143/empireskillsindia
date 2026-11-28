@@ -130,7 +130,7 @@ export function OurCertificationsSection() {
         </div>
         <div className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl bg-gradient-to-r from-[#0B3D62] to-[#135589] text-white text-xs font-bold shadow-sm shrink-0">
           <BadgeCheck className="w-4 h-4 text-[#FF9B5E]" />
-          {INSTITUTE_CERTIFICATIONS.length} Verified Official Credentials
+          {certifications.length} Verified Official Credentials
         </div>
       </div>
 
@@ -175,27 +175,6 @@ export function OurCertificationsSection() {
               <h3 className="text-base font-extrabold text-[#0B3D62] leading-snug">
                 {cert.title}
               </h3>
-              <p className="text-[11px] font-semibold text-[#D65B14] mt-1">
-                {cert.authority}
-              </p>
-              <p className="text-xs text-slate-600 mt-2 leading-relaxed line-clamp-3">
-                {cert.description}
-              </p>
-
-              <div className="mt-auto pt-3.5 space-y-1.5 border-t border-slate-100 text-[11px]">
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-slate-500">Certificate No.</span>
-                  <span className="font-mono font-bold text-[#0B3D62] text-right">
-                    {cert.certNumber}
-                  </span>
-                </div>
-                <div className="flex items-center justify-between gap-2">
-                  <span className="text-slate-500">Validity / Issue</span>
-                  <span className="font-semibold text-slate-700 text-right">
-                    {cert.validity}
-                  </span>
-                </div>
-              </div>
             </div>
 
             {/* Footer Buttons */}
@@ -235,7 +214,7 @@ export function OurCertificationsSection() {
             <div className="bg-gradient-to-r from-[#061E33] via-[#0B3D62] to-[#135589] text-white px-5 py-3.5 flex items-center justify-between gap-3 border-b-2 border-[#F07228]">
               <div>
                 <p className="text-[10px] font-bold uppercase tracking-widest text-[#FF9B5E]">
-                  {activeCert.badge} • {activeCert.certNumber}
+                  {activeCert.badge}
                 </p>
                 <h3 className="text-sm sm:text-base font-bold leading-snug">
                   {activeCert.title}
@@ -269,13 +248,6 @@ export function OurCertificationsSection() {
                 alt={activeCert.title}
                 className="max-h-[68vh] w-auto object-contain rounded-lg shadow-lg border border-slate-300 bg-white"
               />
-            </div>
-
-            <div className="px-5 py-3 bg-white border-t border-slate-200 flex flex-wrap items-center justify-between gap-2 text-xs text-slate-600">
-              <span>
-                <strong className="text-[#0B3D62]">Authority:</strong> {activeCert.authority}
-              </span>
-              <span className="font-semibold text-[#D65B14]">{activeCert.validity}</span>
             </div>
           </div>
         </div>
