@@ -27,6 +27,8 @@ import {
   Menu,
   X,
   CheckCircle2,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { apiFetch } from "@/lib/api";
@@ -52,6 +54,9 @@ const ADMIN_NAV = [
     icon: Award,
   },
   { label: "Certificate Registry", href: "/admin/certificates", icon: FileCheck2 },
+];
+
+const ADMIN_SETTINGS_NAV = [
   {
     label: "Institute Certificates",
     href: "/admin/institute-certificates",
@@ -79,7 +84,11 @@ function AdminShellInner({ adminName, adminEmail, children }: AdminShellProps) {
   const router = useRouter();
   const { centers, selectedCenterId, setSelectedCenterId, selectedCenter } =
     useAdminCenter();
+  const isOnSettingsRoute = ADMIN_SETTINGS_NAV.some((item) =>
+    pathname?.startsWith(item.href)
+  );
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [settingsMenuOpen, setSettingsMenuOpen] = useState(isOnSettingsRoute);
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
@@ -185,6 +194,53 @@ function AdminShellInner({ adminName, adminEmail, children }: AdminShellProps) {
               </Link>
             );
           })}
+
+          {/* Collapsible Admin Settings Section */}
+          <div className="pt-2 mt-2 border-t border-white/15">
+            <button
+              type="button"
+              onClick={() => setSettingsMenuOpen((prev) => !prev)}
+              className={`w-full flex items-center justify-between gap-2 px-3 py-2.5 rounded text-sm font-bold transition-colors ${
+                isOnSettingsRoute
+                  ? "bg-white/15 text-[#FFB380]"
+                  : "text-slate-100 hover:bg-white/10"
+              }`}
+            >
+              <span className="flex items-center gap-2.5">
+                <Settings className="w-4 h-4 shrink-0 text-[#FF9B5E]" />
+                <span>Admin Settings</span>
+              </span>
+              {settingsMenuOpen ? (
+                <ChevronDown className="w-4 h-4 shrink-0 text-[#FFB380]" />
+              ) : (
+                <ChevronRight className="w-4 h-4 shrink-0 text-slate-300" />
+              )}
+            </button>
+
+            {settingsMenuOpen && (
+              <div className="mt-1 ml-2 pl-2.5 border-l border-white/20 space-y-1">
+                {ADMIN_SETTINGS_NAV.map((item) => {
+                  const Icon = item.icon;
+                  const active = pathname?.startsWith(item.href);
+                  return (
+                    <Link
+                      key={item.href}
+                      href={item.href}
+                      onClick={() => setSidebarOpen(false)}
+                      className={`flex items-center gap-2.5 px-2.5 py-2 rounded text-xs font-semibold transition-colors ${
+                        active
+                          ? "bg-[#F07228] text-white shadow-sm"
+                          : "text-slate-200 hover:bg-white/10 hover:text-white"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5 shrink-0" />
+                      <span>{item.label}</span>
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
         </nav>
 
         <div className="p-3 border-t border-white/15 space-y-1.5 text-xs">
