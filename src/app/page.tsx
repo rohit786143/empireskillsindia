@@ -11,9 +11,6 @@ import {
   Users,
   Building2,
   ArrowRight,
-  Briefcase,
-  Globe,
-  Landmark,
 } from "lucide-react";
 import {
   NoticeBoardSection,
@@ -63,105 +60,42 @@ export default function HomePage() {
     <div className="space-y-12 pb-8">
       {/* 1. Institutional Hero Banner — Corporate Training Photo + Balanced Navy-Teal Gradient */}
       <section className="relative overflow-hidden bg-[#06243D] text-white border-b-4 border-[#F07228]">
-        {/* Background Photo Layer with tuned opacity & Navy-Teal Gradient Veil */}
+        {/* Background Photo Layer — Clearly visible with directional Navy-Teal Veil for crisp text readability */}
         <div className="pointer-events-none absolute inset-0" aria-hidden="true">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src="/hero-bg.webp"
             alt=""
-            className="w-full h-full object-cover object-center opacity-30"
+            className="w-full h-full object-cover object-center opacity-100"
           />
-          <div className="absolute inset-0 bg-gradient-to-br from-[#06243D]/90 via-[#0B3D62]/80 to-[#0E7490]/75" />
-          <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#F07228]/20 blur-3xl" />
-          <div className="absolute -bottom-24 right-1/4 w-96 h-96 rounded-full bg-[#38BDF8]/20 blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-r from-[#06243D]/82 via-[#0B3D62]/62 to-[#0E7490]/45" />
+          <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#F07228]/15 blur-3xl" />
+          <div className="absolute -bottom-24 right-1/4 w-96 h-96 rounded-full bg-[#38BDF8]/15 blur-3xl" />
         </div>
-        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
-            <div className="lg:col-span-7 space-y-2.5">
-              <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-extrabold tracking-tight leading-[1.16] text-white">
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-center">
+            <div className="lg:col-span-7 space-y-3.5">
+              <h1 className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold tracking-tight leading-[1.18] text-white drop-shadow">
                 A National{" "}
                 <span className="text-[#FFB36B]">Skill Development, Training,</span>{" "}
                 Placement &amp; Project Implementation Organization
               </h1>
-              <p className="text-xs sm:text-[13.5px] text-sky-100/90 max-w-2xl leading-snug font-medium">
+              <p className="text-xs sm:text-base text-white/95 max-w-2xl leading-relaxed font-semibold drop-shadow-sm">
                 Empowering India&apos;s youth and partner institutions with globally benchmarked
                 vocational programmes, government skill mission delivery, and verified career
                 pathways.
               </p>
-              <div className="grid grid-cols-2 gap-2 pt-0.5 max-w-2xl">
-                <div className="group relative flex items-center gap-2.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-[#FFB36B]/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
-                  <div className="w-8 h-8 rounded-lg bg-[#F07228]/25 ring-1 ring-[#FFB36B]/40 text-[#FFB36B] flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <GraduationCap className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider text-white leading-tight truncate">
-                      SKILL DEVELOPMENT
-                    </p>
-                    <p className="text-[10px] sm:text-[11.5px] text-sky-100/85 mt-0.5 leading-tight line-clamp-1">
-                      Training &amp; Certification Programmes
-                    </p>
-                  </div>
-                  <span className="hidden sm:block text-[10px] font-black text-white/20 group-hover:text-[#FFB36B]/80 transition-colors self-start">
-                    01
-                  </span>
-                </div>
+              <p className="text-xs sm:text-sm text-sky-100/95 max-w-2xl leading-relaxed drop-shadow-sm">
+                Empire Skills India delivers structured, employment-focused diploma and
+                certification programmes in IT, Accounting, Technical Trades, Management, and
+                Teacher Training — backed by transparent online admission and instant QR-code
+                certificate verification.
+              </p>
 
-                <div className="group relative flex items-center gap-2.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-sky-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
-                  <div className="w-8 h-8 rounded-lg bg-sky-400/20 ring-1 ring-sky-300/40 text-sky-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Landmark className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider text-white leading-tight truncate">
-                      GOVERNMENT PROJECTS
-                    </p>
-                    <p className="text-[10px] sm:text-[11.5px] text-sky-100/85 mt-0.5 leading-tight line-clamp-1">
-                      Project Implementation
-                    </p>
-                  </div>
-                  <span className="hidden sm:block text-[10px] font-black text-white/20 group-hover:text-sky-300/80 transition-colors self-start">
-                    02
-                  </span>
-                </div>
-
-                <div className="group relative flex items-center gap-2.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-emerald-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
-                  <div className="w-8 h-8 rounded-lg bg-emerald-400/20 ring-1 ring-emerald-300/40 text-emerald-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Briefcase className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider text-white leading-tight truncate">
-                      PLACEMENT SERVICES
-                    </p>
-                    <p className="text-[10px] sm:text-[11.5px] text-sky-100/85 mt-0.5 leading-tight line-clamp-1">
-                      Employment &amp; Recruitment Support
-                    </p>
-                  </div>
-                  <span className="hidden sm:block text-[10px] font-black text-white/20 group-hover:text-emerald-300/80 transition-colors self-start">
-                    03
-                  </span>
-                </div>
-
-                <div className="group relative flex items-center gap-2.5 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl bg-white/[0.08] hover:bg-white/[0.15] border border-white/15 hover:border-amber-300/60 backdrop-blur-md shadow-sm transition-all duration-200 hover:-translate-y-0.5">
-                  <div className="w-8 h-8 rounded-lg bg-amber-400/20 ring-1 ring-amber-300/40 text-amber-300 flex items-center justify-center shrink-0 group-hover:scale-105 transition-transform">
-                    <Globe className="w-4 h-4" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="text-[10.5px] sm:text-xs font-extrabold uppercase tracking-wider text-white leading-tight truncate">
-                      NATIONAL PARTNERSHIPS
-                    </p>
-                    <p className="text-[10px] sm:text-[11.5px] text-sky-100/85 mt-0.5 leading-tight line-clamp-1">
-                      Institutional &amp; Corporate Network
-                    </p>
-                  </div>
-                  <span className="hidden sm:block text-[10px] font-black text-white/20 group-hover:text-amber-300/80 transition-colors self-start">
-                    04
-                  </span>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 sm:gap-2.5 pt-1">
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
                 <Link
                   href="/admission"
-                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-xs sm:text-sm shadow-lg transition-all"
+                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-xs sm:text-sm shadow-lg transition-all"
                 >
                   <FileText className="w-4 h-4 shrink-0" />
                   <span>Apply Online</span>
@@ -169,14 +103,14 @@ export default function HomePage() {
                 </Link>
                 <Link
                   href="/verify-certificate"
-                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-5 py-2 sm:py-2.5 rounded-lg bg-white text-[#0B3D62] hover:bg-sky-50 font-bold text-xs sm:text-sm shadow-md transition-colors"
+                  className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-white text-[#0B3D62] hover:bg-sky-50 font-bold text-xs sm:text-sm shadow-md transition-colors"
                 >
                   <ShieldCheck className="w-4 h-4 text-[#0E7490] shrink-0" />
                   <span>Verify Cert.</span>
                 </Link>
                 <Link
                   href="/courses"
-                  className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-4 sm:px-5 py-2 sm:py-2.5 rounded-lg border border-white/40 bg-white/10 hover:bg-white/20 text-white font-semibold text-xs sm:text-sm backdrop-blur-sm transition-colors"
+                  className="col-span-2 sm:col-span-1 inline-flex items-center justify-center gap-2 px-5 py-2.5 sm:py-3 rounded-lg border border-white/50 bg-[#06243D]/45 hover:bg-[#06243D]/65 text-white font-semibold text-xs sm:text-sm backdrop-blur-sm transition-colors"
                 >
                   Explore Courses
                 </Link>
