@@ -19,6 +19,7 @@ import {
   Image as ImageIcon,
   MessageSquareHeart,
   UsersRound,
+  FileText,
   Settings,
   LogOut,
   KeyRound,
@@ -61,6 +62,7 @@ const ADMIN_NAV = [
   { label: "Photo Gallery Manager", href: "/admin/gallery", icon: ImageIcon },
   { label: "Student Reviews", href: "/admin/reviews", icon: MessageSquareHeart },
   { label: "Our Team", href: "/admin/team", icon: UsersRound },
+  { label: "About Us Page", href: "/admin/about", icon: FileText },
   { label: "Contact & Settings", href: "/admin/settings", icon: Settings },
 ];
 
