@@ -70,18 +70,46 @@ export default function HomePage() {
         />
         <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-6 items-start">
-            <div className="lg:col-span-7 space-y-3 lg:pt-2">
-              <h1 className="text-2xl sm:text-4xl lg:text-[40px] font-extrabold tracking-tight leading-snug sm:leading-tight text-white">
-                Empowering Youth Through{" "}
-                <span className="text-[#FFB36B]">Industry-Recognized</span> Skill &amp;
-                Vocational Education
+            <div className="lg:col-span-7 space-y-3.5 lg:pt-2">
+              <h1 className="text-2xl sm:text-3xl lg:text-[36px] font-extrabold tracking-tight leading-snug sm:leading-tight text-white">
+                A National{" "}
+                <span className="text-[#FFB36B]">Skill Development, Training,</span>{" "}
+                Placement &amp; Project Implementation Organization
               </h1>
-              <p className="text-sky-100/95 text-xs sm:text-base max-w-2xl leading-relaxed">
-                Empire Skills India delivers structured, employment-focused diploma and
-                certification programmes in IT, Accounting, Technical Trades, Management, and
-                Teacher Training — backed by transparent online admission and instant QR-code
-                certificate verification.
-              </p>
+              <div className="grid grid-cols-2 gap-x-3 sm:gap-x-6 gap-y-2.5 sm:gap-y-3.5 pt-1 max-w-2xl">
+                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
+                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
+                    SKILL DEVELOPMENT
+                  </p>
+                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
+                    Training &amp; Certification Programmes
+                  </p>
+                </div>
+                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
+                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
+                    GOVERNMENT PROJECTS
+                  </p>
+                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
+                    Project Implementation
+                  </p>
+                </div>
+                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
+                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
+                    PLACEMENT SERVICES
+                  </p>
+                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
+                    Employment &amp; Recruitment Support
+                  </p>
+                </div>
+                <div className="border-l-2 border-[#FFB36B] pl-2.5 sm:pl-3">
+                  <p className="text-[11px] sm:text-sm font-extrabold uppercase tracking-wide text-white leading-tight">
+                    NATIONAL PARTNERSHIPS
+                  </p>
+                  <p className="text-[11px] sm:text-[13px] text-sky-100/90 mt-0.5 leading-snug">
+                    Institutional &amp; Corporate Network
+                  </p>
+                </div>
+              </div>
 
               <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
                 <Link

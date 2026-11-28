@@ -29,7 +29,7 @@ interface TickerNotice {
 
 const NAV_LINKS = [
   { label: "Home", href: "/" },
-  { label: "About Institute", href: "/about" },
+  { label: "About Us", href: "/about" },
   { label: "Courses", href: "/courses" },
   { label: "Online Admission", href: "/admission" },
   { label: "Verify Certificate", href: "/verify-certificate" },
