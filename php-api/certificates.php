@@ -4,6 +4,74 @@ require_once __DIR__ . '/franchise-schema.php';
 
 $pdo = get_db();
 ensure_franchise_schema($pdo);
+
+// Auto-add study_centre and subjects_json columns to certificates table
+foreach ([
+    'ALTER TABLE certificates ADD COLUMN study_centre VARCHAR(255) DEFAULT NULL',
+    'ALTER TABLE certificates ADD COLUMN subjects_json LONGTEXT DEFAULT NULL',
+] as $sql) {
+    try { $pdo->exec($sql); } catch (PDOException $e) {}
+}
+
+function enrich_cert_row(array $r): array {
+    $m = map_certificate($r);
+    $m['franchiseId'] = $r['joined_franchise_id'] ?? null;
+    $m['franchiseName'] = $r['joined_franchise_name'] ?? null;
+    $m['franchiseCode'] = $r['joined_franchise_code'] ?? null;
+    $m['studyCentre'] = !empty($r['study_centre'])
+        ? $r['study_centre']
+        : (!empty($r['joined_franchise_name'])
+            ? $r['joined_franchise_name']
+            : 'Empire Institute of Skills Technology, Mandi');
+    $subjects = [];
+    $rawSub = !empty($r['subjects_json']) ? $r['subjects_json'] : ($r['joined_result_json'] ?? null);
+    if (!empty($rawSub)) {
+        $dec = json_decode($rawSub, true);
+        if (is_array($dec)) {
+            foreach ($dec as $item) {
+                if (!is_array($item)) continue;
+                $subjects[] = [
+                    'subject'      => (string)($item['subject'] ?? ''),
+                    'maxMarks'     => (int)($item['maxMarks'] ?? 100),
+                    'minMarks'     => (int)($item['minMarks'] ?? 40),
+                    'marksSecured' => (int)($item['marksSecured'] ?? $item['obtainedMarks'] ?? 0),
+                ];
+            }
+        }
+    }
+    $m['subjects'] = $subjects;
+    return $m;
+}
+
+function compute_official_grade(float $pct): string {
+    if ($pct >= 85) return 'A+';
+    if ($pct >= 75) return 'A';
+    if ($pct >= 60) return 'B';
+    if ($pct >= 40) return 'C';
+    return 'F';
+}
+
+function sanitize_subjects($raw): array {
+    if (!is_array($raw)) return [];
+    $out = [];
+    foreach ($raw as $item) {
+        if (!is_array($item)) continue;
+        $name = trim((string)($item['subject'] ?? ''));
+        if ($name === '') continue;
+        $max = max(1, (int)($item['maxMarks'] ?? 100));
+        $min = max(0, (int)($item['minMarks'] ?? (int)round($max * 0.4)));
+        $sec = max(0, min($max, (int)($item['marksSecured'] ?? $item['obtainedMarks'] ?? 0)));
+        $out[] = [
+            'subject'       => $name,
+            'maxMarks'      => $max,
+            'minMarks'      => $min,
+            'marksSecured'  => $sec,
+            'obtainedMarks' => $sec,
+        ];
+    }
+    return $out;
+}
+
 $method = $_SERVER['REQUEST_METHOD'];
 
 // GET: list all certificates [Admin]
@@ -12,11 +80,16 @@ if ($method === 'GET') {
 
     $id = trim((string)($_GET['id'] ?? ''));
     if ($id !== '') {
-        $stmt = $pdo->prepare('SELECT * FROM certificates WHERE id = ? OR certificate_number = ? LIMIT 1');
+        $stmt = $pdo->prepare(
+            'SELECT c.*, a.franchise_id AS joined_franchise_id, a.franchise_name AS joined_franchise_name, a.franchise_code AS joined_franchise_code, a.result_json AS joined_result_json
+             FROM certificates c
+             LEFT JOIN admission_applications a ON (c.application_id = a.id OR (c.application_id IS NULL AND c.enrollment_number = a.enrollment_number))
+             WHERE c.id = ? OR c.certificate_number = ? LIMIT 1'
+        );
         $stmt->execute([$id, $id]);
         $row = $stmt->fetch();
         if (!$row) json_response(['error' => 'Certificate not found.'], 404);
-        json_response(['certificate' => map_certificate($row)]);
+        json_response(['certificate' => enrich_cert_row($row)]);
     }
 
     $where = [];
@@ -31,7 +104,7 @@ if ($method === 'GET') {
         array_push($params, $q, $q, $q, $q);
     }
 
-    $sql = 'SELECT c.*, a.franchise_id AS joined_franchise_id, a.franchise_name AS joined_franchise_name, a.franchise_code AS joined_franchise_code
+    $sql = 'SELECT c.*, a.franchise_id AS joined_franchise_id, a.franchise_name AS joined_franchise_name, a.franchise_code AS joined_franchise_code, a.result_json AS joined_result_json
             FROM certificates c
             LEFT JOIN admission_applications a ON (c.application_id = a.id OR (c.application_id IS NULL AND c.enrollment_number = a.enrollment_number))';
     if (!empty($where)) $sql .= ' WHERE ' . implode(' AND ', $where);
@@ -41,11 +114,7 @@ if ($method === 'GET') {
     $stmt->execute($params);
     $certs = [];
     while ($r = $stmt->fetch()) {
-        $m = map_certificate($r);
-        $m['franchiseId'] = $r['joined_franchise_id'] ?? null;
-        $m['franchiseName'] = $r['joined_franchise_name'] ?? null;
-        $m['franchiseCode'] = $r['joined_franchise_code'] ?? null;
-        $certs[] = $m;
+        $certs[] = enrich_cert_row($r);
     }
     json_response(['certificates' => $certs]);
 }
@@ -84,37 +153,52 @@ if ($method === 'POST') {
         }
 
         $enrollmentNumber = $student['enrollment_number'] ?: generate_enrollment_number($pdo);
-        $marksObtained = isset($body['marksObtained']) && $body['marksObtained'] !== ''
-            ? (int)$body['marksObtained']
-            : ($student['marks_obtained'] !== null ? (int)$student['marks_obtained'] : null);
-        $totalMarks = isset($body['totalMarks']) && $body['totalMarks'] !== ''
-            ? (int)$body['totalMarks']
-            : ($student['total_marks'] !== null ? (int)$student['total_marks'] : 500);
-        if (isset($body['percentage']) && $body['percentage'] !== '') {
-            $percentage = (float)$body['percentage'];
-        } elseif ($marksObtained !== null && $totalMarks > 0) {
-            $percentage = round(($marksObtained / $totalMarks) * 100, 2);
+        $subjects = sanitize_subjects($body['subjects'] ?? null);
+        if (count($subjects) > 0) {
+            $marksObtained = 0;
+            $totalMarks = 0;
+            foreach ($subjects as $sub) {
+                $marksObtained += (int)$sub['marksSecured'];
+                $totalMarks += (int)$sub['maxMarks'];
+            }
+            $percentage = $totalMarks > 0 ? round(($marksObtained / $totalMarks) * 100, 2) : 0.0;
+            $grade = trim((string)($body['grade'] ?? '')) ?: compute_official_grade($percentage);
+            $resultJson = json_encode($subjects, JSON_UNESCAPED_UNICODE);
         } else {
-            $percentage = $student['percentage'] !== null ? (float)$student['percentage'] : 80.0;
+            $marksObtained = isset($body['marksObtained']) && $body['marksObtained'] !== ''
+                ? (int)$body['marksObtained']
+                : ($student['marks_obtained'] !== null ? (int)$student['marks_obtained'] : null);
+            $totalMarks = isset($body['totalMarks']) && $body['totalMarks'] !== ''
+                ? (int)$body['totalMarks']
+                : ($student['total_marks'] !== null ? (int)$student['total_marks'] : 500);
+            if (isset($body['percentage']) && $body['percentage'] !== '') {
+                $percentage = (float)$body['percentage'];
+            } elseif ($marksObtained !== null && $totalMarks > 0) {
+                $percentage = round(($marksObtained / $totalMarks) * 100, 2);
+            } else {
+                $percentage = $student['percentage'] !== null ? (float)$student['percentage'] : 80.0;
+            }
+            $grade = trim((string)($body['grade'] ?? '')) ?: compute_official_grade($percentage);
+            $resultJson = $student['result_json'];
+            if (empty($resultJson)) {
+                $theoryMax = (int)round($totalMarks * 0.6);
+                $pracMax = $totalMarks - $theoryMax;
+                $theoryObt = $marksObtained !== null
+                    ? (int)round($marksObtained * 0.6)
+                    : (int)round(($percentage / 100) * $theoryMax);
+                $pracObt = $marksObtained !== null
+                    ? ($marksObtained - $theoryObt)
+                    : (int)round(($percentage / 100) * $pracMax);
+                $resultJson = json_encode([
+                    ['subject' => $student['course_name'] . ' — Theory Examination', 'maxMarks' => $theoryMax, 'minMarks' => (int)round($theoryMax * 0.4), 'marksSecured' => $theoryObt, 'obtainedMarks' => $theoryObt],
+                    ['subject' => $student['course_name'] . ' — Practical & Viva-Voce', 'maxMarks' => $pracMax, 'minMarks' => (int)round($pracMax * 0.4), 'marksSecured' => $pracObt, 'obtainedMarks' => $pracObt],
+                ], JSON_UNESCAPED_UNICODE);
+            }
         }
-        $grade = trim((string)($body['grade'] ?? '')) ?: compute_grade($percentage);
         $completionDate = trim((string)($body['completionDate'] ?? '')) ?: ($student['completion_date'] ?: $issueDate);
-
-        $resultJson = $student['result_json'];
-        if (empty($resultJson)) {
-            $theoryMax = (int)round($totalMarks * 0.6);
-            $pracMax = $totalMarks - $theoryMax;
-            $theoryObt = $marksObtained !== null
-                ? (int)round($marksObtained * 0.6)
-                : (int)round(($percentage / 100) * $theoryMax);
-            $pracObt = $marksObtained !== null
-                ? ($marksObtained - $theoryObt)
-                : (int)round(($percentage / 100) * $pracMax);
-            $resultJson = json_encode([
-                ['subject' => $student['course_name'] . ' — Theory Examination', 'maxMarks' => $theoryMax, 'obtainedMarks' => $theoryObt, 'grade' => $grade],
-                ['subject' => $student['course_name'] . ' — Practical & Viva-Voce', 'maxMarks' => $pracMax, 'obtainedMarks' => $pracObt, 'grade' => $grade],
-            ], JSON_UNESCAPED_UNICODE);
-        }
+        $sessionVal = trim((string)($body['session'] ?? '')) ?: ($student['session'] ?: 'July, 2025 To June, 2026');
+        $studyCentre = trim((string)($body['studyCentre'] ?? ''))
+            ?: (!empty($student['franchise_name']) ? $student['franchise_name'] : 'Empire Institute of Skills Technology, Mandi');
 
         // Mark student completed & save marksheet
         $pdo->prepare(
@@ -140,8 +224,8 @@ if ($method === 'POST') {
         $pdo->prepare(
             'INSERT INTO certificates
             (id, certificate_number, enrollment_number, application_id, student_name, father_name, mother_name, dob, photo_url,
-             course_name, course_code, duration, session, marks_obtained, total_marks, percentage, grade, completion_date, issue_date, status)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "VALID")'
+             course_name, course_code, duration, session, study_centre, subjects_json, marks_obtained, total_marks, percentage, grade, completion_date, issue_date, status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "VALID")'
         )->execute([
             $id,
             $certificateNumber,
@@ -155,7 +239,9 @@ if ($method === 'POST') {
             $student['course_name'],
             $student['course_code'],
             $duration,
-            $student['session'],
+            $sessionVal,
+            $studyCentre,
+            $resultJson,
             $marksObtained,
             $totalMarks,
             $percentage,
@@ -164,9 +250,12 @@ if ($method === 'POST') {
             $issueDate,
         ]);
 
-        $row = $pdo->prepare('SELECT * FROM certificates WHERE id = ?');
+        $row = $pdo->prepare(
+            'SELECT c.*, a.franchise_id AS joined_franchise_id, a.franchise_name AS joined_franchise_name, a.franchise_code AS joined_franchise_code, a.result_json AS joined_result_json
+             FROM certificates c LEFT JOIN admission_applications a ON c.application_id = a.id WHERE c.id = ?'
+        );
         $row->execute([$id]);
-        json_response(['certificate' => map_certificate($row->fetch())], 201);
+        json_response(['certificate' => enrich_cert_row($row->fetch())], 201);
     }
 
     // Mode 2: Direct Quick Generator
@@ -187,23 +276,38 @@ if ($method === 'POST') {
     }
 
     $enrollmentNumber = trim((string)($body['enrollmentNumber'] ?? '')) ?: generate_enrollment_number($pdo);
-    $marksObtained = isset($body['marksObtained']) && $body['marksObtained'] !== '' ? (int)$body['marksObtained'] : null;
-    $totalMarks = isset($body['totalMarks']) && $body['totalMarks'] !== '' ? (int)$body['totalMarks'] : 500;
-    if (isset($body['percentage']) && $body['percentage'] !== '') {
-        $percentage = (float)$body['percentage'];
-    } elseif ($marksObtained !== null && $totalMarks > 0) {
-        $percentage = round(($marksObtained / $totalMarks) * 100, 2);
+    $subjects = sanitize_subjects($body['subjects'] ?? null);
+    if (count($subjects) > 0) {
+        $marksObtained = 0;
+        $totalMarks = 0;
+        foreach ($subjects as $sub) {
+            $marksObtained += (int)$sub['marksSecured'];
+            $totalMarks += (int)$sub['maxMarks'];
+        }
+        $percentage = $totalMarks > 0 ? round(($marksObtained / $totalMarks) * 100, 2) : 0.0;
+        $grade = trim((string)($body['grade'] ?? '')) ?: compute_official_grade($percentage);
+        $subjectsJson = json_encode($subjects, JSON_UNESCAPED_UNICODE);
     } else {
-        $percentage = 80.0;
+        $marksObtained = isset($body['marksObtained']) && $body['marksObtained'] !== '' ? (int)$body['marksObtained'] : null;
+        $totalMarks = isset($body['totalMarks']) && $body['totalMarks'] !== '' ? (int)$body['totalMarks'] : 500;
+        if (isset($body['percentage']) && $body['percentage'] !== '') {
+            $percentage = (float)$body['percentage'];
+        } elseif ($marksObtained !== null && $totalMarks > 0) {
+            $percentage = round(($marksObtained / $totalMarks) * 100, 2);
+        } else {
+            $percentage = 80.0;
+        }
+        $grade = trim((string)($body['grade'] ?? '')) ?: compute_official_grade($percentage);
+        $subjectsJson = null;
     }
-    $grade = trim((string)($body['grade'] ?? '')) ?: compute_grade($percentage);
     $completionDate = trim((string)($body['completionDate'] ?? '')) ?: $issueDate;
+    $studyCentre = trim((string)($body['studyCentre'] ?? '')) ?: 'Empire Institute of Skills Technology, Mandi';
 
     $pdo->prepare(
         'INSERT INTO certificates
         (id, certificate_number, enrollment_number, application_id, student_name, father_name, mother_name, dob, photo_url,
-         course_name, course_code, duration, session, marks_obtained, total_marks, percentage, grade, completion_date, issue_date, status)
-        VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "VALID")'
+         course_name, course_code, duration, session, study_centre, subjects_json, marks_obtained, total_marks, percentage, grade, completion_date, issue_date, status)
+        VALUES (?, ?, ?, NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, "VALID")'
     )->execute([
         $id,
         $certificateNumber,
@@ -216,7 +320,9 @@ if ($method === 'POST') {
         $courseName,
         !empty($body['courseCode']) ? trim((string)$body['courseCode']) : null,
         $duration,
-        !empty($body['session']) ? trim((string)$body['session']) : '2026',
+        !empty($body['session']) ? trim((string)$body['session']) : 'July, 2025 To June, 2026',
+        $studyCentre,
+        $subjectsJson,
         $marksObtained,
         $totalMarks,
         $percentage,
@@ -227,7 +333,7 @@ if ($method === 'POST') {
 
     $row = $pdo->prepare('SELECT * FROM certificates WHERE id = ?');
     $row->execute([$id]);
-    json_response(['certificate' => map_certificate($row->fetch())], 201);
+    json_response(['certificate' => enrich_cert_row($row->fetch())], 201);
 }
 
 // PATCH / PUT: edit / revoke / restore certificate [Admin]

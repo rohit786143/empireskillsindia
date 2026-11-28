@@ -21,6 +21,7 @@ interface RawApp {
   franchiseId?: string | null;
   franchiseName?: string | null;
   franchiseCode?: string | null;
+  resultJson?: string | null;
 }
 
 function GeneratorLoader() {
@@ -39,6 +40,8 @@ function GeneratorLoader() {
       photoUrl: string | null;
       isCompleted: boolean;
       franchiseId?: string | null;
+      franchiseName?: string | null;
+      resultJson?: string | null;
     }[]
   >([]);
   const [courses, setCourses] = useState([]);
@@ -72,6 +75,8 @@ function GeneratorLoader() {
             photoUrl: s.photoUrl,
             isCompleted: s.isCompleted,
             franchiseId: s.franchiseId || null,
+            franchiseName: s.franchiseName || null,
+            resultJson: s.resultJson || null,
           }));
         setStudents(mapped);
         setCourses(
