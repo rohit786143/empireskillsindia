@@ -20,7 +20,26 @@ try {
           PRIMARY KEY (`id`)
         ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
     );
+    $pdo->exec(
+        'CREATE TABLE IF NOT EXISTS `team_config` (
+          `config_key` VARCHAR(64) NOT NULL,
+          `config_value` VARCHAR(191) NOT NULL DEFAULT "",
+          PRIMARY KEY (`config_key`)
+        ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci'
+    );
 } catch (PDOException $e) {}
+
+$ALLOWED_LAYOUTS = ['classic', 'portrait', 'horizontal', 'dark-executive', 'minimal'];
+
+function get_team_layout(PDO $pdo, array $allowed): string {
+    try {
+        $stmt = $pdo->prepare('SELECT config_value FROM team_config WHERE config_key = ?');
+        $stmt->execute(['layout']);
+        $val = (string)$stmt->fetchColumn();
+        if (in_array($val, $allowed, true)) return $val;
+    } catch (PDOException $e) {}
+    return 'classic';
+}
 
 function map_team_member(array $r): array {
     return [
@@ -45,12 +64,29 @@ if ($method === 'GET') {
     } else {
         $rows = $pdo->query('SELECT * FROM team_members WHERE is_active = 1 ORDER BY sort_order ASC, created_at ASC')->fetchAll();
     }
-    json_response(['members' => array_map('map_team_member', $rows)]);
+    json_response([
+        'members' => array_map('map_team_member', $rows),
+        'layout'  => get_team_layout($pdo, $ALLOWED_LAYOUTS),
+    ]);
 }
 
 if ($method === 'POST') {
     require_admin();
     $body = get_json_body();
+
+    if (($_GET['action'] ?? '') === 'layout') {
+        $layout = trim((string)($body['layout'] ?? ''));
+        if (!in_array($layout, $ALLOWED_LAYOUTS, true)) {
+            json_response(['error' => 'Invalid team layout style.'], 400);
+        }
+        $stmt = $pdo->prepare(
+            'INSERT INTO team_config (config_key, config_value) VALUES (?, ?)
+             ON DUPLICATE KEY UPDATE config_value = VALUES(config_value)'
+        );
+        $stmt->execute(['layout', $layout]);
+        json_response(['success' => true, 'layout' => $layout]);
+    }
+
     $name = trim((string)($body['name'] ?? ''));
     $shortIntro = trim((string)($body['shortIntro'] ?? ''));
     if ($name === '' || $shortIntro === '') {

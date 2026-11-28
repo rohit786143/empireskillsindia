@@ -12,8 +12,13 @@ import {
   AlertCircle,
   Eye,
   EyeOff,
+  Palette,
 } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
+import {
+  TEAM_LAYOUT_OPTIONS,
+  type TeamLayoutStyle,
+} from "@/components/OurTeamSection";
 import { apiFetch } from "@/lib/api";
 
 interface AdminTeamMember {
@@ -64,6 +69,8 @@ function compressPortrait(file: File): Promise<string> {
 
 function AdminTeamContent() {
   const [members, setMembers] = useState<AdminTeamMember[]>([]);
+  const [layout, setLayout] = useState<TeamLayoutStyle>("classic");
+  const [savingLayout, setSavingLayout] = useState(false);
   const [loading, setLoading] = useState(true);
   const [modalOpen, setModalOpen] = useState(false);
   const [form, setForm] = useState(EMPTY_MEMBER);
@@ -76,8 +83,34 @@ function AdminTeamContent() {
       const res = await apiFetch(`/team.php?all=true&_t=${Date.now()}`);
       const d = await res.json();
       if (res.ok && Array.isArray(d.members)) setMembers(d.members);
+      if (res.ok && d.layout) setLayout(d.layout as TeamLayoutStyle);
     } finally {
       setLoading(false);
+    }
+  }
+
+  async function handleSelectLayout(nextLayout: TeamLayoutStyle) {
+    if (nextLayout === layout || savingLayout) return;
+    setSavingLayout(true);
+    setMsg(null);
+    try {
+      const res = await apiFetch("/team.php?action=layout", {
+        method: "POST",
+        body: JSON.stringify({ layout: nextLayout }),
+      });
+      const data = await res.json();
+      if (res.ok && data.layout) {
+        setLayout(data.layout as TeamLayoutStyle);
+        const found = TEAM_LAYOUT_OPTIONS.find((x) => x.id === nextLayout);
+        setMsg({
+          type: "ok",
+          text: `Team display style changed to "${found?.name || nextLayout}"! Live on Home Page & Our Team page.`,
+        });
+      } else {
+        setMsg({ type: "err", text: data.error || "Failed to update design style." });
+      }
+    } finally {
+      setSavingLayout(false);
     }
   }
 
@@ -212,6 +245,104 @@ function AdminTeamContent() {
           {msg.text}
         </div>
       )}
+
+      {/* 5 Display Style Selector */}
+      <div className="bg-white border border-slate-200 rounded-xl p-4 sm:p-5 shadow-sm space-y-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+          <div>
+            <h2 className="text-sm font-extrabold text-[#0B3D62] flex items-center gap-1.5">
+              <Palette className="w-4 h-4 text-[#F07228]" />
+              Public Display Style (Choose 1 of 5 Designs)
+            </h2>
+            <p className="text-[11px] text-slate-500 mt-0.5">
+              Select how your Our Team cards look on the Home Page &amp; Our Team page.
+            </p>
+          </div>
+          {savingLayout && (
+            <span className="text-[11px] font-bold text-[#D65B14]">Saving style...</span>
+          )}
+        </div>
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-2.5">
+          {TEAM_LAYOUT_OPTIONS.map((opt) => {
+            const active = layout === opt.id;
+            return (
+              <button
+                key={opt.id}
+                type="button"
+                disabled={savingLayout}
+                onClick={() => handleSelectLayout(opt.id)}
+                className={`text-left p-3 rounded-xl border-2 transition-all ${
+                  active
+                    ? "border-[#F07228] bg-amber-50/70 shadow-sm"
+                    : "border-slate-200 bg-slate-50/60 hover:border-[#0B3D62]/40 hover:bg-white"
+                }`}
+              >
+                {/* Mini Visual Wireframe Preview */}
+                <div
+                  className={`h-12 rounded-lg mb-2 overflow-hidden flex items-center justify-center border ${
+                    opt.id === "dark-executive"
+                      ? "bg-[#0B3D62] border-[#0B3D62]"
+                      : "bg-white border-slate-200"
+                  }`}
+                >
+                  {opt.id === "classic" && (
+                    <div className="w-full h-full flex flex-col items-center">
+                      <div className="w-full h-4 bg-[#0B3D62] border-b border-[#F07228]" />
+                      <div className="-mt-2.5 w-5 h-5 rounded-full bg-sky-200 border-2 border-[#F07228]" />
+                      <div className="w-10 h-1 rounded bg-slate-300 mt-1" />
+                    </div>
+                  )}
+                  {opt.id === "portrait" && (
+                    <div className="w-full h-full flex flex-col">
+                      <div className="w-full h-7 bg-gradient-to-br from-[#0B3D62] to-[#0E7490] border-b-2 border-[#F07228]" />
+                      <div className="p-1.5 space-y-1">
+                        <div className="w-10 h-1 rounded bg-[#0B3D62]" />
+                        <div className="w-14 h-1 rounded bg-slate-300" />
+                      </div>
+                    </div>
+                  )}
+                  {opt.id === "horizontal" && (
+                    <div className="w-full h-full p-2 flex items-center gap-2 border-l-4 border-[#0B3D62]">
+                      <div className="w-7 h-7 rounded-md bg-sky-200 shrink-0" />
+                      <div className="space-y-1 flex-1">
+                        <div className="w-10 h-1.5 rounded bg-[#0B3D62]" />
+                        <div className="w-full h-1 rounded bg-slate-300" />
+                      </div>
+                    </div>
+                  )}
+                  {opt.id === "dark-executive" && (
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-5 h-5 rounded-full bg-sky-300/30 border-2 border-[#FFB36B]" />
+                      <div className="w-10 h-1 rounded bg-white/80" />
+                      <div className="w-7 h-1 rounded bg-[#FFB36B]" />
+                    </div>
+                  )}
+                  {opt.id === "minimal" && (
+                    <div className="flex flex-col items-center gap-1">
+                      <div className="w-5 h-5 rounded-full bg-slate-200 ring-2 ring-slate-100" />
+                      <div className="w-6 h-0.5 rounded bg-[#F07228]" />
+                      <div className="w-11 h-1 rounded bg-slate-300" />
+                    </div>
+                  )}
+                </div>
+
+                <div className="flex items-center justify-between gap-1">
+                  <p className="text-xs font-extrabold text-[#0B3D62] leading-tight">
+                    {opt.name}
+                  </p>
+                  {active && (
+                    <CheckCircle2 className="w-3.5 h-3.5 text-[#F07228] shrink-0" />
+                  )}
+                </div>
+                <p className="text-[10.5px] text-slate-500 mt-0.5 leading-snug">
+                  {opt.tagline}
+                </p>
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {loading ? (
         <div className="bg-white border border-slate-200 rounded-lg p-12 text-center text-sm text-slate-500">
