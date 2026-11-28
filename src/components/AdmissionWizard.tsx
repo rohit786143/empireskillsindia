@@ -360,8 +360,8 @@ export function AdmissionWizard({
   return (
     <div className="space-y-6">
       {/* Stepper Header */}
-      <div className="bg-white border border-slate-200 rounded-lg p-4 shadow-sm">
-        <div className="grid grid-cols-5 gap-2">
+      <div className="bg-white border border-slate-200 rounded-lg p-2.5 sm:p-4 shadow-sm">
+        <div className="grid grid-cols-5 gap-1 sm:gap-2">
           {STEPS.map((s) => {
             const Icon = s.icon;
             const active = step === s.num;
@@ -369,7 +369,7 @@ export function AdmissionWizard({
             return (
               <div
                 key={s.num}
-                className={`flex flex-col sm:flex-row items-center justify-center gap-2 py-2 px-2 rounded text-center sm:text-left border ${
+                className={`flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-2 py-1.5 sm:py-2 px-1 sm:px-2 rounded text-center sm:text-left border ${
                   active
                     ? "bg-[#0B3D62] text-white border-[#0B3D62]"
                     : done
@@ -377,9 +377,9 @@ export function AdmissionWizard({
                     : "bg-slate-50 text-slate-500 border-slate-200"
                 }`}
               >
-                <Icon className="w-4 h-4 shrink-0" />
+                <Icon className="w-3.5 h-3.5 sm:w-4 sm:h-4 shrink-0" />
                 <div className="leading-tight">
-                  <div className="text-[10px] uppercase font-bold opacity-80">
+                  <div className="text-[9px] sm:text-[10px] uppercase font-bold opacity-85">
                     Step {s.num}
                   </div>
                   <div className="text-xs font-bold hidden md:block">{s.label}</div>
@@ -391,14 +391,14 @@ export function AdmissionWizard({
       </div>
 
       {error && (
-        <div className="p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-sm flex items-center gap-2.5">
+        <div className="p-3.5 sm:p-4 rounded-lg bg-red-50 border border-red-200 text-red-800 text-xs sm:text-sm flex items-center gap-2.5">
           <AlertCircle className="w-5 h-5 shrink-0 text-red-600" />
           <span>{error}</span>
         </div>
       )}
 
       {/* Main Step Card */}
-      <div className="bg-white border border-slate-200 border-t-4 border-t-[#0B3D62] rounded-lg p-6 sm:p-8 shadow-sm">
+      <div className="bg-white border border-slate-200 border-t-4 border-t-[#0B3D62] rounded-lg p-4 sm:p-8 shadow-sm">
         {/* STEP 1 */}
         {step === 1 && (
           <div className="space-y-6">

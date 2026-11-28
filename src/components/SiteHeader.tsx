@@ -76,12 +76,19 @@ export function SiteHeader() {
     <header className="no-print w-full">
       {/* Top Institutional Utility Bar */}
       <div className="bg-gradient-to-r from-[#0B3D62] via-[#114B75] to-[#0E647A] text-slate-100 text-xs border-b border-[#F07228]/50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex flex-wrap items-center justify-between gap-2">
-          <div className="flex flex-wrap items-center gap-4">
-            <span className="inline-flex items-center gap-1.5 text-slate-200">
-              <Phone className="w-3.5 h-3.5 text-[#FF9B5E]" />
-              <span className="font-medium">Helpline:</span> {siteSettings.helpline}
-            </span>
+        <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-1.5 sm:py-2 flex flex-wrap items-center justify-between gap-2">
+          <div className="flex items-center gap-2.5 sm:gap-4">
+            <a
+              href={`tel:${siteSettings.helpline.split("/")[0]?.replace(/\D/g, "") || "7560001910"}`}
+              className="inline-flex items-center gap-1 text-slate-100 hover:text-[#FFB380]"
+            >
+              <Phone className="w-3.5 h-3.5 text-[#FF9B5E] shrink-0" />
+              <span className="hidden sm:inline font-medium">Helpline:</span>
+              <span className="hidden sm:inline">{siteSettings.helpline}</span>
+              <span className="sm:hidden font-semibold text-[11px]">
+                {siteSettings.helpline.split("/")[0]?.trim()}
+              </span>
+            </a>
             <span className="hidden md:inline-flex items-center gap-1.5 text-slate-200">
               <Mail className="w-3.5 h-3.5 text-[#FF9B5E]" />
               {siteSettings.email}
@@ -112,47 +119,48 @@ export function SiteHeader() {
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-2">
+          <div className="flex flex-wrap items-center gap-1.5 sm:gap-2">
             <a
               href="/app/Empire-Skills-India.apk"
               download="Empire-Skills-India.apk"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm transition-colors"
+              className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold text-[11px] sm:text-xs shadow-sm transition-colors"
               title="Download Empire Skills India Android App (.apk)"
             >
               <Download className="w-3 h-3" />
-              Download App
+              <span>App</span>
+              <span className="hidden sm:inline">Download</span>
             </a>
             <Link
               href="/admission"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-semibold transition-colors"
+              className="inline-flex items-center gap-1 px-2 sm:px-2.5 py-1 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-semibold text-[11px] sm:text-xs transition-colors"
             >
               <FileText className="w-3 h-3" />
               Apply Online
             </Link>
             <Link
               href="/verify-certificate"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#135589] hover:bg-blue-600 text-white font-medium transition-colors"
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#135589] hover:bg-blue-600 text-white font-medium transition-colors"
             >
               <ShieldCheck className="w-3 h-3" />
               Verify Certificate
             </Link>
             <Link
               href="/student-zone"
-              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-500/60 hover:bg-white/10 text-slate-100 font-medium transition-colors"
+              className="hidden md:inline-flex items-center gap-1 px-2.5 py-1 rounded border border-slate-500/60 hover:bg-white/10 text-slate-100 font-medium transition-colors"
             >
               <GraduationCap className="w-3 h-3" />
               Student Zone
             </Link>
             <Link
               href="/franchise/login"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-sky-400/50 hover:bg-sky-500/20 text-sky-200 font-medium transition-colors"
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded border border-sky-400/50 hover:bg-sky-500/20 text-sky-200 font-medium transition-colors"
             >
               <Building2 className="w-3 h-3" />
               Partner Login
             </Link>
             <Link
               href="/admin/login"
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded border border-amber-400/50 hover:bg-[#D65B14]/20 text-amber-200 font-medium transition-colors"
+              className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded border border-amber-400/50 hover:bg-[#D65B14]/20 text-amber-200 font-medium transition-colors"
             >
               <Lock className="w-3 h-3" />
               Admin Login
@@ -164,9 +172,10 @@ export function SiteHeader() {
       {/* Live Scrolling Notification Ticker */}
       <div className="bg-[#EFF6FF] border-b border-slate-200 text-xs overflow-hidden">
         <div className="max-w-7xl mx-auto flex items-center">
-          <div className="shrink-0 bg-[#0B3D62] text-white px-3 sm:px-4 py-2 font-semibold uppercase tracking-wider flex items-center gap-1.5 z-10">
+          <div className="shrink-0 bg-[#0B3D62] text-white px-2.5 sm:px-4 py-1.5 sm:py-2 font-semibold uppercase tracking-wider flex items-center gap-1.5 z-10 text-[10.5px] sm:text-xs">
             <Bell className="w-3.5 h-3.5 text-[#FF9B5E]" />
-            <span>Latest Notifications</span>
+            <span className="sm:hidden">Notices</span>
+            <span className="hidden sm:inline">Latest Notifications</span>
           </div>
           <div className="overflow-hidden flex-1 py-2">
             <div className="esi-ticker-track">
@@ -242,27 +251,58 @@ export function SiteHeader() {
 
         {/* Mobile Nav Drawer */}
         {mobileOpen && (
-          <div className="lg:hidden bg-white border-t border-slate-200 px-4 py-3 space-y-1 shadow-md">
-            {NAV_LINKS.map((item) => {
-              const isActive =
-                item.href === "/"
-                  ? pathname === "/"
-                  : pathname?.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={() => setMobileOpen(false)}
-                  className={`block px-3 py-2 rounded text-sm font-semibold ${
-                    isActive
-                      ? "bg-[#0B3D62] text-white"
-                      : "text-slate-700 hover:bg-slate-100"
-                  }`}
-                >
-                  {item.label}
-                </Link>
-              );
-            })}
+          <div className="lg:hidden bg-white border-t border-slate-200 px-4 py-3.5 space-y-3 shadow-lg max-h-[82vh] overflow-y-auto">
+            <div className="space-y-1">
+              {NAV_LINKS.map((item) => {
+                const isActive =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname?.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    className={`block px-3.5 py-2.5 rounded-lg text-sm font-semibold ${
+                      isActive
+                        ? "bg-[#0B3D62] text-white"
+                        : "text-slate-700 hover:bg-slate-100"
+                    }`}
+                  >
+                    {item.label}
+                  </Link>
+                );
+              })}
+            </div>
+
+            {/* Mobile Portal Quick-Access Grid */}
+            <div className="pt-3 border-t border-slate-200 grid grid-cols-2 gap-2 text-xs">
+              <Link
+                href="/franchise/login"
+                onClick={() => setMobileOpen(false)}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-sky-50 border border-sky-200 text-[#0B3D62] font-bold"
+              >
+                <Building2 className="w-3.5 h-3.5 text-[#135589]" />
+                Partner Login
+              </Link>
+              <Link
+                href="/admin/login"
+                onClick={() => setMobileOpen(false)}
+                className="inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-amber-50 border border-amber-200 text-[#D65B14] font-bold"
+              >
+                <Lock className="w-3.5 h-3.5" />
+                Admin Login
+              </Link>
+              <a
+                href="/app/Empire-Skills-India.apk"
+                download="Empire-Skills-India.apk"
+                onClick={() => setMobileOpen(false)}
+                className="col-span-2 inline-flex items-center justify-center gap-1.5 px-3 py-2.5 rounded-lg bg-emerald-600 text-white font-bold shadow-sm"
+              >
+                <Download className="w-4 h-4" />
+                Download Android App (.apk)
+              </a>
+            </div>
           </div>
         )}
       </div>

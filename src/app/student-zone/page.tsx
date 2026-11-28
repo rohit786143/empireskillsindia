@@ -220,15 +220,15 @@ export default function StudentZonePage() {
 
   return (
     <div className="pb-14">
-      <section className="no-print bg-[#0B3D62] text-white border-b-4 border-[#F07228] py-10">
+      <section className="no-print bg-[#0B3D62] text-white border-b-4 border-[#F07228] py-6 sm:py-10">
         <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
-          <p className="text-xs font-bold uppercase tracking-widest text-[#FF9B5E]">
+          <p className="text-[11px] sm:text-xs font-bold uppercase tracking-widest text-[#FF9B5E]">
             Enrolled Student Self-Service Portal
           </p>
-          <h1 className="text-3xl sm:text-4xl font-extrabold mt-1">
+          <h1 className="text-2xl sm:text-4xl font-extrabold mt-1">
             Student Zone — Results &amp; Digital ID Card
           </h1>
-          <p className="text-slate-200 text-sm sm:text-base mt-2 max-w-2xl">
+          <p className="text-slate-200 text-xs sm:text-base mt-1.5 sm:mt-2 max-w-2xl">
             Approved students can check their Term-End / Final Examination Marksheet and
             download their official printable Empire Skills India Student ID Card.
           </p>
@@ -709,42 +709,42 @@ export default function StudentZonePage() {
             })()}
 
             {/* Switch Tabs */}
-            <div className="no-print flex flex-wrap items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+            <div className="no-print flex flex-col sm:flex-row sm:flex-wrap sm:items-center justify-between gap-2.5 sm:gap-3">
+              <div className="grid grid-cols-1 sm:flex sm:flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => setActiveTab("result")}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded text-sm font-bold border transition-colors ${
+                  className={`inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded text-xs sm:text-sm font-bold border transition-colors ${
                     activeTab === "result"
                       ? "bg-[#0B3D62] text-white border-[#0B3D62]"
                       : "bg-white text-slate-700 border-slate-300 hover:border-[#0B3D62]"
                   }`}
                 >
-                  <FileSpreadsheet className="w-4 h-4" />
+                  <FileSpreadsheet className="w-4 h-4 shrink-0" />
                   Examination Result / Marksheet
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("idcard")}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded text-sm font-bold border transition-colors ${
+                  className={`inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded text-xs sm:text-sm font-bold border transition-colors ${
                     activeTab === "idcard"
                       ? "bg-[#0B3D62] text-white border-[#0B3D62]"
                       : "bg-white text-slate-700 border-slate-300 hover:border-[#0B3D62]"
                   }`}
                 >
-                  <CreditCard className="w-4 h-4" />
+                  <CreditCard className="w-4 h-4 shrink-0" />
                   Download Student ID Card
                 </button>
                 <button
                   type="button"
                   onClick={() => setActiveTab("form")}
-                  className={`inline-flex items-center gap-2 px-4 py-2.5 rounded text-sm font-bold border transition-colors ${
+                  className={`inline-flex items-center justify-center gap-2 px-3.5 sm:px-4 py-2.5 rounded text-xs sm:text-sm font-bold border transition-colors ${
                     activeTab === "form"
                       ? "bg-[#0B3D62] text-white border-[#0B3D62]"
                       : "bg-white text-slate-700 border-slate-300 hover:border-[#0B3D62]"
                   }`}
                 >
-                  <FileText className="w-4 h-4" />
+                  <FileText className="w-4 h-4 shrink-0" />
                   Download Admission Form
                 </button>
               </div>
@@ -752,10 +752,10 @@ export default function StudentZonePage() {
               <button
                 type="button"
                 onClick={handlePrint}
-                className="inline-flex items-center gap-2 px-4 py-2.5 rounded bg-[#F07228] hover:bg-[#F07228] text-white text-sm font-bold shadow-sm"
+                className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded bg-[#F07228] hover:bg-[#D65B14] text-white text-xs sm:text-sm font-bold shadow-sm"
               >
                 <Printer className="w-4 h-4" />
-                Print {activeTab === "result" ? "Marksheet" : "ID Card"}
+                Print {activeTab === "result" ? "Marksheet" : activeTab === "idcard" ? "ID Card" : "Admission Form"}
               </button>
             </div>
 

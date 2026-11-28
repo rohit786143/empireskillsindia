@@ -105,8 +105,8 @@ export function StudentReviewsSection() {
   const durationSec = Math.max(22, reviews.length * 6);
 
   return (
-    <section className="py-4">
-      <div className="bg-gradient-to-br from-[#F0F7FF] via-white to-[#FFF7ED] border border-slate-200 rounded-2xl p-6 sm:p-8 shadow-sm overflow-hidden">
+    <section className="py-2 sm:py-4">
+      <div className="bg-gradient-to-br from-[#F0F7FF] via-white to-[#FFF7ED] border border-slate-200 rounded-2xl p-4 sm:p-8 shadow-sm overflow-hidden">
         {/* Section Header */}
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-3 mb-7">
           <div>
@@ -135,7 +135,7 @@ export function StudentReviewsSection() {
             {loopItems.map((rev, idx) => (
               <article
                 key={`${rev.id}-${idx}`}
-                className="w-[275px] sm:w-[290px] lg:w-[292px] shrink-0 bg-white border border-slate-200 hover:border-[#F07228]/60 rounded-2xl p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative"
+                className="w-[250px] sm:w-[290px] lg:w-[292px] shrink-0 bg-white border border-slate-200 hover:border-[#F07228]/60 rounded-2xl p-4 sm:p-5 shadow-sm hover:shadow-md transition-all flex flex-col justify-between relative"
               >
                 <Quote className="w-8 h-8 text-[#0B3D62]/10 absolute top-4 right-4" />
 
