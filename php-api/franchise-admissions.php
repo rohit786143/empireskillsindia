@@ -323,7 +323,8 @@ if ($method === 'PATCH' || $method === 'PUT') {
                     $existing['course_id'] ?? null,
                     $existing['course_code'] ?? null,
                     $existing['enrollment_number'] ?? null,
-                    $existing['serial_number'] ?? null
+                    $existing['serial_number'] ?? null,
+                    $existing['session'] ?? null
                 );
                 if (empty($existing['enrollment_number'])) {
                     $fields[] = '`enrollment_number` = ?';

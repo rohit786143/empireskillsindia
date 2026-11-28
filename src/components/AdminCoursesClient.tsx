@@ -502,14 +502,35 @@ export function AdminCoursesClient({
                       onChange={(e) =>
                         updateField("enrollmentPrefix", e.target.value.toUpperCase())
                       }
-                      placeholder="e.g., ESI2627BW"
+                      placeholder="e.g., ESIDS"
                       className="w-full px-3 py-2 border border-slate-300 rounded bg-white font-mono uppercase"
                     />
-                    {form.enrollmentPrefix.trim() && (
-                      <p className="text-[10.5px] text-[#0B3D62] font-mono mt-1">
-                        Preview: <strong>{form.enrollmentPrefix.trim()}0001</strong>
-                      </p>
-                    )}
+                    {form.enrollmentPrefix.trim() && (() => {
+                      const rawP = form.enrollmentPrefix.trim().toUpperCase();
+                      const tail = rawP.startsWith("ESI") ? rawP.slice(3) : rawP;
+                      const isQuarterly = form.duration.toLowerCase().includes("3 month");
+                      return (
+                        <p className="text-[10.5px] text-[#0B3D62] font-mono mt-1">
+                          Preview:{" "}
+                          <strong>ESI0126{tail}10001</strong> (Jan)
+                          {isQuarterly ? (
+                            <>
+                              {" • "}
+                              <strong>ESI0426{tail}10001</strong> (Apr)
+                              {" • "}
+                              <strong>ESI0726{tail}10001</strong> (Jul)
+                              {" • "}
+                              <strong>ESI1026{tail}10001</strong> (Oct)
+                            </>
+                          ) : (
+                            <>
+                              {" • "}
+                              <strong>ESI0726{tail}10001</strong> (July)
+                            </>
+                          )}
+                        </p>
+                      );
+                    })()}
                   </div>
                   <div>
                     <label className="block font-bold text-slate-700 mb-1">
@@ -521,12 +542,15 @@ export function AdminCoursesClient({
                       onChange={(e) =>
                         updateField("serialPrefix", e.target.value.toUpperCase())
                       }
-                      placeholder="e.g., BWSN"
+                      placeholder="e.g., SNDS"
                       className="w-full px-3 py-2 border border-slate-300 rounded bg-white font-mono uppercase"
                     />
                     {form.serialPrefix.trim() && (
                       <p className="text-[10.5px] text-[#D65B14] font-mono mt-1">
-                        Preview: <strong>{form.serialPrefix.trim()}0001</strong>
+                        Preview:{" "}
+                        <strong>{form.serialPrefix.trim().toUpperCase()}2610001</strong> (2026)
+                        {" • "}
+                        <strong>{form.serialPrefix.trim().toUpperCase()}2710001</strong> (2027)
                       </p>
                     )}
                   </div>

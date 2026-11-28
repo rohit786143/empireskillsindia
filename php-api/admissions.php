@@ -105,8 +105,9 @@ if ($method === 'POST') {
     $isDirectApproved = ($admin !== null && !empty($body['autoApprove']));
     $enrollmentNumber = null;
     $serialNumber = null;
+    $sessionVal = trim((string)($body['session'] ?? 'July 2026'));
     if ($isDirectApproved) {
-        $genNums = generate_course_enrollment_and_serial($pdo, $courseId, $courseCode);
+        $genNums = generate_course_enrollment_and_serial($pdo, $courseId, $courseCode, null, null, $sessionVal);
         $enrollmentNumber = $genNums['enrollmentNumber'];
         $serialNumber = $genNums['serialNumber'];
     }
@@ -258,7 +259,8 @@ if ($method === 'PATCH' || $method === 'PUT') {
                 $existing['course_id'] ?? null,
                 $existing['course_code'] ?? null,
                 $existing['enrollment_number'] ?? null,
-                $existing['serial_number'] ?? null
+                $existing['serial_number'] ?? null,
+                $existing['session'] ?? null
             );
             if (empty($existing['enrollment_number'])) {
                 $fields[] = '`enrollment_number` = ?';

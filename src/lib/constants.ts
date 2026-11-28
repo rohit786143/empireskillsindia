@@ -110,10 +110,28 @@ export const COURSE_ELIGIBILITIES = [
 ] as const;
 
 export const ACADEMIC_SESSIONS = [
-  "July 2026",
   "Jan 2026",
+  "July 2026",
   "Jan 2027",
+  "July 2027",
 ] as const;
+
+export const QUARTERLY_SESSIONS = [
+  "Jan 2026",
+  "April 2026",
+  "July 2026",
+  "Oct 2026",
+  "Jan 2027",
+  "April 2027",
+  "July 2027",
+  "Oct 2027",
+] as const;
+
+export function getSessionsForDuration(duration?: string): readonly string[] {
+  const d = (duration || "").toLowerCase();
+  if (d.includes("3 month")) return QUARTERLY_SESSIONS;
+  return ACADEMIC_SESSIONS;
+}
 
 export const STUDY_MODES = [
   "Regular",

@@ -158,7 +158,8 @@ if ($method === 'POST') {
             $student['course_id'] ?? null,
             $student['course_code'] ?? null,
             $student['enrollment_number'] ?? null,
-            $student['serial_number'] ?? null
+            $student['serial_number'] ?? null,
+            trim((string)($body['session'] ?? '')) ?: ($student['session'] ?? null)
         );
         $enrollmentNumber = $genNums['enrollmentNumber'];
         $candidateSerial = $genNums['serialNumber'];
@@ -298,7 +299,8 @@ if ($method === 'POST') {
         null,
         $qCourseCode,
         !empty($body['enrollmentNumber']) ? trim((string)$body['enrollmentNumber']) : null,
-        null
+        null,
+        !empty($body['session']) ? trim((string)$body['session']) : null
     );
     $enrollmentNumber = $qGenNums['enrollmentNumber'];
     $certificateNumber = $qGenNums['serialNumber'];

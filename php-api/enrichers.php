@@ -28,31 +28,77 @@ function enrich_course(array $rawRow, array $mapped): array {
     return $mapped;
 }
 
-function next_prefixed_sequence(PDO $pdo, string $prefix, array $sources, int $padLen = 4): string {
-    $cleanPrefix = strtoupper(trim($prefix));
-    $maxNum = 0;
-    $prefixLen = strlen($cleanPrefix);
+function parse_session_month_year(?string $session): array {
+    $raw = strtolower(trim((string)$session));
+    $monthMap = [
+        'jan' => '01', 'feb' => '02', 'mar' => '03', 'apr' => '04',
+        'may' => '05', 'jun' => '06', 'jul' => '07', 'aug' => '08',
+        'sep' => '09', 'oct' => '10', 'nov' => '11', 'dec' => '12',
+    ];
+    $mm = '';
+    foreach ($monthMap as $abbr => $code) {
+        if ($raw !== '' && strpos($raw, $abbr) !== false) {
+            $mm = $code;
+            break;
+        }
+    }
+    if ($mm === '') {
+        $curM = (int)date('n');
+        $mm = $curM >= 7 ? '07' : '01';
+    }
 
-    foreach ($sources as $src) {
-        $table = $src[0];
-        $col = $src[1];
-        try {
-            $stmt = $pdo->prepare("SELECT `{$col}` FROM `{$table}` WHERE `{$col}` LIKE ?");
-            $stmt->execute([$cleanPrefix . '%']);
-            while ($val = $stmt->fetchColumn()) {
-                $valStr = strtoupper((string)$val);
-                if (strpos($valStr, $cleanPrefix) === 0) {
-                    $suffix = substr($valStr, $prefixLen);
-                    if ($suffix !== '' && ctype_digit($suffix)) {
-                        $n = (int)$suffix;
+    $yy = date('y');
+    if ($raw !== '' && preg_match('/\b(20\d{2})\b/', $raw, $m)) {
+        $yy = substr($m[1], -2);
+    }
+
+    return ['mm' => $mm, 'yy' => $yy];
+}
+
+function next_course_running_number(PDO $pdo, string $enrTail, string $serPrefix): int {
+    $maxNum = 10000;
+
+    // 1. Check all existing enrollment numbers matching ESI + 4 digits (MMYY) + enrTail + digits
+    if ($enrTail !== '') {
+        $enrRegex = '/^ESI\d{4}' . preg_quote($enrTail, '/') . '(\d+)$/i';
+        foreach ([
+            ['admission_applications', 'enrollment_number'],
+            ['certificates', 'enrollment_number'],
+        ] as $src) {
+            try {
+                $stmt = $pdo->prepare("SELECT `{$src[1]}` FROM `{$src[0]}` WHERE `{$src[1]}` LIKE ?");
+                $stmt->execute(['ESI%' . $enrTail . '%']);
+                while ($val = $stmt->fetchColumn()) {
+                    if (preg_match($enrRegex, strtoupper(trim((string)$val)), $m)) {
+                        $n = (int)$m[1];
                         if ($n > $maxNum) $maxNum = $n;
                     }
                 }
-            }
-        } catch (PDOException $e) {}
+            } catch (PDOException $e) {}
+        }
     }
 
-    return $cleanPrefix . str_pad((string)($maxNum + 1), $padLen, '0', STR_PAD_LEFT);
+    // 2. Check all existing serial / certificate numbers matching serPrefix + 2 digits (YY) + digits
+    if ($serPrefix !== '') {
+        $serRegex = '/^' . preg_quote($serPrefix, '/') . '\d{2}(\d+)$/i';
+        foreach ([
+            ['admission_applications', 'serial_number'],
+            ['certificates', 'certificate_number'],
+        ] as $src) {
+            try {
+                $stmt = $pdo->prepare("SELECT `{$src[1]}` FROM `{$src[0]}` WHERE `{$src[1]}` LIKE ?");
+                $stmt->execute([$serPrefix . '%']);
+                while ($val = $stmt->fetchColumn()) {
+                    if (preg_match($serRegex, strtoupper(trim((string)$val)), $m)) {
+                        $n = (int)$m[1];
+                        if ($n > $maxNum) $maxNum = $n;
+                    }
+                }
+            } catch (PDOException $e) {}
+        }
+    }
+
+    return $maxNum + 1;
 }
 
 function generate_course_enrollment_and_serial(
@@ -60,7 +106,8 @@ function generate_course_enrollment_and_serial(
     ?string $courseId,
     ?string $courseCode = null,
     ?string $existingEnrollment = null,
-    ?string $existingSerial = null
+    ?string $existingSerial = null,
+    ?string $session = null
 ): array {
     foreach ([
         'ALTER TABLE courses ADD COLUMN enrollment_prefix VARCHAR(64) DEFAULT NULL',
@@ -92,13 +139,24 @@ function generate_course_enrollment_and_serial(
         }
     } catch (PDOException $e) {}
 
+    $parts = parse_session_month_year($session);
+    $mm = $parts['mm'];
+    $yy = $parts['yy'];
+
+    // Split enrollment prefix after "ESI" (e.g., "ESIDS" -> "ESI" + MM + YY + "DS" + 10001)
+    $enrTail = '';
+    if ($enrPrefix !== '') {
+        $enrTail = strpos($enrPrefix, 'ESI') === 0 ? substr($enrPrefix, 3) : $enrPrefix;
+    }
+
+    $nextSeq = ($enrPrefix !== '' || $serPrefix !== '')
+        ? next_course_running_number($pdo, $enrTail, $serPrefix)
+        : 10001;
+
     $enrollmentNumber = !empty($existingEnrollment) ? trim($existingEnrollment) : '';
     if ($enrollmentNumber === '') {
         if ($enrPrefix !== '') {
-            $enrollmentNumber = next_prefixed_sequence($pdo, $enrPrefix, [
-                ['admission_applications', 'enrollment_number'],
-                ['certificates', 'enrollment_number'],
-            ], 4);
+            $enrollmentNumber = 'ESI' . $mm . $yy . $enrTail . $nextSeq;
         } else {
             $enrollmentNumber = generate_enrollment_number($pdo);
         }
@@ -107,10 +165,7 @@ function generate_course_enrollment_and_serial(
     $serialNumber = !empty($existingSerial) ? trim($existingSerial) : '';
     if ($serialNumber === '') {
         if ($serPrefix !== '') {
-            $serialNumber = next_prefixed_sequence($pdo, $serPrefix, [
-                ['admission_applications', 'serial_number'],
-                ['certificates', 'certificate_number'],
-            ], 4);
+            $serialNumber = $serPrefix . $yy . $nextSeq;
         } else {
             $serialNumber = generate_certificate_number($pdo);
         }

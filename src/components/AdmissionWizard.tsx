@@ -16,6 +16,7 @@ import {
 } from "lucide-react";
 import {
   ACADEMIC_SESSIONS,
+  getSessionsForDuration,
   STUDY_MODES,
   RELIGION_OPTIONS,
   HEAR_ABOUT_OPTIONS,
@@ -496,7 +497,7 @@ export function AdmissionWizard({
                   onChange={(e) => setSession(e.target.value)}
                   className="w-full px-3.5 py-2.5 text-sm border border-slate-300 rounded bg-white focus:outline-none focus:ring-2 focus:ring-[#135589]"
                 >
-                  {ACADEMIC_SESSIONS.map((s) => (
+                  {getSessionsForDuration(selectedCourse?.duration).map((s) => (
                     <option key={s} value={s}>
                       {s}
                     </option>
