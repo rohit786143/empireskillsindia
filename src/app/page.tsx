@@ -61,18 +61,21 @@ export default function HomePage() {
 
   return (
     <div className="space-y-12 pb-8">
-      {/* 1. Institutional Hero Banner — Balanced Navy, Ocean Teal & Saffron Logo Palette */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#0B3D62] via-[#135589] to-[#0E7490] text-white border-b-4 border-[#F07228]">
-        {/* Subtle luminous ambient accents */}
-        <div
-          className="pointer-events-none absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#F07228]/20 blur-3xl"
-          aria-hidden="true"
-        />
-        <div
-          className="pointer-events-none absolute -bottom-24 right-1/4 w-96 h-96 rounded-full bg-[#38BDF8]/20 blur-3xl"
-          aria-hidden="true"
-        />
-        <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
+      {/* 1. Institutional Hero Banner — Corporate Training Photo + Balanced Navy-Teal Gradient */}
+      <section className="relative overflow-hidden bg-[#06243D] text-white border-b-4 border-[#F07228]">
+        {/* Background Photo Layer with tuned opacity & Navy-Teal Gradient Veil */}
+        <div className="pointer-events-none absolute inset-0" aria-hidden="true">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src="/hero-bg.webp"
+            alt=""
+            className="w-full h-full object-cover object-center opacity-30"
+          />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#06243D]/90 via-[#0B3D62]/80 to-[#0E7490]/75" />
+          <div className="absolute -top-24 -left-24 w-80 h-80 rounded-full bg-[#F07228]/20 blur-3xl" />
+          <div className="absolute -bottom-24 right-1/4 w-96 h-96 rounded-full bg-[#38BDF8]/20 blur-3xl" />
+        </div>
+        <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3.5 sm:py-4">
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 lg:gap-6 items-center">
             <div className="lg:col-span-7 space-y-2.5">
               <h1 className="text-2xl sm:text-3xl lg:text-[32px] font-extrabold tracking-tight leading-[1.16] text-white">
