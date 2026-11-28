@@ -3,13 +3,13 @@
 import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Lock, Mail, ArrowLeft, AlertCircle, ShieldCheck } from "lucide-react";
+import { Lock, Mail, ArrowLeft, AlertCircle } from "lucide-react";
 import { BrandLogo } from "@/components/BrandLogo";
 import { apiFetch } from "@/lib/api";
 
 export default function AdminLoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("admin@empireskillsindia.com");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
@@ -69,6 +69,7 @@ export default function AdminLoginPage() {
                   required
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter official admin email"
                   className="w-full pl-9 pr-3 py-2.5 text-sm border border-slate-300 rounded focus:outline-none focus:ring-2 focus:ring-[#135589]"
                 />
               </div>
@@ -99,19 +100,6 @@ export default function AdminLoginPage() {
               {loading ? "Signing In..." : "Sign In to Institute Portal"}
             </button>
           </form>
-
-          <div className="p-3 rounded bg-slate-50 border border-slate-200 text-[11px] text-slate-600 space-y-1">
-            <div className="flex items-center gap-1.5 font-bold text-[#0B3D62]">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-600" />
-              Default Institute Owner Credentials
-            </div>
-            <p>
-              Email: <code className="font-mono font-bold">admin@empireskillsindia.com</code>
-            </p>
-            <p>
-              Password: <code className="font-mono font-bold">Admin@123</code>
-            </p>
-          </div>
         </div>
 
         <div className="text-center">
