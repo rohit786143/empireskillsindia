@@ -16,6 +16,7 @@ import {
   Building2,
   Facebook,
   Instagram,
+  Download,
 } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { apiFetch } from "@/lib/api";
@@ -112,6 +113,15 @@ export function SiteHeader() {
           </div>
 
           <div className="flex flex-wrap items-center gap-2">
+            <a
+              href="/app/Empire-Skills-India.apk"
+              download="Empire-Skills-India.apk"
+              className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-emerald-600 hover:bg-emerald-500 text-white font-semibold shadow-sm transition-colors"
+              title="Download Empire Skills India Android App (.apk)"
+            >
+              <Download className="w-3 h-3" />
+              Download App
+            </a>
             <Link
               href="/admission"
               className="inline-flex items-center gap-1 px-2.5 py-1 rounded bg-[#F07228] hover:bg-[#D65B14] text-white font-semibold transition-colors"

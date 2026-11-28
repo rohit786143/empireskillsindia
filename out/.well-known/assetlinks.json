@@ -1,0 +1,8 @@
+[{
+      "relation": ["delegate_permission/common.handle_all_urls"],
+      "target": {
+        "namespace": "android_app",
+        "package_name": "com.empireskillsindia.twa",
+        "sha256_cert_fingerprints": ["BE:6F:BE:09:85:1E:82:74:87:48:20:9D:C8:E6:BC:79:12:B8:CA:2F:FC:9A:8F:FB:5B:C4:F9:D0:2A:36:31:0B"]
+      }
+    }]

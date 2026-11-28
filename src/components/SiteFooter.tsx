@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { MapPin, Phone, Mail, Clock, ShieldCheck, Lock, ExternalLink, Facebook, Instagram } from "lucide-react";
+import { MapPin, Phone, Mail, Clock, ShieldCheck, Lock, ExternalLink, Facebook, Instagram, Download } from "lucide-react";
 import { BrandLogo } from "./BrandLogo";
 import { useSiteSettings } from "@/lib/useSiteSettings";
 
@@ -141,7 +141,15 @@ export function SiteFooter() {
                 <span>{siteSettings.officeHours}</span>
               </li>
             </ul>
-            <div className="mt-4 pt-3 border-t border-white/15 flex items-center gap-2">
+            <div className="mt-4 pt-3 border-t border-white/15 flex flex-wrap items-center gap-2">
+              <a
+                href="/app/Empire-Skills-India.apk"
+                download="Empire-Skills-India.apk"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-semibold shadow-sm transition-colors"
+              >
+                <Download className="w-3.5 h-3.5" />
+                Download Android App
+              </a>
               {siteSettings.facebook && (
                 <a
                   href={siteSettings.facebook}
