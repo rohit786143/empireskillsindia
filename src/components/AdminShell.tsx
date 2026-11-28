@@ -18,6 +18,7 @@ import {
   Megaphone,
   Image as ImageIcon,
   MessageSquareHeart,
+  UsersRound,
   Settings,
   LogOut,
   KeyRound,
@@ -59,6 +60,7 @@ const ADMIN_NAV = [
   { label: "Notice Board Manager", href: "/admin/notices", icon: Megaphone },
   { label: "Photo Gallery Manager", href: "/admin/gallery", icon: ImageIcon },
   { label: "Student Reviews", href: "/admin/reviews", icon: MessageSquareHeart },
+  { label: "Our Team", href: "/admin/team", icon: UsersRound },
   { label: "Contact & Settings", href: "/admin/settings", icon: Settings },
 ];
 

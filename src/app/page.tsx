@@ -18,6 +18,7 @@ import {
   type PublicCourse,
 } from "@/components/HomeClientSections";
 import { StudentReviewsSection } from "@/components/StudentReviewsSection";
+import { OurTeamSection } from "@/components/OurTeamSection";
 import { HeroGallerySlider } from "@/components/HeroGallerySlider";
 import { apiFetch } from "@/lib/api";
 
@@ -111,7 +112,18 @@ export default function HomePage() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-2">
+              <div className="pt-1.5">
+                <Link
+                  href="/our-team"
+                  className="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-white/15 hover:bg-white/25 border border-[#FFB36B]/70 text-white font-bold text-xs sm:text-sm backdrop-blur-sm shadow-sm transition-all"
+                >
+                  <Users className="w-4 h-4 text-[#FFB36B] shrink-0" />
+                  <span>Our Team</span>
+                  <ArrowRight className="w-3.5 h-3.5 text-[#FFB36B]" />
+                </Link>
+              </div>
+
+              <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2.5 sm:gap-3 pt-1">
                 <Link
                   href="/admission"
                   className="inline-flex items-center justify-center gap-1.5 sm:gap-2 px-3.5 sm:px-6 py-2.5 sm:py-3 rounded-lg bg-gradient-to-r from-[#F07228] to-[#F59E0B] hover:from-[#D65B14] hover:to-[#D97706] text-white font-bold text-xs sm:text-sm shadow-lg transition-all"
@@ -300,7 +312,10 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* 4. Student Voices & Alumni Reviews (4-Card Right-to-Left Slider) */}
+      {/* 4. Leadership & Faculty — Our Team (Admin Managed) */}
+      <OurTeamSection mode="section" />
+
+      {/* 5. Student Voices & Alumni Reviews (4-Card Right-to-Left Slider) */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <StudentReviewsSection />
       </div>
