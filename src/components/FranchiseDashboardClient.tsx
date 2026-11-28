@@ -1173,6 +1173,8 @@ export function FranchiseDashboardClient() {
                                       disabled={isBusy}
                                       onClick={() => {
                                         setRemarks(app.franchiseRemarks || "");
+                                        setForwardProofUrl("");
+                                        setForwardUtr("");
                                         setActionModal({
                                           app,
                                           action: "FORWARD_TO_MAIN",
@@ -1214,6 +1216,8 @@ export function FranchiseDashboardClient() {
                                       disabled={isBusy}
                                       onClick={() => {
                                         setRemarks(app.franchiseRemarks || "");
+                                        setForwardProofUrl("");
+                                        setForwardUtr("");
                                         setActionModal({
                                           app,
                                           action: "FORWARD_TO_MAIN",

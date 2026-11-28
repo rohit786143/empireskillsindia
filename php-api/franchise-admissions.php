@@ -418,15 +418,17 @@ if ($method === 'PATCH' || $method === 'PUT') {
         }
         if (!$hasInitial500) {
             $existingFrPayments[] = [
-                'id'         => generate_cuid(),
-                'amount'     => 500,
-                'feeType'    => 'Initial Forward Fee (₹500)',
-                'mode'       => 'UPI / Bank',
-                'receiptNo'  => $forwardUtr,
-                'date'       => date('Y-m-d'),
-                'recordedAt' => date('Y-m-d H:i:s'),
-                'remarks'    => $remarks !== '' ? $remarks : 'Paid ₹500 to Main Admin on application forward',
-                'proofUrl'   => $forwardProof,
+                'id'            => generate_cuid(),
+                'applicationId' => $id,
+                'studentName'   => $existing['full_name'] ?? '',
+                'amount'        => 500,
+                'feeType'       => 'Initial Forward Fee (₹500)',
+                'mode'          => 'UPI / Bank',
+                'receiptNo'     => $forwardUtr,
+                'date'          => date('Y-m-d'),
+                'recordedAt'    => date('Y-m-d H:i:s'),
+                'remarks'       => $remarks !== '' ? $remarks : 'Paid ₹500 to Main Admin on application forward',
+                'proofUrl'      => $forwardProof,
             ];
             $totalFrPaid = 0;
             foreach ($existingFrPayments as $ep) {
@@ -436,6 +438,35 @@ if ($method === 'PATCH' || $method === 'PUT') {
             $params[] = $totalFrPaid;
             $fields[] = '`franchise_payments_json` = ?';
             $params[] = json_encode($existingFrPayments, JSON_UNESCAPED_UNICODE);
+        }
+
+        // Also ensure this specific student's own initial registration fee is credited ONLY to this student's ledger if still empty
+        $initStudentAmt = max(0, (int)($existing['registration_fee_paid'] ?? 0));
+        if ($initStudentAmt > 0) {
+            $curStudentPayments = [];
+            if (!empty($existing['fee_payments_json'])) {
+                $decS = json_decode($existing['fee_payments_json'], true);
+                if (is_array($decS)) $curStudentPayments = $decS;
+            }
+            if (count($curStudentPayments) === 0) {
+                $curStudentPayments[] = [
+                    'id'            => generate_cuid(),
+                    'applicationId' => $id,
+                    'studentName'   => $existing['full_name'] ?? '',
+                    'amount'        => $initStudentAmt,
+                    'feeType'       => 'Registration / Initial Fee',
+                    'mode'          => 'UPI / Online',
+                    'receiptNo'     => trim((string)($existing['payment_utr'] ?? '')),
+                    'date'          => substr((string)($existing['created_at'] ?? date('Y-m-d')), 0, 10),
+                    'recordedAt'    => date('Y-m-d H:i:s'),
+                    'remarks'       => 'Initial fee paid during online admission',
+                    'proofUrl'      => $existing['payment_screenshot_url'] ?? null,
+                ];
+                $fields[] = '`fee_paid` = ?';
+                $params[] = $initStudentAmt;
+                $fields[] = '`fee_payments_json` = ?';
+                $params[] = json_encode($curStudentPayments, JSON_UNESCAPED_UNICODE);
+            }
         }
     } else {
         json_response(['error' => 'Invalid franchise action.'], 400);
@@ -447,7 +478,8 @@ if ($method === 'PATCH' || $method === 'PUT') {
     }
 
     $params[] = $id;
-    $pdo->prepare('UPDATE admission_applications SET ' . implode(', ', $fields) . ' WHERE id = ?')->execute($params);
+    $params[] = $franchiseId;
+    $pdo->prepare('UPDATE admission_applications SET ' . implode(', ', $fields) . ' WHERE id = ? AND franchise_id = ?')->execute($params);
 
     $upd = $pdo->prepare(
         'SELECT a.*, c.duration AS joined_course_duration, c.fee AS joined_course_fee, c.fee_breakdown_json AS joined_fee_breakdown

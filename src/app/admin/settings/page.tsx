@@ -14,6 +14,7 @@ import {
   Settings,
   QrCode,
   Upload,
+  Trash2,
 } from "lucide-react";
 import { AdminGuard } from "@/components/AdminGuard";
 import { apiFetch } from "@/lib/api";
@@ -38,6 +39,47 @@ function AdminSettingsContent() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [status, setStatus] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+  const [resetConfirm, setResetConfirm] = useState("");
+  const [resetBusy, setResetBusy] = useState(false);
+  const [resetMsg, setResetMsg] = useState<{ type: "ok" | "err"; text: string } | null>(null);
+
+  async function handleResetAllData(e: React.FormEvent) {
+    e.preventDefault();
+    if (resetConfirm.trim().toUpperCase() !== "DELETE ALL") {
+      setResetMsg({ type: "err", text: 'Please type "DELETE ALL" exactly to confirm.' });
+      return;
+    }
+    if (
+      !confirm(
+        "Are you 100% sure? This will permanently delete ALL enrolled students, admission applications, student fee receipts, and franchise/admin payment entries."
+      )
+    ) {
+      return;
+    }
+    setResetBusy(true);
+    setResetMsg(null);
+    try {
+      const res = await apiFetch("/reset-data.php", {
+        method: "POST",
+        body: JSON.stringify({ confirmText: resetConfirm.trim() }),
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setResetMsg({ type: "err", text: data.error || "Failed to reset data." });
+      } else {
+        const d = data.deleted || {};
+        setResetConfirm("");
+        setResetMsg({
+          type: "ok",
+          text: `Cleared! Deleted ${d.studentsAndAdmissions ?? 0} students/admissions, ${d.studentFeeSubmissions ?? 0} student fee receipts, and ${d.franchiseRoyaltyRequests ?? 0} franchise royalty payment requests. (Franchise centers, courses, gallery & settings are safe.)`,
+        });
+      }
+    } catch {
+      setResetMsg({ type: "err", text: "Network error while resetting data." });
+    } finally {
+      setResetBusy(false);
+    }
+  }
 
   useEffect(() => {
     apiFetch(`/site-settings.php?_t=${Date.now()}`)
@@ -340,6 +382,57 @@ function AdminSettingsContent() {
           </div>
         </form>
       )}
+
+      {/* Danger Zone: Clear All Test Students & Payment Entries */}
+      <form
+        onSubmit={handleResetAllData}
+        className="bg-red-50/70 border-2 border-red-200 rounded-xl p-6 space-y-4 shadow-sm"
+      >
+        <div>
+          <h2 className="text-base font-extrabold text-red-800 flex items-center gap-2">
+            <Trash2 className="w-5 h-5 text-red-600" />
+            Reset All Enrolled Students &amp; Payment Entries
+          </h2>
+          <p className="text-xs text-red-700 mt-1 leading-relaxed">
+            Permanently deletes <strong>all enrolled students, admission applications, student fee receipts, and franchise/admin payment entries</strong> so you can start completely fresh. Your Study Centers (Franchises), Courses, Notices, Gallery, Team, Reviews &amp; Settings will NOT be affected.
+          </p>
+        </div>
+
+        {resetMsg && (
+          <div
+            className={`p-3 rounded-lg text-xs font-semibold flex items-center gap-2 ${
+              resetMsg.type === "ok"
+                ? "bg-emerald-50 text-emerald-800 border border-emerald-200"
+                : "bg-red-100 text-red-800 border border-red-300"
+            }`}
+          >
+            {resetMsg.type === "ok" ? (
+              <CheckCircle2 className="w-4 h-4 shrink-0" />
+            ) : (
+              <AlertCircle className="w-4 h-4 shrink-0" />
+            )}
+            {resetMsg.text}
+          </div>
+        )}
+
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+          <input
+            type="text"
+            value={resetConfirm}
+            onChange={(e) => setResetConfirm(e.target.value)}
+            placeholder='Type "DELETE ALL" to confirm'
+            className="flex-1 px-3.5 py-2 text-sm border border-red-300 rounded-lg bg-white font-mono"
+          />
+          <button
+            type="submit"
+            disabled={resetBusy || resetConfirm.trim().toUpperCase() !== "DELETE ALL"}
+            className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-lg bg-red-600 hover:bg-red-700 text-white text-xs sm:text-sm font-bold shadow-sm disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            {resetBusy ? "Deleting..." : "Delete All Students & Payments"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

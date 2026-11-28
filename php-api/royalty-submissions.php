@@ -86,22 +86,24 @@ if ($method === 'PATCH' || $method === 'PUT') {
                 if (is_array($dec)) $existingFrPayments = $dec;
             }
             $existingFrPayments[] = [
-                'id'         => generate_cuid(),
-                'amount'     => $payAmt,
-                'feeType'    => ($curPending > 0 && $payAmt >= $curPending) ? 'Final Royalty Settlement' : '15% Royalty Installment',
-                'mode'       => 'UPI / Bank',
-                'receiptNo'  => $sub['utr'],
-                'date'       => $sub['payment_date'] ?: date('Y-m-d'),
-                'recordedAt' => date('Y-m-d H:i:s'),
-                'remarks'    => $adminRemarks !== '' ? $adminRemarks : ($sub['franchise_remarks'] ?: 'Verified & Approved by Main Admin'),
-                'proofUrl'   => $sub['proof_url'],
+                'id'            => generate_cuid(),
+                'applicationId' => $appRow['id'],
+                'studentName'   => $appRow['full_name'] ?? '',
+                'amount'        => $payAmt,
+                'feeType'       => ($curPending > 0 && $payAmt >= $curPending) ? 'Final Royalty Settlement' : '15% Royalty Installment',
+                'mode'          => 'UPI / Bank',
+                'receiptNo'     => $sub['utr'],
+                'date'          => $sub['payment_date'] ?: date('Y-m-d'),
+                'recordedAt'    => date('Y-m-d H:i:s'),
+                'remarks'       => $adminRemarks !== '' ? $adminRemarks : ($sub['franchise_remarks'] ?: 'Verified & Approved by Main Admin'),
+                'proofUrl'      => $sub['proof_url'],
             ];
             $totalFrPaid = 0;
             foreach ($existingFrPayments as $ep) {
                 $totalFrPaid += (int)($ep['amount'] ?? 0);
             }
-            $pdo->prepare('UPDATE admission_applications SET franchise_paid_to_main = ?, franchise_payments_json = ? WHERE id = ?')
-                ->execute([$totalFrPaid, json_encode($existingFrPayments, JSON_UNESCAPED_UNICODE), $appRow['id']]);
+            $pdo->prepare('UPDATE admission_applications SET franchise_paid_to_main = ?, franchise_payments_json = ? WHERE id = ? AND franchise_id = ?')
+                ->execute([$totalFrPaid, json_encode($existingFrPayments, JSON_UNESCAPED_UNICODE), $appRow['id'], $sub['franchise_id']]);
 
             $aStmt->execute([$appRow['id']]);
             $updRow = $aStmt->fetch();
