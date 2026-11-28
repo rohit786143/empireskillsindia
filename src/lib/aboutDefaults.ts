@@ -1,5 +1,3 @@
-import { INSTITUTE_INFO } from "./constants";
-
 export interface AboutHighlightCard {
   id: string;
   title: string;
@@ -55,7 +53,8 @@ export const DEFAULT_ABOUT_CONFIG: AboutPageConfig = {
   showHero: true,
   heroEyebrow: "Institutional Overview",
   heroTitle: "About Empire Skills India",
-  heroSubtitle: `${INSTITUTE_INFO.tagline} — Committed to standardized vocational education, transparent examinations, and nationally verifiable digital credentials.`,
+  heroSubtitle:
+    "Empowering youth and communities through industry-aligned Vocational Education, Skill Development, and IT Sector training — backed by dedicated Student Placement Services and end-to-end execution of Government, CSR, and National Skill Development Projects.",
 
   showMandate: true,
   mandateTitle: "Institutional Mandate & Academic Governance",
