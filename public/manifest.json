@@ -1,0 +1,61 @@
+{
+  "id": "/",
+  "name": "Empire Skills India",
+  "short_name": "Empire Skills",
+  "description": "Official institutional portal of Empire Skills India — Online Admissions, Skill & Vocational Courses, Student Zone, Partner Portal & Instant QR Certificate Verification.",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#0B3D62",
+  "theme_color": "#0B3D62",
+  "lang": "en-IN",
+  "dir": "ltr",
+  "categories": ["education"],
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Online Admission",
+      "short_name": "Admission",
+      "url": "/admission/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Student Zone",
+      "short_name": "Student Zone",
+      "url": "/student-zone/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Verify Certificate",
+      "short_name": "Verify",
+      "url": "/verify-certificate/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    },
+    {
+      "name": "Partner Login",
+      "short_name": "Partner",
+      "url": "/franchise/login/",
+      "icons": [{ "src": "/icons/icon-192.png", "sizes": "192x192" }]
+    }
+  ]
+}
